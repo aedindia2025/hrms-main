@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Expense Creation - List{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark">Expense type creation</span></h6>
+        <!-- Link to Create Page -->
+       {% url 'expense_create' as expense_create_url %}
+       <a href="{{ expense_create_url|default:'#' }}" class="btn btn-success btn-create text-nowrap">+ Create</a>
+    </div>
+
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            
+            <!-- Filter Section -->
+           
+
+            <!-- Show entries & Search -->
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-10">
+                <div>
+                    Show 
+                    <select class="form-select d-inline-block w-auto mx-1">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                    entries
+                </div>
+                <div>
+                    <label class="me-2">Search:</label>
+                    <input type="text" class="form-control d-inline-block w-auto">
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>S.No</th>
+                            <th>expense Type</th>
+                           <th>Image Required</th>
+                            <th>Status</th>
+                            <th>Description</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>Miscellaneous Expenses</td>
+                            <td class="text-success">Yes</td>
+                            <td>Active</td>
+                            <td></td>
+                            <td>
+                                {% url 'expense_edit' as expense_edit_url %}
+                                <a href="{{ expense_edit_url|default:'#' }}" class="text-primary me-2">
+                                        <i data-feather="edit"></i>
+                                    </a>
+                                    <form action="#" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-danger">
+                                            <i data-feather="trash-2"></i>
+                                        </button>
+                                    </form>
+                            </td>
+                        </tr>
+                         <tr>
+                           <td>2</td>
+                            <td>Food Expenses</td>
+                          <td class="d-flex justify-content-between align-items-center text-danger">
+                            <span>No</span>
+                            {% url 'expense_expense_add' as expense_expense_add_url %}
+                            <a  href="{{ expense_expense_add_url|default:'#' }}" class="btn-expenses">
+                                Expenses <span class="arrow">➜</span>
+</a>
+                          </td>
+                            <td>Active</td>
+                            <td></td>
+                            <td>
+                                {% url 'expense_edit' as expense_edit_url %}
+                                <a href="{{ expense_edit_url|default:'#' }}" class="text-primary me-2">
+                                        <i data-feather="edit"></i>
+                                    </a>
+                                    <form action="#" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-danger">
+                                            <i data-feather="trash-2"></i>
+                                        </button>
+                                    </form>
+                            </td>
+                        </tr>
+                         <tr>
+                           <td>3</td>
+                            <td>Rent</td>
+                            <td>-</td>
+                            <td>Active</td>
+                            <td></td>
+                            <td>
+                                {% url 'expense_edit' as expense_edit_url %}
+                                <a href="{{ expense_edit_url|default:'#' }}" class="text-primary me-2">
+                                        <i data-feather="edit"></i>
+                                    </a>
+                                    <form action="#" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-danger">
+                                            <i data-feather="trash-2"></i>
+                                        </button>
+                                    </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center">
+                <div>Showing 1 to 1 of 1 entries</div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                        <li class="page-item active"><a class="page-link">1</a></li>
+                        <li class="page-item disabled"><a class="page-link">Next</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background: #f7f8fa;
+    }
+    .card {
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }
+    .table th, .table td {
+        font-size: 14px;
+    }
+    .btn-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: 0.2s ease-in-out;
+}
+.btn-expenses {
+      border: 2px solid #28a745;
+      color: #28a745;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: transparent;
+      position: relative;
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+    .btn-expenses:hover {
+      background-color: #28a745;
+      color: #fff;
+    }
+    .btn-expenses .arrow {
+      opacity: 0;
+      margin-left: 0;
+      transition: all 0.3s ease;
+    }
+    .btn-expenses:hover .arrow {
+      opacity: 1;
+      margin-left: 8px;
+    }
+</style>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+</script>
+{% endblock %}

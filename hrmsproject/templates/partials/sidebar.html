@@ -1,0 +1,172 @@
+{% load static %}
+
+<!-- Sidebar Toggle Button (Mobile only) -->
+<button class="btn btn-light d-lg-none m-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas">
+  <iconify-icon icon="heroicons:bars-3-solid" class="text-2xl"></iconify-icon>
+</button>
+
+<!-- Desktop Sidebar -->
+<aside class="sidebar d-none d-lg-block">
+  <div>
+    <a href="{% url 'accounts:dashboard' %}" class="sidebar-logo">
+      <img src="{% static 'assets/images/logo-svg.svg' %}" alt="Ascent" class="light-logo">
+      <img src="{% static 'assets/images/logo-svg.svg' %}" alt="Ascent" class="dark-logo">
+      <img src="{% static 'assets/images/logo-svg.svg' %}" alt="Ascent" class="logo-icon">
+    </a>
+  </div>
+  <div class="sidebar-menu-area">
+    <div class="col-lg-12">
+      <div class="user-grid-card position-relative border radius-16 overflow-hidden bg-tb-success h-100">
+        <div class="pb-16 pt-16 ms-16 me-16 com-pro text-center">
+          <div class="border border-top-0 border-start-0 border-end-0 pro-class">
+            <span class="w-50-px h-50-px bg-success text-white rounded-circle d-flex justify-content-center align-items-center mx-auto">
+              {{ request.user.first_name|first|default:'U' }}
+            </span>
+            <h6 class="mb-0 mt-12">{{ request.user.get_full_name|default:request.user.username }}</h6>
+            <span class="text-secondary-light mb-0 sub-tex">{{ request.user.email|default:'--' }}</span>
+          </div>
+          <div class="mt-11 text-center">
+            <span class="bg-success text-white px-10 py-4 radius-8 fw-medium text-sm">Punch</span>
+            <p class="mb-0 mt-1 fw-semibold">Total Hours</p>
+            <p class="mb-0">In 09:05 AM | Out</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="sidebar-menu mt-20 side-li">
+      <li class="c1">
+        <a href="{% url 'entry:leave_entry_list' %}">
+          <iconify-icon icon="mdi:calendar-account" class="menu-icon"></iconify-icon>
+          <span>Leave Entry</span>
+        </a>
+      </li>
+      <li class="c2">
+        <a href="{% url 'entry:permission_entry_list' %}">
+          <iconify-icon icon="mdi:account-check" class="menu-icon"></iconify-icon>
+          <span>Permission Entry</span>
+        </a>
+      </li>
+      <li class="c3">
+        <a href="{% url 'entry:tada_entry_list' %}">
+          <iconify-icon icon="mdi:receipt-text" class="menu-icon"></iconify-icon>
+          <span>TADA Entry</span>
+        </a>
+      </li>
+      <li class="c4">
+        <a href="{% url 'entry:travel_entry_list' %}">
+          <iconify-icon icon="mdi:routes" class="menu-icon"></iconify-icon>
+          <span>Travel Requisition</span>
+        </a>
+      </li>
+      <li class="c5">
+        <a href="{% url 'reports:daily_attendance_report' %}">
+          <iconify-icon icon="mdi:calendar-check" class="menu-icon"></iconify-icon>
+          <span>Attendance</span>
+        </a>
+      </li>
+      <li class="c6">
+        <a href="{% url 'accounts:profile' %}">
+          <iconify-icon icon="mdi:account-eye" class="menu-icon"></iconify-icon>
+          <span>View Profile</span>
+        </a>
+      </li>
+      <li class="c7">
+        <a href="{% url 'accounts:inbox' %}">
+          <iconify-icon icon="mdi:email" class="menu-icon"></iconify-icon>
+          <span>Inbox</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</aside>
+
+
+
+<!-- Mobile Offcanvas Sidebar -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarOffcanvas">
+  <div class="offcanvas-body p-0">
+  <aside class="sidebar w-100">
+    <button type="button" class="sidebar-close-btn" data-bs-dismiss="offcanvas">
+      <iconify-icon icon="radix-icons:cross-2"></iconify-icon>
+    </button>
+    <div>
+      <a href="index.html" class="sidebar-logo">
+        <img src="{% static 'assets/images/logo-svg.svg' %}" alt="site logo" class="light-logo">
+        <img src="{% static 'assets/images/logo-svg.svg' %}" alt="site logo" class="dark-logo">
+        <img src="{% static 'assets/images/logo-svg.svg' %}" alt="site logo" class="logo-icon">
+      </a>
+    </div>
+    <div class="offcanvas-body p-0">
+      <div class="sidebar-menu-area">
+        <ul class="sidebar-menu" id="sidebar-menu">
+          
+          <!-- Dropdown -->
+          <li class="dropdown">
+            <a href="javascript:void(0)" class="dropdown-toggle">
+              <iconify-icon icon="solar:home-smile-angle-outline" class="menu-icon"></iconify-icon>
+              <span>Dashboard</span>
+            </a>
+            <ul class="sidebar-submenu collapse">
+              <li>
+                <a href="index.html"><i class="ri-circle-fill circle-icon text-primary-600 w-auto"></i> AI</a>
+              </li>
+            </ul>
+          </li>
+
+       
+      
+
+        </ul>
+      </div>
+    </div>
+  </aside>
+</div>
+</div>
+
+<script>
+  $(function () {
+    console.log("Sidebar script loaded ✅");
+
+    $('#sidebar-menu').on('click', '.dropdown-toggle', function (e) {
+      e.preventDefault();
+
+      let $submenu = $(this).next('.sidebar-submenu');
+
+      // Close others
+      $('#sidebar-menu .sidebar-submenu').not($submenu).slideUp().parent().removeClass('active');
+
+      // Toggle current
+      $submenu.slideToggle();
+      $(this).parent().toggleClass('active');
+    });
+  });
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".sidebar .dropdown-toggle").forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      const submenu = el.nextElementSibling;
+      if (submenu) submenu.classList.toggle("show");
+    });
+  });
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll('.sidebar .dropdown-toggle').forEach(function (toggle) {
+    toggle.addEventListener('click', function (event) {
+      event.preventDefault();
+      const parent = toggle.closest('li');
+
+      document.querySelectorAll('.sidebar .dropdown').forEach(function (item) {
+        if (item !== parent) {
+          item.classList.remove('open');
+        }
+      });
+
+      parent.classList.toggle('open');
+    });
+  });
+});
+
+</script>

@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Asset Create Creation - List{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark"> Asset creation</span></h6>
+        <!-- Link to Create Page -->
+       {% url 'asset_create_create' as asset_create_create_url %}
+       <a href="{{ asset_create_create_url|default:'#' }}" class="btn btn-success btn-create text-nowrap">+ Create</a>
+    </div>
+
+
+   <div class="card shadow-sm">
+        <div class="card-body">
+    <!-- Copy dashboard HTML here -->
+      <div class="row g-3 mb-3">
+      <div class="col-md-3">
+        <label class="form-label">From Date</label>
+        <input type="date" class="form-control" value="2025-09-20">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">To Date</label>
+        <input type="date" class="form-control" value="2025-09-20">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Site Name</label>
+        <select class="form-select">
+          <option>select</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Salary Type</label>
+        <select class="form-select">
+          <option>select</option>
+        </select>
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button class="btn btn-primary w-100">Go</button>
+      </div>
+    </div>
+     <div class="d-flex justify-content-between align-items-center mt-5 mb-10">
+                <div>
+                    Show 
+                    <select class="form-select d-inline-block w-auto mx-1">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                    entries
+                </div>
+                <div>
+                    <label class="me-2">Search:</label>
+                    <input type="text" class="form-control d-inline-block w-auto">
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>S.No</th>
+                            <th>Entry Date</th>
+                            <th>Asset ID</th>
+                            <th>Site Name</th>
+                            <th>Employee name</th>
+                            <th>Issued QTY</th>
+                            <th>Return QTY</th>
+                            <th>Print</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                           <td colspan="12" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No data available in table</td>
+                        </tr>
+                        <tr class="d-none">
+                            <td>1</td>
+                            <td>11-02-2025</td>
+                            <td>AST-2374899</td>
+                            <td>Guntur</td>
+                            <td>Aravindh</td>
+                            <td>1</td>
+                            <td>3</td>
+                            <td>
+                       
+                            </td>
+                            <td>
+                                 {% url 'asset_create_edit' as asset_create_edit_url %}
+                                 <a href="{{ asset_create_edit_url|default:'#' }}" class="text-primary me-2">
+                                        <i data-feather="edit"></i>
+                                    </a>
+                                    <form action="#" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-danger">
+                                            <i data-feather="trash-2"></i>
+                                        </button>
+                                    </form>
+                            </td>
+
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center">
+                <div>Showing 1 to 1 of 1 entries</div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                        <li class="page-item active"><a class="page-link">1</a></li>
+                        <li class="page-item disabled"><a class="page-link">Next</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+</div>
+</div>
+</div>
+
+
+<style>
+    body {
+        background: #f7f8fa;
+    }
+    .card {
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }
+    .table th, .table td {
+        font-size: 14px;
+    }
+    .btn-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: 0.2s ease-in-out;
+}
+</style>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+</script>
+{% endblock %}

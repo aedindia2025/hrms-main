@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Employee Creation - List{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <form id="employee-filter-form" method="get"></form>
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark">Employee creation</span></h6>
+        <!-- Link to Create Page -->
+      <div>
+        <a href="#" class="btn bg-secondary-subtle btn-create text-nowrap"><i data-feather="file-plus" width="14" height="14"></i> Import</a>
+        <a href="{% url 'master:employee_create' %}" class="btn btn-success btn-create text-nowrap">+ Create</a>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            
+            <!-- Filter Section -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="form-group row">
+                        <label class="col-md-1 col-form-label" for="staff_status">Status</label>
+                        <div class="col-md-2">
+                            <select name="staff_status" id="staff_status" class="form-select" form="employee-filter-form">
+                                <option value="0" {% if staff_status == '0' or not staff_status %}selected{% endif %}>All</option>
+                                <option value="1" {% if staff_status == '1' %}selected{% endif %}>Active Staff</option>
+                                <option value="2" {% if staff_status == '2' %}selected{% endif %}>Relieved Staff</option>
+                            </select>
+                        </div>
+                        <label class="col-md-2 col-form-label" for="company_name">Company Name</label>
+                        <div class="col-md-3">
+                            <select name="company_name" id="company_name" class="form-select" form="employee-filter-form">
+                                <option value="">Select Company</option>
+                                {% for company in companies %}
+                                    <option value="{{ company.pk }}" {% if company_name == company.pk|stringformat:"s" %}selected{% endif %}>
+                                        {{ company.company_group|default:"-" }}{% if company.company_group and company.billing_name %}  {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex justify-content-center">
+                            <button type="button" class="btn btn-primary btn-rounded mr-2" onclick="staffFilter();">Go</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Send Email Button and Modal -->
+            <div class="mb-3">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#emailModal">
+                    Send Email
+                </button>
+            </div>
+
+            <!-- Email Modal -->
+            <div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="emailModalLabel" style="color: #000;">Email</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <form id="email-form">
+                      {% csrf_token %}
+                      <div class="form-group mb-3">
+                        <label for="email_id" class="form-label">Email:</label>
+                        <input type="email" id="email_id" name="email_id" class="form-control" required>
+                      </div>
+                    </form>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" onclick="send_mail()" class="btn btn-primary">Send Email</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Excel Export -->
+            <div class="col-md-12 mb-3 text-end">
+                <a href="#" id="excel_export" class="text-decoration-none">
+                    <i data-feather="file-text" width="30" height="30" style="color: green;"></i>
+                    <span style="color: green;">&nbsp;Excel Export</span>
+                </a>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-responsive">
+                <table id="staff_datatable" class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Staff Id</th>
+                            <th>Staff Name</th>
+                            <th>DOB</th>
+                            <th>Designation</th>
+                            <th>Department</th>
+                            <th>Work Location</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if employees %}
+                            {% for employee in employees %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ employee.employee_code|default:"-" }}</td>
+                                    <td>{{ employee.user.get_full_name|default:employee.user.username }}</td>
+                                    <td>{{ employee.date_of_birth|date:"d-m-Y"|default:"-" }}</td>
+                                    <td>{{ employee.job_title|default:"-" }}</td>
+                                    <td>-</td>
+                                    <td>{{ employee.location|default:"-" }}</td>
+                                    <td>
+                                        <a href="#" class="text-primary me-2">
+                                            <i data-feather="edit"></i>
+                                        </a>
+                                        <a href="#" class="text-danger">
+                                            <i data-feather="trash-2"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">No employees found.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background: #f7f8fa;
+    }
+    .card {
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }
+    .table th, .table td {
+        font-size: 14px;
+    }
+    .btn-create {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: 0.2s ease-in-out;
+    }
+    .btn-rounded {
+        border-radius: 20px;
+    }
+    #staff_datatable {
+        width: 100%;
+    }
+</style>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+
+    function staffFilter() {
+        var staffStatus = document.getElementById('staff_status').value;
+        var companyName = document.getElementById('company_name').value;
+        var url = window.location.pathname;
+        var params = new URLSearchParams();
+        
+        if (staffStatus && staffStatus !== '0') {
+            params.append('staff_status', staffStatus);
+        }
+        if (companyName) {
+            params.append('company_name', companyName);
+        }
+        
+        var queryString = params.toString();
+        if (queryString) {
+            window.location.href = url + '?' + queryString;
+        } else {
+            window.location.href = url;
+        }
+    }
+
+    function send_mail() {
+        var email_id = $('#email_id').val();
+        
+        if (email_id) {
+            var csrftoken = $('[name=csrfmiddlewaretoken]').val();
+            var data = {
+                "email_id": email_id,
+                "action": "send_mail",
+                "csrfmiddlewaretoken": csrftoken
+            };
+            
+            // Note: You'll need to create a Django view to handle this
+            // For now, this will show an alert
+            alert('Email functionality will be implemented. Email: ' + email_id);
+            
+            // TODO: Uncomment when you create the view at 'master:employee_send_email'
+            // Example AJAX call:
+            // $.ajax({
+            //     type: "POST",
+            //     url: "/master/employee/send-email/",  // Update this URL when view is created
+            //     data: data,
+            //     success: function (response) {
+            //         if (response.success) {
+            //             var modalElement = document.getElementById('emailModal');
+            //             var modal = bootstrap.Modal.getInstance(modalElement);
+            //             if (modal) {
+            //                 modal.hide();
+            //             }
+            //             alert('Email sent successfully');
+            //             location.reload();
+            //         } else {
+            //             alert('Error sending email: ' + response.error);
+            //         }
+            //     },
+            //     error: function(xhr, status, error) {
+            //         alert('Error sending email. Please try again.');
+            //     }
+            // });
+        } else {
+            alert("Enter Email Address");
+        }
+    }
+
+    // Excel Export functionality
+    $('#excel_export').on('click', function(e) {
+        e.preventDefault();
+        var staffStatus = $('#staff_status').val();
+        var companyName = $('#company_name').val();
+        var params = new URLSearchParams();
+        
+        if (staffStatus && staffStatus !== '0') {
+            params.append('staff_status', staffStatus);
+        }
+        if (companyName) {
+            params.append('company_name', companyName);
+        }
+        
+        // Note: You'll need to create a Django view to handle Excel export
+        alert('Excel export functionality will be implemented with filters: ' + params.toString());
+        
+        // TODO: Uncomment when you create the view at 'master:employee_export_excel'
+        // var url = "/master/employee/export-excel/";  // Update this URL when view is created
+        // window.location.href = url + '?' + params.toString();
+    });
+</script>
+{% endblock %}

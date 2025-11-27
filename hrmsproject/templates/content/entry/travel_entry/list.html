@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Travel Requisition{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Travel Requisition </span></h6>
+        <!-- Link to Create Page -->
+      <div>
+       <a  class="btn btn-success btn-create text-nowrap" data-bs-toggle="modal" data-bs-target="#createModal">+ Create</a>
+       </div>
+    </div>
+
+
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            
+            <!-- Filter Section -->
+
+            <div class="row g-3 mb-3">
+      <div class="col-md-2">
+        <label class="form-label">From Date</label>
+        <input type="date" class="form-control" value="2025-09-20">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">To Date</label>
+        <input type="date" class="form-control" value="2025-09-20">
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button class="btn btn-primary w-100">Go</button>
+      </div>
+    </div>
+            <!-- Show entries & Search -->
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-10">
+                <div>
+                    Show 
+                    <select class="form-select d-inline-block w-auto mx-1">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                    entries
+                </div>
+                <div>
+                    <label class="me-2">Search:</label>
+                    <input type="text" class="form-control d-inline-block w-auto">
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>S.No</th>
+                            <th>Entry Date</th>
+                            <th>From To</th>
+                            <th>Date Of Departure</th>
+                            <th>Return Date</th>
+                            <th>Travel By</th>
+                            <th>Remarks</th>
+                            <th>Action By</th>
+                            <th>View</th>
+                            <th>Ticket Image</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="14" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No data available in table</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center">
+                <div>Showing 1 to 1 of 1 entries</div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                        <li class="page-item active"><a class="page-link">1</a></li>
+                        <li class="page-item disabled"><a class="page-link">Next</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="createModalLabel">Create Travel Requisition</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <div class="modal-body">
+       <div class="travel-card">
+    
+    <!-- Tabs -->
+    <div class="d-flex justify-content-center gap-3 mb-5 travel-tabs">
+      <button class="btn active">Bus</button>
+      <button class="btn">Train</button>
+      <button class="btn">Cab</button>
+      <button class="btn">Flight</button>
+    </div>
+
+    <!-- Trip Type -->
+    <div class="d-flex justify-content-center gap-2 mb-4 trip-type">
+      <button class="btn active">One Way</button>
+      <button class="btn">Return</button>
+    </div>
+
+    <div class="col-md-12">
+          <label>Staff Name</label>
+          <input type="text" class="form-control" value="Praveena S" readonly>
+        </div>
+
+        <div class="col-md-12" style="margin-top:20px;">
+  <label>Booking Needed?</label><br>
+
+  <input type="radio" name="booking" id="frontdesk" value="frontdesk" style="margin-right:4px;">
+  <label for="frontdesk">Front Desk <small style="color: gray;">(Office arranges travel)</small></label>
+
+  &nbsp;&nbsp;
+
+  <input type="radio" name="booking" id="self" value="self" style="margin-right:4px;">
+  <label for="self">Self <small style="color: gray;">(You arrange travel)</small></label>
+</div>
+
+
+        <!-- Accommodation -->
+        <div class="col-md-12"  style="margin-top:20px;">
+           <label>Accommodation Type</label><br>
+
+  <input type="radio" name="booking" id="frontdesk" value="frontdesk" style="margin-right:4px;">
+  <label for="frontdesk">Hotel</label>
+
+  &nbsp;&nbsp;
+
+  <input type="radio" name="booking" id="self" value="self" style="margin-right:4px;">
+  <label for="self">Guest House</label>
+</div>
+
+
+    <!-- Travel Form -->
+    <form>
+      <div class="row g-3 align-items-end" style="margin-top:20px;">
+
+       <div class="col-md-6">
+  <label>From</label>
+  <div class="input-group">
+    <input type="text" class="form-control" placeholder="Enter departure city">
+    <span class="input-group-text bg-white"><i class="fa-solid fa-location-dot text-muted"></i></span>
+  </div>
+</div>
+       <div class="col-md-5">
+  <label>To</label>
+  <div class="input-group">
+    <input type="text" class="form-control" placeholder="Enter destination">
+    <span class="input-group-text bg-white"><i class="fa-solid fa-location-dot text-muted"></i></span>
+  </div>
+</div>
+
+        <div class="col-md-1 text-end">
+          <label class="invisible">Swap</label><br>
+          <button type="button" class="btn btn-outline-secondary rounded-circle">
+            ⇄
+          </button>
+        </div>
+
+        <div class="col-md-6">
+          <label>Departure Date</label>
+          <input type="date" class="form-control">
+        </div>
+
+        <div class="col-md-6">
+          <label>Departure Time</label>
+          <input type="time" class="form-control">
+        </div>
+
+        <!-- <div class="col-md-6">
+          <label>Return Date</label>
+          <input type="date" class="form-control">
+        </div>
+
+        <div class="col-md-6">
+          <label>Return Time</label>
+          <input type="time" class="form-control">
+        </div> -->
+
+        <div class="col-md-6">
+          <label>No of Days</label>
+           <input type="number" class="form-control">
+        </div>
+
+        <div class="col-md-6">
+          <label>Travel Reason</label>
+          <select class="form-select">
+            <option>Business Trip</option>
+            <option>Quartely Home Town Visit</option>
+          </select>
+        </div>
+        <div class="col-md-12">
+            <label class="form-label">Purpose Of Visit <span class="text-danger">*</span></label>
+            <textarea class="form-control" rows="2" required></textarea>
+          </div>
+          <div class="col-md-6">
+    <label  class="form-label">Aadhar Upload</label>
+    <input class="form-control" type="file" accept="image/*">
+    </div>
+    <div class="col-md-6">
+    <label  class="form-label">Upload One Way Document</label>
+    <input class="form-control" type="file" accept="image/*">
+    </div>
+     <div class="row justify-content-center">
+        <div class="col-3 mt-5 ">
+          <button type="submit" class="btn submit-btn">Submit</button>
+        </div>
+    </div>
+      </div>
+    </form>
+  </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+    input[type="radio"] {
+  appearance: auto !important;
+  -webkit-appearance: radio !important;
+  margin-right: 4px;
+}
+
+    body {
+        background: #f7f8fa;
+    }
+    .card {
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }
+    .table th, .table td {
+        font-size: 14px;
+    }
+    .btn-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: 0.2s ease-in-out;
+}
+.btn-expenses {
+      border: 2px solid #28a745;
+      color: #28a745;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: transparent;
+      position: relative;
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+    .btn-expenses:hover {
+      background-color: #28a745;
+      color: #fff;
+    }
+    .btn-expenses .arrow {
+      opacity: 0;
+      margin-left: 0;
+      transition: all 0.3s ease;
+    }
+    .btn-expenses:hover .arrow {
+      opacity: 1;
+      margin-left: 8px;
+    }
+    .travel-card {
+      padding: 25px;
+      max-width: 900px;
+    }
+
+    /* Pill shaped tabs */
+    .travel-tabs .btn {
+      border-radius: 50px;
+      padding: 8px 25px;
+      font-weight: 500;
+      border: 2px solid #146c43;
+      color: #020202ff;
+      background: #fff;
+      transition: 0.3s;
+    }
+    .travel-tabs .btn.active, 
+    .travel-tabs .btn:hover {
+      background: #146c43;
+      color: #fff;
+    }
+
+    /* One Way / Return toggle */
+    .trip-type .btn {
+      border-radius: 30px;
+      padding: 6px 20px;
+      border: 1px solid #dee2e6;
+      background: #fff;
+      color: #146c43;
+      font-weight: 500;
+    }
+    .trip-type .btn.active {
+      background: #0d6efd;
+      color: #fff;
+      border-color: #0d6efd;
+    }
+
+    .form-control, .form-select {
+      border-radius: 12px;
+    }
+
+    .submit-btn {
+      background: #146c43;
+      border: none;
+      color:#fff;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      width: 100%;
+      transition: 0.3s;
+    }
+    .submit-btn:hover {
+      background: #0b5232;
+      color:#fff;
+    }
+
+    label {
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    .form-check-input:checked {
+      background-color: #146c43;
+      border-color: #146c43;
+    }
+</style>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+</script>
+{% endblock %}

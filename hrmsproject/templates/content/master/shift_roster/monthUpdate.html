@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shift Roster - Month Update{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Link to Create Page -->
+     <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark">Shift Roster Month Update</span></h6>
+
+     <button  onclick="history.back()" class="btn-back">
+   <i data-feather="arrow-left"></i> Back
+</button>
+</div>
+
+
+ <div class="card shadow-sm">
+        <div class="card-body">
+            <form action="" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+        
+                   <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label class="form-label">Site Name <span class="text-danger">*</span></label>
+        <select id="siteName" name="site_name" class="form-select">
+          <option value="">Select</option>
+          {% for site in sites %}
+            <option value="{{ site.value }}" {% if values.site_name == site.value %}selected{% endif %}>{{ site.label }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.site_name %}<div class="text-danger small">{{ errors.site_name }}</div>{% endif %}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Salary Type <span class="text-danger">*</span></label>
+        <select id="salaryType" name="salary_type" class="form-select">
+          <option value="">Select</option>
+          {% for item in salary_types %}
+            <option value="{{ item.value }}" {% if values.salary_type == item.value %}selected{% endif %}>{{ item.label }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.salary_type %}<div class="text-danger small">{{ errors.salary_type }}</div>{% endif %}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Find month wise <span class="text-danger">*</span></label>
+        <input id="fromDate" name="month_date" type="date" class="form-control" value="{{ values.month_date }}">
+        {% if errors.month_date %}<div class="text-danger small">{{ errors.month_date }}</div>{% endif %}
+      </div>
+      <div class="table-responsive mb-4" id="rosterTable" style="display:none;">
+      <table class="table table-bordered align-middle">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Site</th>
+            {% for day in week_days %}
+              <th>{{ day.date|date:'Y-m-d' }}<br>{{ day.label }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for employee in employees %}
+          <tr style="background-color:#f2f2f2; color:#146c43; font-weight:500;">
+            <td>{{ employee.name }}<br><small style="color:#146c43;font-weight:500;">- {{ employee.designation }}</small></td>
+            <td>
+              <select class="form-select" name="assignment_{{ employee.id }}_site">
+                {% for site in sites %}
+                  <option value="{{ site.value }}" {% if site.value == employee.default_site %}selected{% endif %}>{{ site.label }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            {% for day in week_days %}
+            <td>
+              <input type="text" name="schedule_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="form-control">
+              <input type="checkbox" name="dayoff_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="mt-1">
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+        <div class="col-md-6">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" name="description" rows="2" placeholder="Enter Description">{{ values.description }}</textarea>
+                    </div>
+    </div>
+                    <!-- Description -->
+                    
+
+                    <!-- Week Off -->
+        
+             
+
+                <!-- Buttons -->
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a href="{% url 'master:shift_roster_month' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                    <button type="submit" class="btn btn-success px-4">Update</button>
+                </div>
+            </form>
+
+
+    </div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Card -->
+<style>
+    body {
+      background-color: #f7f9fc;
+    }
+    .page-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-top: 20px;
+    }
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+    table th {
+      background-color: #f1f5f9;
+      text-align: center;
+    }
+    table td {
+      background-color: #f8f9fa;
+      vertical-align: middle;
+    }
+    .btn-back:hover {
+  background-color: #218838; /* darker green */
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.btn-back i {
+  font-size: 14px;
+}
+      .btn-back {
+  display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #28a745;
+    color: #fff !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: 0.2s ease-in-out;
+}
+  </style>
+     
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+
+    function fillDayShift() {
+        // Select all input fields inside the rosterTable
+        const inputs = document.querySelectorAll("#rosterTable input.form-control");
+        inputs.forEach(input => {
+            input.value = "DAY SHIFT";
+        });
+    }
+
+    function checkFilters() {
+        const site = document.getElementById("siteName").value;
+        const salary = document.getElementById("salaryType").value;
+        const date = document.getElementById("fromDate").value;
+
+        const showTable = (site && site !== "Select") && 
+                          (salary && salary !== "Select") && 
+                          date;
+
+        const rosterTable = document.getElementById("rosterTable");
+
+        if (showTable) {
+            rosterTable.style.display = "block";
+            fillDayShift(); // 👈 Auto-fill as soon as table is shown
+        } else {
+            rosterTable.style.display = "none";
+        }
+    }
+
+    // Attach listeners once
+    document.getElementById("siteName").addEventListener("change", checkFilters);
+    document.getElementById("salaryType").addEventListener("change", checkFilters);
+    document.getElementById("fromDate").addEventListener("change", checkFilters);
+</script>
+
+{% endblock %}

@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Daily Attendance Report{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-3 fw-bold text-secondary">Reports / <span class="text-dark"> Daily Attendance Report</span></h6>
+        <!-- Link to Create Page -->
+       <a href="#" class="btn btn-success btn-create text-nowrap">Home<span data-feather="home" class="icon-sm"></span> </a>
+    </div>
+
+
+   <div class="card shadow-sm">
+        <div class="card-body">
+    <!-- Copy dashboard HTML here -->
+      <div class="row g-3 mb-3">
+       <div class="col-md-2">
+        <label class="form-label">From Date</label>
+        <input type="date" class="form-control" value="2025-09-20">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">To Date</label>
+        <input type="date" class="form-control" value="2025-09-20">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Site Name</label>
+        <select class="form-select">
+          <option>select</option>
+        </select>
+      </div>
+       <div class="col-md-2">
+        <label class="form-label">Salary Type</label>
+        <select class="form-select">
+        <option>Select</option>
+          <option>Salary</option>
+          <option>Wages</option>
+          <option>Others</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Contractor Name</label>
+        <select class="form-select">
+          <option>select</option>
+          <option>Ascent E-Digit Solutions</option>
+          <option>Big Tech Industrial India Pvt LTD</option>
+          <option>Zigma Global Environment Solutions</option>
+          <option>Jawahar Enterprises</option>
+          <option>Theeran & CO</option>
+          <option>Antenna Engineering</option>
+          <option>Ragava Engineering</option>
+          <option>SS Power Tech & Settu Team</option>
+           <option>Yokesh Engineering</option>
+          <option>Rajesh Team</option>
+          <option>Minnal Electricals</option>
+         <option>Siva Subramanian Team</option>
+        <option>Yokesh Engineering</option>
+         <option>Rathinavel Contractors</option>
+         <option>Gandhi Engineer</option>
+         <option>Internship</option>
+         <option>Anna University-Chennai</option>
+         <option>Navaratna Enterprices</option>
+         <option>SVA Enterprices</option>
+         <option>BP</option>
+         <option>Varun Builders</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Employee Name</label>
+        <select class="form-select">
+        <option>Select</option>
+          <option>Manoj</option>
+          <option>Gowshi</option>
+          <option>Prabu</option>
+        </select>
+      </div>
+      <div class="col-md-1 d-flex align-items-end">
+        <button class="btn btn-primary w-100">Go</button>
+      </div>
+    </div>
+    
+     <div class="d-flex justify-content-between align-items-center mt-5 ">
+
+                <div>
+                    Show 
+                    <select class="form-select d-inline-block w-auto mx-1">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                    entries
+                </div>
+               
+            </div>    
+  <div class="d-flex justify-content-between align-items-center mt-5 mb-3">
+  
+  <!-- Left side: Buttons -->
+  <div class="d-flex gap-2">
+   
+    <button id="btnExcel" class="btn btn-sm btn-success">
+      <i data-feather="file-text"></i> Export to Excel
+    </button>
+  </div>
+
+  <!-- Right side: Search -->
+  <div class="d-flex align-items-center">
+    <label class="me-2 mb-0">Search:</label>
+    <input type="text" class="form-control form-control-sm w-auto">
+  </div>
+
+</div>
+
+            
+
+            <!-- Data Table -->
+            <div class="table-responsive">
+                <table id="attendanceTable" class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                           
+                           <th >S.No</th>
+                            <th class="text-nowrap">Date</th>
+                            <th class="text-nowrap">EMP ID</th>
+                            <th class="text-nowrap">Employee Name</th>
+                            <th class="text-nowrap">Site</th>
+                            <th class="text-nowrap">Shift</th>
+                            <th class="text-nowrap">SHIFT IN TIME</th>
+                            <th class="text-nowrap">IN TIME</th>
+                            <th class="text-nowrap">SHIFT OUT TIME</th>
+                            <th class="text-nowrap">OUT TIME</th>
+                            <th class="text-nowrap">Worked Hours</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- <tr>
+                           <td colspan="12" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No data available in table</td>
+                        </tr> -->
+                          <tr>
+                            <td>1</td>
+                            <td class="text-nowrap">23-09-2025</td>
+                            <td>069</td>
+                            <td class="text-nowrap">Mohan Kumaar S</td>
+                            <td class="text-nowrap"> Erode (Head Office)</td>
+                            <td class="text-nowrap">GENERAL SHIFT - SITE A</td>
+                            <td>09:00:00</td>
+                            <td>10:03:07</td>
+                            <td>18:00:00</td>
+                            <td>05:00</td>
+                            <td class="fw-semibold">4 hours</td>
+                            <td class="text-danger">Pending</td>
+                        </tr>
+                     
+                         <tr>
+                            <td>2</td>
+                            <td class="text-nowrap">23-09-2025</td>
+                            <td>239</td>
+                            <td class="text-nowrap">Shankar Raman C V</td>
+                            <td class="text-nowrap">Erode (Head Office)</td>
+                            <td class="text-nowrap">Morning Shift</td>
+                            <td>11:00:00</td>
+                            <td>10:58:37</td>
+                            <td>13:00:00</td>
+                            <td>04:00</td>
+                            <td class="fw-semibold">4 hours</td>
+                            <td class="text-danger">Pending</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center">
+                <div>Showing 1 to 1 of 1 entries</div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                        <li class="page-item active"><a class="page-link">1</a></li>
+                        <li class="page-item disabled"><a class="page-link">Next</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+        </div>
+</div>
+</div>
+</div>
+
+<!-- Column Range Modal -->
+<!-- Column Range Modal -->
+<div class="modal fade" id="columnRangeModal" tabindex="-1" aria-labelledby="columnRangeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <p class="modal-title fs-5 fw-bold text-black">Select Column Range</p>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Start Column</label>
+          <select id="startCol" class="form-select" disabled>
+            <option value="0" selected>S.No</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">End Column</label>
+          <select id="endCol" class="form-select">
+            <!-- JS will populate -->
+             <option>Select</option>
+             <option>Date</option>
+             <option>EMP ID</option>
+             <option>Employee Name</option>
+             <option>Site</option>
+             <option>Shift</option>
+             <option>SHIFT IN TIME</option>
+             <option>IN TIME</option>
+             <option>SHIFT OUT TIME</option>
+             <option>OUT TIME</option>
+             <option>Approval Status</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="applyColumns" class="btn btn-primary">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<style>
+    .table .btn {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+    body {
+        background: #f7f8fa;
+    }
+    .card {
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+    }
+    .table th, .table td {
+        font-size: 14px;
+    }
+    .btn-create {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: 0.2s ease-in-out;
+}
+.icon-sm {
+    width: 16px;
+    height: 16px;
+  }
+</style>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+
+
+
+    // Populate End Column select
+
+
+
+</script>
+{% endblock %}

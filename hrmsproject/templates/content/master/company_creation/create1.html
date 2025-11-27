@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Company Creation - Create{% endblock %}
+
+{% block extra_css %}
+<style>
+  .company-input { min-height: 44px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-main-body">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="mb-0 fw-bold text-secondary">Master / <span class="text-dark">Company Creation</span></h6>
+    <a href="{% url 'master:company_list' %}" class="btn btn-outline-secondary">
+      <i class="ri-arrow-go-back-line"></i> Back
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        {% csrf_token %}
+
+        <div class="row g-3">
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label">Company Group <span class="text-danger">*</span></label>
+            <input type="text" name="company_group" class="form-control company-input" value="{{ submitted.company_group|default:'' }}">
+            {% if errors.company_group %}<div class="text-danger small">{{ errors.company_group }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label">Billing Name <span class="text-danger">*</span></label>
+            <input type="text" name="billing_name" class="form-control company-input" value="{{ submitted.billing_name|default:'' }}">
+            {% if errors.billing_name %}<div class="text-danger small">{{ errors.billing_name }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label">Mobile No <span class="text-danger">*</span></label>
+            <input type="text" name="mobile_no" class="form-control company-input" value="{{ submitted.mobile_no|default:'' }}" pattern="[0-9]{10}" title="Mobile number must be exactly 10 digits" maxlength="10" required>
+            {% if errors.mobile_no %}<div class="text-danger small">{{ errors.mobile_no }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Address <span class="text-danger">*</span></label>
+            <textarea name="address" rows="2" class="form-control company-input">{{ submitted.address|default:'' }}</textarea>
+            {% if errors.address %}<div class="text-danger small">{{ errors.address }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Billing Address <span class="text-danger">*</span></label>
+            <textarea name="billing_address" rows="2" class="form-control company-input">{{ submitted.billing_address|default:'' }}</textarea>
+            {% if errors.billing_address %}<div class="text-danger small">{{ errors.billing_address }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label">Phone No</label>
+            <input type="text" name="phone_no" class="form-control company-input" value="{{ submitted.phone_no|default:'' }}" pattern="[0-9]{10}" title="Phone number must be exactly 10 digits" maxlength="10">
+            {% if errors.phone_no %}<div class="text-danger small">{{ errors.phone_no }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label">GSTIN No <span class="text-danger">*</span></label>
+            <input type="text" name="gstin_no" class="form-control company-input" value="{{ submitted.gstin_no|default:'' }}" pattern="[0-9A-Z]{15}" title="GSTIN number must be exactly 15 alphanumeric characters" maxlength="15">
+            {% if errors.gstin_no %}<div class="text-danger small">{{ errors.gstin_no }}</div>{% endif %}
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select company-input">
+              <option value="Active" {% if submitted.status|default:'Active' == 'Active' %}selected{% endif %}>Active</option>
+              <option value="Inactive" {% if submitted.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+            </select>
+          </div>
+          <div class="col-md-6 col-lg-4">
+            <label class="form-label">Logo</label>
+            <input type="file" name="logo" class="form-control">
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a href="{% url 'master:company_list' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-success px-4">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

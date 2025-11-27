@@ -1,0 +1,1479 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Employee Creation - Staff Details{% endblock %}
+
+{% block extra_css %}
+<style>
+.employee-form .form-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: block;
+  margin-top: 2rem;
+  margin-bottom: 0.8rem;
+}
+.d-flex.justify-content-end.gap-2 {
+  margin-top: 3%;
+}
+.employee-form .form-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.employee-form .form-field .form-label {
+  width: 30%;
+  height: 30px;
+  margin-bottom: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+.employee-form .form-field .form-label .text-danger {
+  color: #dc3545 !important;
+  font-weight: 700;
+  margin-left: 2px;
+  display: inline-block;
+}
+.employee-form .form-field .form-control,
+.employee-form .form-field .form-select,
+.employee-form .form-field input,
+.employee-form .form-field textarea {
+  flex: 1;
+  min-height: 36px;
+  font-size: 0.9rem;
+}
+.employee-form .form-control.is-invalid,
+.employee-form .form-select.is-invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.2);
+}
+.employee-form .form-control.is-valid,
+.employee-form .form-select.is-valid {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.15rem rgba(25, 135, 84, 0.2);
+}
+.employee-form .invalid-feedback {
+  font-size: 0.78rem;
+  color: #dc3545;
+  display: block !important;
+  width: 100%;
+}
+.employee-form .form-field .invalid-feedback {
+  flex-basis: 100%;
+  margin-left: 30%;
+  margin-top: 0.25rem;
+  padding-left: 0.25rem;
+  color: #dc3545;
+  font-size: 0.875rem;
+  display: block !important;
+}
+.employee-form .form-field .validity-labels-container {
+  width: 30%;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 1rem;
+}
+.employee-form .form-field .validity-labels-container .text-muted.d-block {
+  width: auto;
+  height: 30px;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 30px;
+}
+.employee-form .form-field .validity-inputs-container {
+  flex: 1;
+}
+.employee-step-nav {
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.employee-step-nav .nav-link {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  color: #495057;
+  font-weight: 600;
+  min-width: 180px;
+}
+.employee-step-nav .nav-link.active {
+  background-color: #198754;
+  border-color: #198754;
+  color: #fff;
+}
+.employee-tab-pane {
+  padding-top: 0.5rem;
+}
+.table-placeholder {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-main-body">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="mb-0 fw-bold text-secondary">Master / <span class="text-dark">Employee Creation</span></h6>
+
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <ul class="nav nav-pills employee-step-nav mb-4" id="employeeCreateTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tab-staff-details-tab" data-bs-toggle="pill" data-bs-target="#tab-staff-details" type="button" role="tab" aria-controls="tab-staff-details" aria-selected="true">
+            Staff Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-dependent-details-tab" data-bs-toggle="pill" data-bs-target="#tab-dependent-details" type="button" role="tab" aria-controls="tab-dependent-details" aria-selected="false">
+            Dependent Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-account-details-tab" data-bs-toggle="pill" data-bs-target="#tab-account-details" type="button" role="tab" aria-controls="tab-account-details" aria-selected="false">
+            Account Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-qualification-details-tab" data-bs-toggle="pill" data-bs-target="#tab-qualification-details" type="button" role="tab" aria-controls="tab-qualification-details" aria-selected="false">
+            Qualification Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-experience-details-tab" data-bs-toggle="pill" data-bs-target="#tab-experience-details" type="button" role="tab" aria-controls="tab-experience-details" aria-selected="false">
+            Experience Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-asset-details-tab" data-bs-toggle="pill" data-bs-target="#tab-asset-details" type="button" role="tab" aria-controls="tab-asset-details" aria-selected="false">
+            Asset / Vehicle Details
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="employeeCreateTabContent">
+        <div class="tab-pane fade show active employee-tab-pane" id="tab-staff-details" role="tabpanel" aria-labelledby="tab-staff-details-tab">
+          <form class="needs-validation employee-form" id="staff-create-form" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="unique_id" value="{{ staff.unique_id|default:'' }}">
+            <div id="staffFormMessage" class="alert d-none" role="alert"></div>
+
+            <div class="mb-4">
+              <h7 class="form-section-title text-danger mb-3">Personal Details</h7>
+              <div class="row g-3">
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Staff Name <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="staff_name" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Staff ID <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="staff_id" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Gender <span class="text-danger">*</span></label>
+                  <select class="form-select" name="gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Father Name <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="father_name" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" name="date_of_birth" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Document DOB <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" name="doc_dob" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Age <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control" name="age" min="18" max="70" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Marital Status <span class="text-danger">*</span></label>
+                  <select class="form-select" name="marital_status" required>
+                    <option value="">Select</option>
+                    <option value="Married">Married</option>
+                    <option value="Unmarried">Unmarried</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Personal Contact No <span class="text-danger">*</span></label>
+                  <input type="tel" class="form-control" name="personal_contact" maxlength="10" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Office Contact No <span class="text-danger">*</span></label>
+                  <input type="tel" class="form-control" name="office_contact" maxlength="10" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Personal Email <span class="text-danger">*</span></label>
+                  <input type="email" class="form-control" name="personal_email" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Office Email <span class="text-danger">*</span></label>
+                  <input type="email" class="form-control" name="office_email" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Aadhar No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="aadhar_no" placeholder="0000 0000 0000" maxlength="14" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">PAN No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pan_no" maxlength="10" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Medical Claim <span class="text-danger">*</span></label>
+                  <select class="form-select" name="medical_claim" required>
+                    <option value="">Select</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Blood Group <span class="text-danger">*</span></label>
+                  <select class="form-select" name="blood_group" required>
+                    <option value="">Select</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Qualification <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="qualification" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h7 class="form-section-title text-danger mb-0">Present &amp; Permanent Address</h7>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="sameAddressToggle">
+                  <label class="form-check-label" for="sameAddressToggle">Same as present address</label>
+                </div>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Country <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_country" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Country <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_country" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">State <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_state" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">State <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_state" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">City <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_city" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">City <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_city" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Building No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_building" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Building No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_building" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Street <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_street" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Street <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_street" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Area <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_area" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Area <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_area" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Pincode <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_pincode" maxlength="6" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Pincode <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_pincode" maxlength="6" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h7 class="form-section-title text-danger mb-3">Official Details</h7>
+              <div class="row g-3">
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Date of Join <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" name="date_of_join" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Designation <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="designation" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Department <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="department" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Work Location <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="work_location" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">ESI No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="esi_no" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">PF No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pf_no" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Bio Metric ID <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="biometric_id" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                  <select class="form-select" name="company_name" required>
+                    <option value="">Select Company</option>
+                    {% for company in companies %}
+                      <option value="{{ company.pk }}">{{ company.company_group|default:'-' }}{% if company.company_group and company.billing_name %} / {% endif %}{{ company.billing_name|default:'-' }}</option>
+                    {% empty %}
+                      <option value="">No companies available</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Salary Category <span class="text-danger">*</span></label>
+                  <select class="form-select" name="salary_category" required>
+                    <option value="">Select Category</option>
+                    <option value="Monthly">Monthly</option>
+                    <option value="Wages">Wages</option>
+                    <option value="Contract">Contract</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Profile Image <span class="text-danger">*</span></label>
+                  <input type="file" class="form-control" name="profile_image" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h7 class="form-section-title text-danger mb-3">Attendance &amp; Branch Details</h7>
+              <div class="row g-3">
+                <div class="col-md-6 form-field">
+                  <label class="form-label mb-0">Premises Type</label>
+                  <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <label class="form-check mb-0 d-flex align-items-center gap-2">
+                      <input class="form-check-input" type="radio" name="premises_type" id="premises_out" value="OUT" checked>
+                      <span>Out Premises</span>
+                    </label>
+                    <label class="form-check mb-0 d-flex align-items-center gap-2">
+                      <input class="form-check-input" type="radio" name="premises_type" id="premises_in" value="IN">
+                      <span>In Premises</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label ">Branch <span class="text-danger">*</span></label>
+                  <select class="form-select" name="branch_ids" id="branch_ids" required>
+                    <option value="">-- Select Branch --</option>
+                    <option value="Branch 1">Branch 1</option>
+                    <option value="Branch 2">Branch 2</option>
+                    <option value="Branch 3">Branch 3</option>
+                    <option value="Branch 4">Branch 4</option>
+                    <option value="Branch 5">Branch 5</option>
+                  </select>
+                  </div>
+
+               
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Attendance Setting <span class="text-danger">*</span></label>
+                  <select class="form-select" name="attendance_setting" required>
+                    <option value="">Select Setting</option>
+                    <option value="Default">Default</option>
+                    <option value="Night Shift">Night Shift</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Reporting Officer <span class="text-danger">*</span></label>
+                  <select class="form-select" name="reporting_officer" required>
+                    <option value="">Select Officer</option>
+                    <option value="RO1">Officer 1</option>
+                    <option value="RO2">Officer 2</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'master:employee_list' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-dependent-details-tab" data-validation-form="staff-create-form">Next</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-dependent-details" role="tabpanel" aria-labelledby="tab-dependent-details-tab">
+          <form class="needs-validation employee-form" id="dependent-details-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Dependent Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Relationship <span class="text-danger">*</span></label>
+                <select class="form-select" name="relationship" required>
+                  <option value="">Select Relationship</option>
+                  <option value="Spouse">Spouse</option>
+                  <option value="Father">Father</option>
+                  <option value="Mother">Mother</option>
+                  <option value="Child">Child</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="rel_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Gender <span class="text-danger">*</span></label>
+                <select class="form-select" name="rel_gender" required>
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="rel_date_of_birth" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Aadhar No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="rel_aadhar_no" maxlength="12" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Occupation <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="occupation" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Standard <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="standard" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">School <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="school" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Existing Illness <span class="text-danger">*</span></label>
+                <select class="form-select" name="existing_illness" required>
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Description <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="description" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Existing Insurance <span class="text-danger">*</span></label>
+                <select class="form-select" name="existing_insurance" required>
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Insurance No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="insurance_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Physically Challenged <span class="text-danger">*</span></label>
+                <select class="form-select" name="physically_challenged" required>
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Remarks <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="remarks" required>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4 nav-tab-controls">
+              <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-staff-details-tab">Back</button>
+              <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-account-details-tab" data-validation-form="dependent-details-form">Next</button>
+            </div>
+            <div class="table-responsive mt-4">
+              <table class="table table-sm table-striped table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Relationship</th>
+                    <th>Name</th>
+                    <th>Gender</th>
+                    <th>DOB</th>
+                    <th>Aadhar No</th>
+                    <th>Occupation</th>
+                    <th>Std.</th>
+                    <th>School</th>
+                    <th>Existing Illness</th>
+                    <th>Description</th>
+                    <th>Existing Insurance</th>
+                    <th>Insurance No</th>
+                    <th>Physically Challenged</th>
+                    <th>Remarks</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="16" class="text-center table-placeholder">No dependents added yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-account-details" role="tabpanel" aria-labelledby="tab-account-details-tab">
+          <form class="needs-validation employee-form" id="account-details-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Account Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Bank Status <span class="text-danger">*</span></label>
+                <select class="form-select" name="bank_status" required>
+                  <option value="">Select Option</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Salary Type <span class="text-danger">*</span></label>
+                <select class="form-select" name="salary_type" required>
+                  <option value="">Select Type</option>
+                  <option value="Axis Bank">Axis Bank</option>
+                  <option value="NEFT">NEFT</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Hold">Hold</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Accountant Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="accountant_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Account Number <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="account_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Bank Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="bank_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">IFSC Code <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="ifsc_code" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Contact No <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" name="bank_contact_no" maxlength="10" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Bank Address <span class="text-danger">*</span></label>
+                <textarea class="form-control" name="bank_address" rows="2" required></textarea>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4 nav-tab-controls">
+              <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-dependent-details-tab">Back</button>
+              <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-qualification-details-tab" data-validation-form="account-details-form">Next</button>
+            </div>
+             <div class="table-responsive mt-4">
+              <table class="table table-sm table-striped table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Bank Status</th>
+                    <th>Salary Type</th>
+                    <th>Acc. Name</th>
+                    <th>Acc. No</th>
+                    <th>Bank Name</th>
+                    <th>IFSC Code</th>
+                    <th>Ph.No</th>
+                    <th>Bank Address</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="10" class="text-center table-placeholder">No qualification records yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-qualification-details" role="tabpanel" aria-labelledby="tab-qualification-details-tab">
+          <form class="needs-validation employee-form" id="qualification-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Qualification Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Education Type <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="education_type" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Degree <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="degree" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">College Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="college_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Year of Passing <span class="text-danger">*</span></label>
+                <input type="month" class="form-control" name="year_passing" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Percentage <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="percentage" maxlength="10" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">University <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="university" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Document Upload <span class="text-danger">*</span></label>
+                <input type="file" class="form-control" name="qualification_docs" multiple required>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4 nav-tab-controls">
+              <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-account-details-tab">Back</button>
+              <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-experience-details-tab" data-validation-form="qualification-form">Next</button>
+            </div>
+            <div class="table-responsive mt-4">
+              <table class="table table-sm table-striped table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Education Type</th>
+                    <th>Degree</th>
+                    <th>Document</th>
+                    <th>College Name</th>
+                    <th>Year of Passing</th>
+                    <th>Percentage</th>
+                    <th>University</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="9" class="text-center table-placeholder">No qualification records yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-experience-details" role="tabpanel" aria-labelledby="tab-experience-details-tab">
+          <form class="needs-validation employee-form" id="experience-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Experience Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Company <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="exp_company_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Designation <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="designation_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Salary <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="salary_amt" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Joining Month <span class="text-danger">*</span></label>
+                <input type="month" class="form-control" name="join_month" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Relieving Month <span class="text-danger">*</span></label>
+                <input type="month" class="form-control" name="relieve_month" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Experience (years) <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="exp" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Document Upload <span class="text-danger">*</span></label>
+                <input type="file" class="form-control" name="experience_docs" multiple required>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4 nav-tab-controls">
+              <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-qualification-details-tab">Back</button>
+              <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-asset-details-tab" data-validation-form="experience-form">Next</button>
+            </div>
+           
+            <div class="table-responsive mt-4">
+              <table class="table table-sm table-striped table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Company</th>
+                    <th>Designation</th>
+                    <th>Document</th>
+                    <th>Salary</th>
+                    <th>Joining Month</th>
+                    <th>Relieving Month</th>
+                    <th>Experience</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="9" class="text-center table-placeholder">No experience records yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-asset-details" role="tabpanel" aria-labelledby="tab-asset-details-tab">
+          <form class="needs-validation employee-form" id="asset-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Asset / Vehicle Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Asset Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="asset_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Serial / Item No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="item_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="qty" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Status <span class="text-danger">*</span></label>
+                <select class="form-select" name="status" required>
+                  <option value="">Select Status</option>
+                  <option value="Issued">Issued</option>
+                  <option value="Returned">Returned</option>
+                  <option value="In Repair">In Repair</option>
+                </select>
+              </div>
+            </div>
+            <h7 class="form-section-title text-danger mb-3">Vehicle Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Vehicle Reg. No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="veh_reg_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">License Mode <span class="text-danger">*</span></label>
+                <select class="form-select" name="license_mode" required>
+                  <option value="">Select Mode</option>
+                  <option value="Two Wheeler">Two Wheeler</option>
+                  <option value="Four Wheeler">Four Wheeler</option>
+                  <option value="Heavy Vehicle">Heavy Vehicle</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">License No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="dri_license_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <div class="validity-labels-container">
+                  <small class="text-muted d-block">From <span class="text-danger">*</span></small>
+                  <small class="text-muted d-block">To <span class="text-danger">*</span></small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap validity-inputs-container">
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="valid_from" required>
+                  </div>
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="valid_to" required>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Vehicle Type <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="vehicle_type" id="vehicle_type" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Vehicle Company <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="vehicle_company" id="vehicle_company" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Vehicle Owner <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="vehicle_owner" id="vehicle_owner" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Year of Registration <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="registration_year" id="registration_year" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">RC No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="rc_no" id="rc_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <div class="validity-labels-container">
+                  <small class="text-muted d-block">From <span class="text-danger">*</span></small>
+                  <small class="text-muted d-block">To <span class="text-danger">*</span></small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap validity-inputs-container">
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="rc_validity_from" id="rc_validity_from" required>
+                  </div>
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="rc_validity_to" id="rc_validity_to" required>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Insurance No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="ins_no" id="ins_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <div class="validity-labels-container">
+                  <small class="text-muted d-block">From <span class="text-danger">*</span></small>
+                  <small class="text-muted d-block">To <span class="text-danger">*</span></small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap validity-inputs-container">
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="ins_validity_from" id="ins_validity_from" required>
+                  </div>
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="ins_validity_to" id="ins_validity_to" required>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4 nav-tab-controls">
+              <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-experience-details-tab">Back</button>
+              <button type="button" class="btn btn-success" data-validation-form="asset-form" id="final-save-btn">Save Employee</button>
+            </div>
+            <div class="table-responsive mt-4">
+              <table class="table table-sm table-striped table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Asset</th>
+                    <th>Serial / Item No</th>
+                    <th>Qty</th>
+                    <th>Status</th>
+                    <th>Vehicle Reg. No</th>
+                    <th>License Mode</th>
+                    <th>License No</th>
+                    <th>Validity</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="10" class="text-center table-placeholder">No assets assigned yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const sameAddressToggle = document.getElementById('sameAddressToggle');
+    const presentFields = ['pre_country', 'pre_state', 'pre_city', 'pre_building', 'pre_street', 'pre_area', 'pre_pincode'];
+    const permFields = ['perm_country', 'perm_state', 'perm_city', 'perm_building', 'perm_street', 'perm_area', 'perm_pincode'];
+    const tabNavButtons = document.querySelectorAll('.tab-nav-btn[data-tab-target]');
+
+    function copyAddress() {
+      presentFields.forEach((field, index) => {
+        const presentInput = document.querySelector(`[name="${field}"]`);
+        const permInput = document.querySelector(`[name="${permFields[index]}"]`);
+        if (!presentInput || !permInput) {
+          return;
+        }
+        if (sameAddressToggle.checked) {
+          permInput.value = presentInput.value;
+        }
+      });
+    }
+
+    const staffSaveUrl = "{% url 'master:employee_staff_save' %}";
+    const csrfTokenInput = document.querySelector('#staff-create-form input[name="csrfmiddlewaretoken"]');
+    const staffFormMessage = document.getElementById('staffFormMessage');
+    let currentEmployeeUniqueId = document.querySelector('#staff-create-form input[name="unique_id"]')?.value || '';
+    let redirectTimeout = null;
+
+    function markFieldInvalid(field, message = 'This field is required.') {
+      if (!field) return;
+      field.classList.add('is-invalid');
+      field.classList.remove('is-valid');
+      
+      // Find the form-field container
+      const formField = field.closest('.form-field');
+      if (!formField) {
+        console.warn('Field is not inside a .form-field container');
+        return;
+      }
+      
+      // Look for existing feedback in the form-field
+      let feedback = formField.querySelector('.invalid-feedback');
+      if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback d-block';
+        feedback.style.display = 'block';
+        feedback.style.color = '#dc3545';
+        feedback.style.fontSize = '0.875rem';
+        feedback.style.marginTop = '0.25rem';
+        feedback.style.paddingLeft = '0.25rem';
+        // Append at the end of form-field
+        formField.appendChild(feedback);
+      }
+      feedback.textContent = message;
+      feedback.style.display = 'block';
+      feedback.style.visibility = 'visible';
+      feedback.style.opacity = '1';
+    }
+
+    function markFieldValid(field) {
+      if (!field) return;
+      field.classList.remove('is-invalid');
+      field.classList.add('is-valid');
+      const feedback = field.parentElement.querySelector('.invalid-feedback');
+      if (feedback) {
+        feedback.remove();
+      }
+    }
+
+    function shouldValidateField(field) {
+      if (!field) return false;
+      if (field.disabled) return false;
+      const type = field.type;
+      return !['hidden', 'button', 'submit', 'checkbox', 'radio'].includes(type);
+    }
+
+    function validateFormFields(form) {
+      if (!form) return true;
+      let isValid = true;
+      const invalidFields = [];
+      const fields = Array.from(form.querySelectorAll('input, select, textarea'))
+        .filter(shouldValidateField);
+
+      fields.forEach((field) => {
+        // Check if field has required attribute
+        const hasRequiredAttr = field.hasAttribute('required');
+        
+        // Check if field label has red asterisk (required indicator)
+        const formField = field.closest('.form-field');
+        const hasRequiredIndicator = formField?.querySelector('.form-label .text-danger') !== null;
+        
+        const isRequired = hasRequiredAttr || hasRequiredIndicator;
+        const value = (field.value || '').trim();
+        
+        if (isRequired && !value) {
+          // Get field label for better error message
+          const label = formField?.querySelector('.form-label');
+          const labelText = label ? label.textContent.replace(/\s*\*\s*$/, '').trim() : 'This field';
+          markFieldInvalid(field, `${labelText} is required.`);
+          invalidFields.push(field);
+          isValid = false;
+        } else if (value) {
+          markFieldValid(field);
+        } else {
+          // Clear validation state for optional empty fields
+          field.classList.remove('is-invalid', 'is-valid');
+          const formFieldContainer = field.closest('.form-field');
+          if (formFieldContainer) {
+            const feedback = formFieldContainer.querySelector('.invalid-feedback');
+            if (feedback) {
+              feedback.remove();
+            }
+          }
+        }
+      });
+
+      // If there are invalid fields, scroll to the first one and switch to its tab
+      if (!isValid && invalidFields.length > 0) {
+        const firstInvalidField = invalidFields[0];
+        const tabPane = firstInvalidField.closest('.tab-pane');
+        
+        if (tabPane) {
+          const tabId = tabPane.id;
+          const tabButton = document.querySelector(`[data-bs-target="#${tabId}"], [href="#${tabId}"]`);
+          
+          if (tabButton) {
+            // Switch to the tab containing the first error
+            if (window.bootstrap && bootstrap.Tab) {
+              const tabInstance = bootstrap.Tab.getOrCreateInstance(tabButton);
+              tabInstance.show();
+            } else {
+              tabButton.click();
+            }
+          }
+        }
+        
+        // Scroll to the first invalid field after a short delay
+        setTimeout(() => {
+          firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          firstInvalidField.focus();
+        }, 300);
+      }
+
+      return isValid;
+    }
+
+    function attachRealtimeValidation(form) {
+      if (!form) return;
+      const fields = Array.from(form.querySelectorAll('input, select, textarea'))
+        .filter(shouldValidateField);
+      fields.forEach((field) => {
+        const handler = () => {
+          // Check if field is required
+          const hasRequiredAttr = field.hasAttribute('required');
+          const formField = field.closest('.form-field');
+          const hasRequiredIndicator = formField?.querySelector('.form-label .text-danger') !== null;
+          const isRequired = hasRequiredAttr || hasRequiredIndicator;
+          
+          const value = (field.value || '').trim();
+          
+          if (isRequired && !value) {
+            markFieldInvalid(field, 'This field is required.');
+          } else if (value) {
+            markFieldValid(field);
+          } else {
+            // Optional field is empty - clear validation state
+            field.classList.remove('is-invalid', 'is-valid');
+            if (formField) {
+              const feedback = formField.querySelector('.invalid-feedback');
+              if (feedback) {
+                feedback.remove();
+              }
+            }
+          }
+        };
+        field.addEventListener('input', handler);
+        field.addEventListener('blur', handler);
+        field.addEventListener('change', handler);
+      });
+    }
+
+    if (sameAddressToggle) {
+      sameAddressToggle.addEventListener('change', copyAddress);
+    }
+
+    // Ensure all required field asterisks are visible
+    function ensureRequiredIndicatorsVisible() {
+      const allForms = document.querySelectorAll('.employee-form');
+      allForms.forEach(form => {
+        const requiredFields = form.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+          const formField = field.closest('.form-field');
+          if (formField) {
+            const label = formField.querySelector('.form-label');
+            if (label) {
+              const asterisk = label.querySelector('.text-danger');
+              if (asterisk) {
+                asterisk.style.display = 'inline';
+                asterisk.style.visibility = 'visible';
+                asterisk.style.color = '#dc3545';
+                asterisk.style.fontWeight = '700';
+              }
+            }
+          }
+        });
+      });
+    }
+
+    // Attach real-time validation to all forms
+    attachRealtimeValidation(document.getElementById('staff-create-form'));
+    attachRealtimeValidation(document.getElementById('dependent-details-form'));
+    attachRealtimeValidation(document.getElementById('account-details-form'));
+    attachRealtimeValidation(document.getElementById('qualification-form'));
+    attachRealtimeValidation(document.getElementById('experience-form'));
+    attachRealtimeValidation(document.getElementById('asset-form'));
+    
+    // Ensure required indicators are visible on page load
+    ensureRequiredIndicatorsVisible();
+    
+    // Re-check when tabs are switched
+    document.addEventListener('shown.bs.tab', () => {
+      setTimeout(ensureRequiredIndicatorsVisible, 100);
+    });
+
+    function showTab(targetSelector) {
+      if (!targetSelector) return;
+      const tabTriggerElement = document.querySelector(targetSelector);
+      if (!tabTriggerElement) return;
+      if (window.bootstrap && bootstrap.Tab) {
+        const tabInstance = bootstrap.Tab.getOrCreateInstance(tabTriggerElement);
+        tabInstance.show();
+      } else {
+        tabTriggerElement.click();
+      }
+    }
+
+    function showFormMessage(type, text) {
+      if (!staffFormMessage) return;
+      staffFormMessage.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
+      staffFormMessage.classList.add(`alert-${type}`);
+      staffFormMessage.textContent = text;
+    }
+
+    function clearFormMessage() {
+      if (!staffFormMessage) return;
+      staffFormMessage.classList.add('d-none');
+      staffFormMessage.textContent = '';
+      staffFormMessage.classList.remove('alert-success', 'alert-danger', 'alert-warning');
+    }
+
+    function applyServerErrors(errorMap = {}) {
+      if (!errorMap || Object.keys(errorMap).length === 0) {
+        console.warn('No errors to apply');
+        return;
+      }
+      
+      console.log('Applying server errors:', errorMap);
+      
+      // Find all fields with errors and identify their tabs
+      const allForms = document.querySelectorAll('form');
+      const fieldErrors = [];
+      let firstErrorField = null;
+      let firstErrorTab = null;
+      
+      // Collect all field errors
+      Object.entries(errorMap).forEach(([fieldName, message]) => {
+        let field = null;
+        
+        // Search in all forms to find the field
+        for (let form of allForms) {
+          field = form.querySelector(`[name="${fieldName}"]`);
+          if (field) break;
+        }
+        
+        if (field) {
+          const tabPane = field.closest('.tab-pane');
+          const tabId = tabPane ? tabPane.id : null;
+          
+          fieldErrors.push({ field, message, fieldName, tabId });
+          
+          // Track the first error
+          if (!firstErrorField) {
+            firstErrorField = field;
+            firstErrorTab = tabId;
+          }
+        } else {
+          console.warn(`Field "${fieldName}" not found in any form`);
+        }
+      });
+      
+      // Function to apply errors to fields
+      const applyErrorsToFields = () => {
+        fieldErrors.forEach(({ field, message }) => {
+          markFieldInvalid(field, message);
+        });
+        
+        // Scroll to the first error field
+        if (firstErrorField) {
+          setTimeout(() => {
+            firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstErrorField.focus();
+          }, 100);
+        }
+      };
+      
+      // If first error is in a tab, switch to it first
+      if (firstErrorTab) {
+        const tabButton = document.querySelector(`[data-bs-target="#${firstErrorTab}"]`);
+        if (tabButton) {
+          const tabPane = document.querySelector(`#${firstErrorTab}`);
+          if (tabPane && !tabPane.classList.contains('show')) {
+            // Show the tab with the error
+            if (window.bootstrap && bootstrap.Tab) {
+              // Listen for tab shown event on the button
+              const handleTabShown = () => {
+                applyErrorsToFields();
+                tabButton.removeEventListener('shown.bs.tab', handleTabShown);
+              };
+              tabButton.addEventListener('shown.bs.tab', handleTabShown);
+              
+              const tabInstance = bootstrap.Tab.getOrCreateInstance(tabButton);
+              tabInstance.show();
+              
+              // Fallback timeout in case event doesn't fire
+              setTimeout(applyErrorsToFields, 400);
+            } else {
+              tabButton.click();
+              setTimeout(applyErrorsToFields, 300);
+            }
+          } else {
+            // Tab is already shown, apply errors immediately
+            applyErrorsToFields();
+          }
+        } else {
+          // Tab button not found, apply errors anyway
+          applyErrorsToFields();
+        }
+      } else {
+        // No tab, apply errors immediately
+        applyErrorsToFields();
+      }
+    }
+
+    async function saveStaffDetails(shouldRedirect = false, currentFormId = null) {
+      // If currentFormId is provided, validate that form first
+      // Otherwise, validate the staff form (for backward compatibility)
+      const formToValidate = currentFormId ? document.getElementById(currentFormId) : document.getElementById('staff-create-form');
+      
+      if (formToValidate) {
+        const isValid = validateFormFields(formToValidate);
+        if (!isValid) {
+          // Individual error messages are already shown by validateFormFields
+          // No need for a generic message
+          return false;
+        }
+      }
+      
+      clearFormMessage();
+      
+      // Always get the staff form for data collection
+      const form = document.getElementById('staff-create-form');
+      if (!form) return false;
+      
+      const formData = new FormData(form);
+      
+      // Collect data from all tabs
+      const dependentForm = document.getElementById('dependent-details-form');
+      const accountForm = document.getElementById('account-details-form');
+      const qualificationForm = document.getElementById('qualification-form');
+      const experienceForm = document.getElementById('experience-form');
+      const assetForm = document.getElementById('asset-form');
+      
+      if (dependentForm) {
+        const dependentData = new FormData(dependentForm);
+        for (let [key, value] of dependentData.entries()) {
+          formData.append(key, value);
+        }
+      }
+      
+      if (accountForm) {
+        const accountData = new FormData(accountForm);
+        for (let [key, value] of accountData.entries()) {
+          formData.append(key, value);
+        }
+      }
+      
+      if (qualificationForm) {
+        const qualificationData = new FormData(qualificationForm);
+        // Handle multiple file inputs separately
+        const qualificationDocsInput = qualificationForm.querySelector('input[name="qualification_docs"]');
+        if (qualificationDocsInput && qualificationDocsInput.files) {
+          for (let i = 0; i < qualificationDocsInput.files.length; i++) {
+            formData.append('qualification_docs', qualificationDocsInput.files[i]);
+          }
+        }
+        // Append other form fields
+        for (let [key, value] of qualificationData.entries()) {
+          if (key !== 'qualification_docs') {
+            formData.append(key, value);
+          }
+        }
+      }
+      
+      if (experienceForm) {
+        const experienceData = new FormData(experienceForm);
+        // Handle multiple file inputs separately
+        const experienceDocsInput = experienceForm.querySelector('input[name="experience_docs"]');
+        if (experienceDocsInput && experienceDocsInput.files) {
+          for (let i = 0; i < experienceDocsInput.files.length; i++) {
+            formData.append('experience_docs', experienceDocsInput.files[i]);
+          }
+        }
+        // Append other form fields
+        for (let [key, value] of experienceData.entries()) {
+          if (key !== 'experience_docs') {
+            formData.append(key, value);
+          }
+        }
+      }
+      
+      if (assetForm) {
+        const assetData = new FormData(assetForm);
+        for (let [key, value] of assetData.entries()) {
+          formData.append(key, value);
+        }
+      }
+      
+      try {
+        const response = await fetch(staffSaveUrl, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': csrfTokenInput?.value || ''
+          }
+        });
+        
+        let result;
+        try {
+          result = await response.json();
+        } catch (jsonError) {
+          console.error('JSON parse error:', jsonError);
+          showFormMessage('danger', 'Invalid response from server. Please try again.');
+          return false;
+        }
+        
+        if (result.status === 1) {
+          // Clear any existing redirect timeout
+          if (redirectTimeout) {
+            clearTimeout(redirectTimeout);
+            redirectTimeout = null;
+          }
+          
+          if (shouldRedirect) {
+            // Final save - show success and redirect
+            showFormMessage('success', result.msg);
+            if (result.unique_id) {
+              currentEmployeeUniqueId = result.unique_id;
+              document.querySelector('#staff-create-form input[name="unique_id"]').value = result.unique_id;
+            }
+            // Redirect after delay
+            redirectTimeout = setTimeout(() => {
+              window.location.href = "{% url 'master:employee_list' %}";
+            }, 2000);
+          } else {
+            // Intermediate save - show brief success message (no redirect)
+            showFormMessage('success', 'Data saved successfully. You can continue to the next tab.');
+            if (result.unique_id) {
+              currentEmployeeUniqueId = result.unique_id;
+              document.querySelector('#staff-create-form input[name="unique_id"]').value = result.unique_id;
+            }
+            // Clear the success message after a short delay
+            setTimeout(() => {
+              clearFormMessage();
+            }, 3000);
+          }
+          return true;
+        } else {
+          if (result.errors) {
+            console.log('Server errors:', result.errors);
+            // Apply errors across all forms - function now searches all forms
+            // Individual error messages are shown for each field, no need for generic message
+            applyServerErrors(result.errors);
+          } else {
+            // Only show generic message if there are no individual field errors
+            showFormMessage('danger', result.msg || 'Failed to save employee data.');
+            console.warn('No errors object in response:', result);
+          }
+          return false;
+        }
+      } catch (error) {
+        showFormMessage('danger', 'An error occurred while saving. Please try again.');
+        console.error('Fetch error:', error);
+        return false;
+      }
+    }
+
+    tabNavButtons.forEach((btn) => {
+      btn.addEventListener('click', async (event) => {
+        const validationFormId = btn.getAttribute('data-validation-form');
+        const targetSelector = btn.getAttribute('data-tab-target');
+        const isLastTab = btn.textContent.trim() === 'Next' && btn.disabled;
+
+        // If it's the last tab's Next button, save the form and redirect
+        if (isLastTab && validationFormId === 'asset-form') {
+          event.preventDefault();
+          event.stopPropagation();
+          await saveStaffDetails(true); // true = redirect after save
+          return;
+        }
+
+        if (validationFormId) {
+          const form = document.getElementById(validationFormId);
+          const isValid = validateFormFields(form);
+          if (!isValid) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+          
+          // Save all data to server for validation when moving between tabs
+          // This ensures server-side validation runs for all tabs
+          // Pass the current form ID so it validates the correct form
+          const saved = await saveStaffDetails(false, validationFormId); // false = don't redirect, pass current form ID
+          if (saved && targetSelector) {
+            event.preventDefault();
+            event.stopPropagation();
+            showTab(targetSelector);
+          } else if (!saved) {
+            event.preventDefault();
+            event.stopPropagation();
+            // Errors are already displayed by applyServerErrors
+          }
+          return;
+        }
+
+        if (targetSelector) {
+          event.preventDefault();
+          event.stopPropagation();
+          showTab(targetSelector);
+        }
+      });
+    });
+    
+    // Add save button handler for the final save button
+    const finalSaveBtn = document.getElementById('final-save-btn');
+    if (finalSaveBtn) {
+      finalSaveBtn.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Validate the asset form first
+        const assetForm = document.getElementById('asset-form');
+        if (assetForm) {
+          const isValid = validateFormFields(assetForm);
+          if (!isValid) {
+            // Individual error messages are already shown by validateFormFields
+            // No need for a generic message
+            return;
+          }
+        }
+        
+        // Save all data and redirect
+        await saveStaffDetails(true); // true = redirect after save
+      });
+    }
+  });
+</script>
+{% endblock %}
+

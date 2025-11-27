@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leave Entry - Create{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Link to Create Page -->
+     <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Leave Entry Create </span></h6>
+
+     <button  onclick="history.back()" class="btn-back">
+   <i data-feather="arrow-left"></i> Back
+</button>
+</div>
+
+
+ <div class="card shadow-sm">
+        <div class="card-body">
+           <form>
+        <div class="row g-3">
+
+          <!-- Employee Name -->
+          <div class="col-md-6">
+            <label class="form-label">Employee Name</label>
+            <input type="text" class="form-control" value="Praveena S - ZGESPL/465" readonly>
+          </div>
+
+          <!-- Permission Date -->
+
+
+          <div class="col-md-3">
+            <label class="form-label">From Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" required>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">To Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" required>
+          </div>
+         <div class="col-md-3">
+            <label class="form-label">Leave Days</label>
+            <input type="text" value="1" class="form-control" readonly>
+          </div>
+          <!-- Difference Time -->
+          <div class="col-md-3">
+            <label class="form-label">Leave Type</label>
+             <select id="leave-type" class="form-select">
+                <option value="compensatory-leave">Compensatory Leave/Off</option>
+                    <option value="earned-leave">Earned Leave</option>
+                     <option value="LOP">Loss of Pay</option>
+                      <option value="Sick-leave">Sick Leave</option>
+                </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Leave Duration Type</label>
+             <select id="leave-type" class="form-select">
+                <option value="compensatory-leave">Full day</option>
+                    <option value="earned-leave">Forenoon</option>
+                     <option value="LOP">Afternoon</option>
+                </select>
+          </div>
+         <div class="col-md-3">
+            <label class="form-label">Entry Date</label>
+            <input type="text" value="23-04-2025" class="form-control" readonly>
+          </div>
+          <!-- Reason -->
+          <div class="col-md-4">
+            <label class="form-label">Reason <span class="text-danger">*</span></label>
+            <textarea class="form-control" rows="3" required></textarea>
+          </div>
+   
+        </div>
+
+        <!-- Available Permissions -->
+        <div class="form-section-bottom">
+        <table class="balance-table mt-3">
+            <thead>
+                <tr>
+                    <th>LEAVE TYPE</th>
+                    <th>BALANCE DAYS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Casual Leave</td>
+                    <td>0.00</td>
+                </tr>
+                <tr>
+                    <td>Earned Leave</td>
+                    <td>11</td>
+                </tr>
+                <tr>
+                    <td>Sick Leave</td>
+                    <td>0.50</td>
+                </tr>
+                <tr>
+                    <td>Compensatory Leave/Off</td>
+                    <td>1</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+        <!-- Buttons -->
+      </form>
+    <!-- Buttons -->
+
+
+
+                <!-- Buttons -->
+                <div class="mt-5 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-success px-4">Submit</button>
+                    <a href="#" class="btn btn-danger px-4">Cancel</a>
+                </div>
+            </form>
+
+
+    </div>
+</div>
+</div>
+
+    <!-- Card -->
+<style>
+    .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #28a745; /* green shade */
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: 0.2s ease-in-out;
+}
+
+.btn-back:hover {
+  background-color: #218838; /* darker green */
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.btn-back i {
+  font-size: 14px;
+}
+.form-check .form-check-input{
+    margin-top:7px;
+    margin-right:6px;
+}
+.details-box {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 15px;
+    }
+    .details-box  li i {
+  vertical-align: middle;
+}
+/* Basic container styling */
+.leave-creation-container {
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 900px;
+    margin: 20px auto;
+}
+
+/* Flexbox for form rows */
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Specific styling for the reason textarea to take full width */
+.reason-field {
+    flex: 100%;
+}
+
+/* Label and input styling */
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #555;
+    font-size: 14px;
+}
+
+.required {
+    color: red;
+}
+
+input[type="text"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensures padding doesn't affect total width */
+    font-size: 14px;
+}
+
+textarea {
+    resize: vertical; /* Allows user to resize vertically but not horizontally */
+}
+
+/* Balance Table styling */
+.form-section-bottom {
+    margin-top: 30px;
+}
+
+.balance-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.balance-table th,
+.balance-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+    font-size: 14px;
+}
+
+.balance-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Button styling */
+.button-row {
+    margin-top: 30px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.submit-btn, .cancel-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.submit-btn {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.cancel-btn {
+    background-color: #f0f0f0;
+    color: #555;
+    border: 1px solid #ccc;
+}
+    </style>
+     
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    function calculateDiffTime() {
+    let start = document.getElementById("startTime").value;
+    let end = document.getElementById("endTime").value;
+    let diffField = document.getElementById("diffTime");
+
+    if (start && end) {
+      let s = new Date("1970-01-01T" + start + ":00");
+      let e = new Date("1970-01-01T" + end + ":00");
+
+      if (e < s) e.setDate(e.getDate() + 1);
+
+      let diffMs = e - s;
+      let hrs = Math.floor(diffMs / (1000 * 60 * 60));
+      let mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+      diffField.value = hrs + " hrs " + mins + " mins";
+    } else {
+      diffField.value = "";
+    }
+  }
+
+  document.getElementById("startTime").addEventListener("change", calculateDiffTime);
+  document.getElementById("endTime").addEventListener("change", calculateDiffTime);
+
+  feather.replace();
+</script>
+{% endblock %}

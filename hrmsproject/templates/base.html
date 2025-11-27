@@ -1,0 +1,99 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Ascent Payroll{% endblock %}</title>
+  
+  <link rel="icon" type="image/png" href="{% static 'assets/images/favicon.png' %}" sizes="16x16">
+  <!-- remix icon font css  -->
+  <link rel="stylesheet" href="{% static 'assets/css/remixicon.css' %}">
+  <!-- BootStrap css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/bootstrap.min.css' %}">
+  <!-- Apex Chart css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/apexcharts.css' %}">
+  <!-- Data Table css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/dataTables.min.css' %}">
+  <!-- Text Editor css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/editor-katex.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/css/lib/editor.atom-one-dark.min.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/css/lib/editor.quill.snow.css' %}">
+  <!-- Date picker css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/flatpickr.min.css' %}">
+  <!-- Calendar css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/full-calendar.css' %}">
+  <!-- Vector Map css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/jquery-jvectormap-2.0.5.css' %}">
+  <!-- Popup css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/magnific-popup.css' %}">
+  <!-- Slick Slider css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/slick.css' %}">
+  <!-- prism css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/prism.css' %}">
+  <!-- file upload css -->
+  <link rel="stylesheet" href="{% static 'assets/css/lib/file-upload.css' %}">
+  <link rel="stylesheet" href="{% static 'assets/css/lib/audioplayer.css' %}">
+  <!-- main css -->
+  <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+
+  {% block extra_css %}{% endblock %}
+
+   <!-- jQuery library js -->
+  <script src="{% static 'assets/js/lib/jquery-3.7.1.min.js' %}"></script>
+  <!-- Bootstrap js -->
+  <script src="{% static 'assets/js/lib/bootstrap.bundle.min.js' %}"></script>
+</head>
+
+<body class="app-body bg-light">
+
+  {% include 'partials/sidebar.html' %}
+  <main class="dashboard-main">
+    {% include 'partials/topheader.html' %}
+
+    <div class="main-content">
+      {% if messages %}
+        <div class="container-fluid py-2">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+    {% include 'partials/footer.html' %}
+  </main>
+
+  <!-- Apex Chart js -->
+  <script src="{% static 'assets/js/lib/apexcharts.min.js' %}"></script>
+  <!-- Data Table js -->
+  <script src="{% static 'assets/js/lib/dataTables.min.js' %}"></script>
+  <!-- Iconify Font js -->
+  <script src="{% static 'assets/js/lib/iconify-icon.min.js' %}"></script>
+  <!-- jQuery UI js -->
+  <script src="{% static 'assets/js/lib/jquery-ui.min.js' %}"></script>
+  <!-- Vector Map js -->
+  <script src="{% static 'assets/js/lib/jquery-jvectormap-2.0.5.min.js' %}"></script>
+  <script src="{% static 'assets/js/lib/jquery-jvectormap-world-mill-en.js' %}"></script>
+  <!-- Popup js -->
+  <script src="{% static 'assets/js/lib/magnifc-popup.min.js' %}"></script>
+  <!-- Slick Slider js -->
+  <script src="{% static 'assets/js/lib/slick.min.js' %}"></script>
+  <!-- prism js -->
+  <script src="{% static 'assets/js/lib/prism.js' %}"></script>
+  <!-- file upload js -->
+  <script src="{% static 'assets/js/lib/file-upload.js' %}"></script>
+  <!-- audioplayer -->
+  <script src="{% static 'assets/js/lib/audioplayer.js' %}"></script>
+  
+  <!-- main js -->
+  <script src="{% static 'assets/js/app.js' %}"></script>
+  <script src="{% static 'assets/js/homeOneChart.js' %}"></script>
+
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>

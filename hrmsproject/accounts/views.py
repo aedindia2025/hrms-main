@@ -1,0 +1,144 @@
+from django.contrib import messages
+from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.shortcuts import redirect, render
+
+from .forms import ProfileForm
+from .models import Profile
+
+
+# ==================== Home & Authentication ====================
+def home(request):
+    """Redirect unauthenticated users to login, others to dashboard."""
+    if request.user.is_authenticated:
+        return redirect('accounts:dashboard')
+    return redirect('accounts:login')
+
+
+@login_required
+def dashboard(request):
+    """Dashboard for authenticated users."""
+    return render(request, 'content/dashboard.html')
+
+
+def login_view(request):
+    """Render and process the login form."""
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            auth_login(request, form.get_user())
+            messages.success(request, 'Login successful!')
+            return redirect('accounts:dashboard')
+        messages.error(request, 'Invalid credentials. Please try again.')
+    else:
+        form = AuthenticationForm()
+    return render(request, 'login.html', {'form': form})
+
+
+def register(request):
+    """Render and process the registration form."""
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f'Account created for {user.username}!')
+            return redirect('accounts:login')
+        messages.error(request, 'Registration failed. Please correct the highlighted fields.')
+    else:
+        form = UserCreationForm()
+    return render(request, 'register.html', {'form': form})
+
+
+def logout_view(request):
+    """Log out the current user."""
+    auth_logout(request)
+    messages.success(request, 'You have been logged out successfully.')
+    return redirect('accounts:login')
+
+
+# ==================== Profile & Settings ====================
+@login_required
+def profile(request):
+    """Display and update the user's profile."""
+    profile_obj, _ = Profile.objects.get_or_create(user=request.user)
+    email_value = request.user.email
+    email_error = ''
+
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, instance=profile_obj)
+        email_value = request.POST.get('email', '').strip()
+
+        if not email_value:
+            email_error = 'Email is required.'
+        else:
+            try:
+                validate_email(email_value)
+            except ValidationError:
+                email_error = 'Enter a valid email address.'
+
+        if form.is_valid() and not email_error:
+            form.save()
+            if email_value != request.user.email:
+                request.user.email = email_value
+                request.user.save(update_fields=['email'])
+            messages.success(request, 'Profile updated successfully.')
+            return redirect('accounts:profile')
+        messages.error(request, email_error or 'Please correct the highlighted errors.')
+    else:
+        form = ProfileForm(instance=profile_obj)
+
+    primary_group = request.user.groups.first()
+    context = {
+        'display_name': request.user.get_full_name() or request.user.username,
+        'primary_group_name': primary_group.name if primary_group else ('Admin' if request.user.is_superuser else ''),
+        'profile': profile_obj,
+        'form': form,
+        'email_value': email_value,
+        'email_error': email_error,
+    }
+    return render(request, 'content/profile.html', context)
+
+
+@login_required
+def inbox(request):
+    """Placeholder inbox view."""
+    return render(request, 'content/inbox.html')
+
+
+@login_required
+def settings_view(request):
+    """Placeholder settings view."""
+    return render(request, 'content/settings.html')
+
+
+# ==================== Accounts ====================
+@login_required
+def cash_reports_list(request):
+    """Accounts -> Cash Reports list."""
+    return render(request, 'content/accounts/cash_reports/list.html')
+
+
+# ==================== Demo ====================
+@login_required
+def demo_add(request):
+    return render(request, 'content/demo/add.html')
+
+
+@login_required
+def demo_store(request):
+    if request.method == 'POST':
+        messages.success(request, 'Demo item saved successfully!')
+        return redirect('accounts:demo_list')
+    return redirect('accounts:demo_add')
+
+
+@login_required
+def demo_list(request):
+    return render(request, 'content/demo/list.html')
+
+
+
+
