@@ -12,86 +12,88 @@
         <!-- Link to Create Page -->
      <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark">Site Transfer Entry Create</span></h6>
 
-     <button  onclick="history.back()" class="btn-back">
+     <a href="{% url 'entry:site_entry_list' %}" class="btn-back">
    <i data-feather="arrow-left"></i> Back
-</button>
+</a>
 </div>
 
 
  <div class="card shadow-sm">
         <div class="card-body">
-            <form action="" method="post" enctype="multipart/form-data">
+            <form method="post">
                 {% csrf_token %}
-                <form>
-    <div class="row mb-3">
-      <!-- From Date -->
-      <div class="col-md-3">
-        <label class="form-label">From Date <span class="text-danger">*</span></label>
-        <input type="date" class="form-control" required>
-      </div>
+                <div class="row mb-3">
+                  <!-- Transfer Date -->
+                  <div class="col-md-3">
+                    <label class="form-label">Transfer Date <span class="text-danger">*</span></label>
+                    <input type="date" name="transfer_date" class="form-control" value="{{ values.transfer_date }}" required>
+                    {% if errors.transfer_date %}<div class="text-danger small">{{ errors.transfer_date }}</div>{% endif %}
+                  </div>
 
-      <!-- Employee Name -->
-      <div class="col-md-3">
-        <label class="form-label">Employee Name <span class="text-danger">*</span></label>
-         <select class="form-select" id="employeeName" required>
-          <option value="">Select Employee</option>
-          <option value="emp1" data-site="Nellore - Allipuram">John Doe</option>
-          <option value="emp2" data-site="Chennai - T Nagar">Jane Smith</option>
-          <option value="emp3" data-site="Hyderabad - Gachibowli">David Kumar</option>
-        </select>
-      </div>
+                  <!-- Employee Name -->
+                  <div class="col-md-3">
+                    <label class="form-label">Employee Name <span class="text-danger">*</span></label>
+                    <select class="form-select" id="employeeName" name="employee_name" required>
+                      <option value="">Select Employee</option>
+                      {% for employee in employees %}
+                        <option value="{{ employee.staff_name }}" data-site="{{ employee.work_location }}" {% if values.employee_name == employee.staff_name %}selected{% endif %}>
+                          {{ employee.staff_name }} ({{ employee.staff_id }})
+                        </option>
+                      {% endfor %}
+                    </select>
+                    {% if errors.employee_name %}<div class="text-danger small">{{ errors.employee_name }}</div>{% endif %}
+                  </div>
 
-      <!-- From Site (auto-filled) -->
-      <div class="col-md-3">
-        <label class="form-label">From Site <span class="text-danger">*</span></label>
-        <select class="form-select" id="fromSite" required disabled>
-          <option value="">Select Site</option>
-          <option value="Nellore - Allipuram">Nellore - Allipuram</option>
-          <option value="Chennai - T Nagar">Chennai - T Nagar</option>
-          <option value="Hyderabad - Gachibowli">Hyderabad - Gachibowli</option>
-          <option value="Bangalore - Whitefield">Bangalore - Whitefield</option>
-        </select>
-      </div>
+                  <!-- From Site (auto-filled) -->
+                  <div class="col-md-3">
+                    <label class="form-label">From Site <span class="text-danger">*</span></label>
+                    <select class="form-select" id="fromSite" name="from_site" required>
+                      <option value="">Select Site</option>
+                      {% for site in sites %}
+                        <option value="{{ site.name }}" {% if values.from_site == site.name %}selected{% endif %}>{{ site.name }}</option>
+                      {% endfor %}
+                    </select>
+                    {% if errors.from_site %}<div class="text-danger small">{{ errors.from_site }}</div>{% endif %}
+                  </div>
 
-      <!-- To Site -->
-      <div class="col-md-3">
-        <label class="form-label">To Site <span class="text-danger">*</span></label>
-          <select class="form-select" required>
-          <option value="">Select</option>
-          <option value="Nellore - Allipuram">Nellore - Allipuram</option>
-          <option value="Chennai - T Nagar">Chennai - T Nagar</option>
-          <option value="Hyderabad - Gachibowli">Hyderabad - Gachibowli</option>
-          <option value="Bangalore - Whitefield">Bangalore - Whitefield</option>
-        </select>
-      </div>
-    </div>
+                  <!-- To Site -->
+                  <div class="col-md-3">
+                    <label class="form-label">To Site <span class="text-danger">*</span></label>
+                    <select class="form-select" id="toSite" name="to_site" required>
+                      <option value="">Select Site</option>
+                      {% for site in sites %}
+                        <option value="{{ site.name }}" {% if values.to_site == site.name %}selected{% endif %}>{{ site.name }}</option>
+                      {% endfor %}
+                    </select>
+                    {% if errors.to_site %}<div class="text-danger small">{{ errors.to_site }}</div>{% endif %}
+                  </div>
+                </div>
 
-    <div class="row mb-3">
-      <!-- Month OR Week -->
-      <div class="col-md-3">
-        <label class="form-label">Month OR Week <span class="text-danger">*</span></label>
-        <select class="form-select" required>
-          <option value="">Select</option>
-          <option value="Month">Month</option>
-          <option value="Week">Week</option>
-        </select>
-      </div>
+                <div class="row mb-3">
+                  <!-- Month OR Week -->
+                  <div class="col-md-3">
+                    <label class="form-label">Month OR Week</label>
+                    <select class="form-select" name="transfer_type">
+                      <option value="">Select</option>
+                      {% for value, label in transfer_type_choices %}
+                        <option value="{{ value }}" {% if values.transfer_type == value %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                    {% if errors.transfer_type %}<div class="text-danger small">{{ errors.transfer_type }}</div>{% endif %}
+                  </div>
 
-      <!-- Description -->
-      <div class="col-md-3">
-        <label class="form-label">Description <span class="text-danger">*</span></label>
-        <textarea class="form-control" rows="2" required></textarea>
-      </div>
-    </div>
-
-    <!-- Buttons -->
-  </form>
-
+                  <!-- Description -->
+                  <div class="col-md-3">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" name="description" rows="2">{{ values.description }}</textarea>
+                    {% if errors.description %}<div class="text-danger small">{{ errors.description }}</div>{% endif %}
+                  </div>
+                </div>
 
                 <!-- Buttons -->
                 <div class="mt-5 d-flex justify-content-end gap-2">
                     <button type="submit" class="btn btn-success px-4">Submit</button>
-                    <a href="#" class="btn btn-danger px-4">Cancel</a>
+                    <a href="{% url 'entry:site_entry_list' %}" class="btn btn-danger px-4">Cancel</a>
                 </div>
             </form>
 
@@ -141,7 +143,10 @@
 
     if (site) {
       for (let option of fromSiteSelect.options) {
-        option.selected = (option.value === site);
+        if (option.value === site) {
+          option.selected = true;
+          break;
+        }
       }
     } else {
       fromSiteSelect.selectedIndex = 0; // reset to default

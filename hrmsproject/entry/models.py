@@ -1,4 +1,99 @@
+from datetime import datetime, timedelta
+
 from django.db import models
+
+from master.models import Employee, Site
+
+
+class CompOffEntry(models.Model):
+    DAY_STATUS_FULL = 'full_day'
+    DAY_STATUS_HALF = 'half_day'
+    DAY_STATUS_OVERTIME = 'overtime'
+    DAY_STATUS_CHOICES = [
+        (DAY_STATUS_FULL, 'Full Day'),
+        (DAY_STATUS_HALF, 'Half Day'),
+        (DAY_STATUS_OVERTIME, 'Overtime'),
+    ]
+
+    APPROVAL_PENDING = 'pending'
+    APPROVAL_APPROVED = 'approved'
+    APPROVAL_REJECTED = 'rejected'
+    APPROVAL_CHOICES = [
+        (APPROVAL_PENDING, 'Pending'),
+        (APPROVAL_APPROVED, 'Approved'),
+        (APPROVAL_REJECTED, 'Rejected'),
+    ]
+
+    work_date = models.DateField()
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name='comp_off_entries',
+    )
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.PROTECT,
+        related_name='comp_off_entries',
+    )
+    in_time = models.TimeField()
+    out_time = models.TimeField()
+    worked_duration = models.DurationField(
+        null=True,
+        blank=True,
+        help_text='Stores total worked duration for the day.',
+    )
+    day_status = models.CharField(
+        max_length=20,
+        choices=DAY_STATUS_CHOICES,
+    )
+    head_approval_status = models.CharField(
+        max_length=20,
+        choices=APPROVAL_CHOICES,
+        default=APPROVAL_PENDING,
+    )
+    head_approval_by = models.CharField(max_length=255, blank=True)
+    head_approval_note = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-work_date', 'employee__staff_name']
+        verbose_name = 'Comp-Off Entry'
+        verbose_name_plural = 'Comp-Off Entries'
+
+    def __str__(self):
+        return f'{self.employee} - {self.work_date}'
+
+    def save(self, *args, **kwargs):
+        if self.in_time and self.out_time:
+            in_dt = datetime.combine(self.work_date, self.in_time)
+            out_dt = datetime.combine(self.work_date, self.out_time)
+            if out_dt <= in_dt:
+                out_dt += timedelta(days=1)
+            self.worked_duration = out_dt - in_dt
+        super().save(*args, **kwargs)
+
+    @property
+    def worked_hours_display(self) -> str:
+        if not self.worked_duration:
+            return ''
+        total_minutes = int(self.worked_duration.total_seconds() // 60)
+        hours, minutes = divmod(total_minutes, 60)
+        parts = []
+        if hours:
+            parts.append(f'{hours} hr{"s" if hours != 1 else ""}')
+        if minutes:
+            parts.append(f'{minutes} min{"s" if minutes != 1 else ""}')
+        return ' '.join(parts) or '0 mins'
+
+    @property
+    def head_approval_badge_class(self) -> str:
+        mapping = {
+            self.APPROVAL_APPROVED: 'text-success bg-success-subtle border border-success',
+            self.APPROVAL_REJECTED: 'text-danger bg-danger-subtle border border-danger',
+            self.APPROVAL_PENDING: 'text-info bg-info-subtle border border-info',
+        }
+        return mapping.get(self.head_approval_status, 'text-secondary bg-secondary-subtle border border-secondary')
 
 
 class SiteEntry(models.Model):
