@@ -101,7 +101,7 @@ def comp_off_create(request):
     return render(request, 'content/entry/comp_entry/create.html', context)
 
 
-@login_required
+@permission_required('entry.view_compoffentry', raise_exception=True)
 def comp_off_list(request):
     per_page = request.GET.get('per_page', '').strip() or '10'
     search_query = request.GET.get('q', '').strip()
@@ -143,7 +143,7 @@ def comp_off_list(request):
     return render(request, 'content/entry/comp_entry/list.html', context)
 
 
-@login_required
+@permission_required('entry.change_compoffentry', raise_exception=True)
 def comp_off_edit(request, pk):
     comp_off_entry = get_object_or_404(CompOffEntry, pk=pk)
     employees = Employee.objects.order_by('staff_name')
@@ -232,7 +232,7 @@ def comp_off_edit(request, pk):
     return render(request, 'content/entry/comp_entry/edit.html', context)
 
 
-@login_required
+@permission_required('entry.delete_compoffentry', raise_exception=True)
 def comp_off_delete(request, pk):
     comp_off_entry = get_object_or_404(CompOffEntry, pk=pk)
     if request.method == 'POST':
@@ -249,15 +249,15 @@ def comp_off_delete(request, pk):
 # ------------------------
 # ENTRY -> LEAVE
 # ------------------------
-@login_required
+@permission_required('entry.add_leaveentry', raise_exception=True)
 def leave_entry_create(request):
     return render(request, 'content/entry/leave_entry/create.html')
 
-@login_required
+@permission_required('entry.view_leaveentry', raise_exception=True)
 def leave_entry_list(request):
     return render(request, 'content/entry/leave_entry/list.html')
 
-@login_required
+@permission_required('entry.view_leaveentry', raise_exception=True)
 def leave_entry_print(request):
     return render(request, 'content/entry/leave_entry/print.html')
 
@@ -265,15 +265,15 @@ def leave_entry_print(request):
 # ------------------------
 # ENTRY -> MANUAL
 # ------------------------
-@login_required
+@permission_required('entry.add_manualentry', raise_exception=True)
 def manual_entry_create(request):
     return render(request, 'content/entry/manual_entry/create.html')
 
-@login_required
+@permission_required('entry.view_manualentry', raise_exception=True)
 def manual_entry_list(request):
     return render(request, 'content/entry/manual_entry/list.html')
 
-@login_required
+@permission_required('entry.view_manualentry', raise_exception=True)
 def manual_entry_print(request):
     return render(request, 'content/entry/manual_entry/print.html')
 
@@ -281,15 +281,15 @@ def manual_entry_print(request):
 # ------------------------
 # ENTRY -> PERMISSION
 # ------------------------
-@login_required
+@permission_required('entry.add_permissionentry', raise_exception=True)
 def permission_entry_create(request):
     return render(request, 'content/entry/permission_entry/create.html')
 
-@login_required
+@permission_required('entry.view_permissionentry', raise_exception=True)
 def permission_entry_list(request):
     return render(request, 'content/entry/permission_entry/list.html')
 
-@login_required
+@permission_required('entry.view_permissionentry', raise_exception=True)
 def permission_entry_print(request):
     return render(request, 'content/entry/permission_entry/print.html')
 
@@ -297,7 +297,7 @@ def permission_entry_print(request):
 # ------------------------
 # ENTRY -> SITE
 # ------------------------
-@login_required
+@permission_required('entry.view_siteentry', raise_exception=True)
 def site_entry_list(request):
     per_page = request.GET.get('per_page', '').strip() or '10'
     search_query = request.GET.get('q', '').strip()
@@ -339,7 +339,7 @@ def site_entry_list(request):
     return render(request, 'content/entry/site_entry/list.html', context)
 
 
-@login_required
+@permission_required('entry.add_siteentry', raise_exception=True)
 def site_entry_create(request):
     employees = Employee.objects.order_by('staff_name')
     sites = Site.objects.order_by('name')
@@ -402,7 +402,7 @@ def site_entry_create(request):
     return render(request, 'content/entry/site_entry/create.html', context)
 
 
-@login_required
+@permission_required('entry.change_siteentry', raise_exception=True)
 def site_entry_edit(request, pk):
     site_entry = get_object_or_404(SiteEntry, pk=pk)
     employees = Employee.objects.order_by('staff_name')
@@ -466,7 +466,7 @@ def site_entry_edit(request, pk):
     return render(request, 'content/entry/site_entry/edit.html', context)
 
 
-@login_required
+@permission_required('entry.delete_siteentry', raise_exception=True)
 def site_entry_delete(request, pk):
     site_entry = get_object_or_404(SiteEntry, pk=pk)
     if request.method == 'POST':
@@ -483,11 +483,11 @@ def site_entry_delete(request, pk):
 # ------------------------
 # ENTRY -> TADA
 # ------------------------
-@login_required
+@permission_required('entry.add_tadaentry', raise_exception=True)
 def tada_entry_create(request):
     return render(request, 'content/entry/tada_entry/create.html')
 
-@login_required
+@permission_required('entry.view_tadaentry', raise_exception=True)
 def tada_entry_list(request):
     return render(request, 'content/entry/tada_entry/list.html')
 
@@ -495,10 +495,10 @@ def tada_entry_list(request):
 # ------------------------
 # ENTRY -> TRAVEL
 # ------------------------
-@login_required
+@permission_required('entry.add_travelentry', raise_exception=True)
 def travel_entry_create(request):
     return render(request, 'content/entry/travel_entry/create.html')
 
-@login_required
+@permission_required('entry.view_travelentry', raise_exception=True)
 def travel_entry_list(request):
     return render(request, 'content/entry/travel_entry/list.html')
