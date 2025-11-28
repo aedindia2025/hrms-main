@@ -112,17 +112,17 @@
                             {% for employee in employees %}
                                 <tr>
                                     <td>{{ forloop.counter }}</td>
-                                    <td>{{ employee.employee_code|default:"-" }}</td>
-                                    <td>{{ employee.user.get_full_name|default:employee.user.username }}</td>
+                                    <td>{{ employee.staff_id|default:"-" }}</td>
+                                    <td>{{ employee.staff_name|default:"-" }}</td>
                                     <td>{{ employee.date_of_birth|date:"d-m-Y"|default:"-" }}</td>
-                                    <td>{{ employee.job_title|default:"-" }}</td>
-                                    <td>-</td>
-                                    <td>{{ employee.location|default:"-" }}</td>
+                                    <td>{{ employee.designation|default:"-" }}</td>
+                                    <td>{{ employee.department|default:"-" }}</td>
+                                    <td>{{ employee.work_location|default:"-" }}</td>
                                     <td>
-                                        <a href="#" class="text-primary me-2">
+                                        <a href="{% url 'master:employee_edit' employee.pk %}" class="text-primary me-2" title="Edit">
                                             <i data-feather="edit"></i>
                                         </a>
-                                        <a href="#" class="text-danger">
+                                        <a href="{% url 'master:employee_delete' employee.pk %}" class="text-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this employee?');">
                                             <i data-feather="trash-2"></i>
                                         </a>
                                     </td>

@@ -72,4 +72,7 @@ urlpatterns = [
     path('employee/edit/<int:pk>/', views.employee_edit, name='employee_edit'),
     path('employee/delete/<int:pk>/', views.employee_delete, name='employee_delete'),
     path('employee/staff-save/', views.employee_staff_save, name='employee_staff_save'),
+    path('api/countries/', views.get_countries, name='get_countries'),
+    path('api/states/', views.get_states, name='get_states'),
+    path('api/cities/', views.get_cities, name='get_cities'),
 ]

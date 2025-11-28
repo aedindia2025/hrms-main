@@ -1,5 +1,5 @@
 from datetime import datetime, date, timedelta
-
+import json
 import uuid
 
 from django.contrib import messages
@@ -11,9 +11,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.decorators.http import require_POST
-
-from accounts.models import Profile
+from django.views.decorators.http import require_POST, require_http_methods
 
 from .models import (
     AdditionDeduction,
@@ -2429,26 +2427,20 @@ def employee_list(request):
     staff_status = request.GET.get('staff_status', '').strip()
     company_name = request.GET.get('company_name', '').strip()
     
-    # Get all profiles (employees)
-    employees = Profile.objects.select_related('user').all()
+    # Get all employees from Employee model
+    employees = Employee.objects.select_related('company').all()
     
-    # Filter by status (you may need to add a status field to Profile model)
-    # For now, we'll just show all employees
-    # if staff_status == '1':
-    #     employees = employees.filter(status='active')
-    # elif staff_status == '2':
-    #     employees = employees.filter(status='relieved')
+    # Filter by company
+    if company_name:
+        try:
+            employees = employees.filter(company_id=int(company_name))
+        except (ValueError, TypeError):
+            pass
     
-    # Filter by company (you may need to add company field to Profile model)
-    # if company_name:
-    #     try:
-    #         employees = employees.filter(company_id=int(company_name))
-    #     except (ValueError, TypeError):
-    #         pass
+    # Note: Status filter can be added later if needed
+    # For now, we'll show all employees
     
     # Get all companies, ordered by billing_name
-    # This will include all companies (both Active and Inactive)
-    # If you want only Active companies, use: Company.objects.filter(status=Company.STATUS_ACTIVE).order_by('billing_name')
     companies = Company.objects.all().order_by('billing_name')
     
     context = {
@@ -2463,8 +2455,8 @@ def employee_list(request):
 @permission_required('master.add_employee', raise_exception=True)
 def employee_create(request):
     companies = Company.objects.all().order_by('billing_name')
-    last_profile = Profile.objects.order_by('-id').first()
-    last_staff_id = getattr(last_profile, 'employee_code', '') if last_profile else ''
+    last_employee = Employee.objects.order_by('-id').first()
+    last_staff_id = getattr(last_employee, 'staff_id', '') if last_employee else ''
     context = {
         'companies': companies,
         'staff': None,
@@ -2518,6 +2510,17 @@ def _clean_required(data, field, label, errors):
     return value
 
 
+def _clean_text_only(data, field, label, errors):
+    """Validate text fields that should only contain letters, spaces, dots, hyphens, and apostrophes."""
+    value = _clean_required(data, field, label, errors)
+    if value:
+        import re
+        # Allow letters, spaces, dots, hyphens, apostrophes (for names like O'Brien, Mary-Jane, etc.)
+        if not re.match(r'^[a-zA-Z\s\.\-\']+$', value):
+            errors[field] = f'{label} should only contain letters, spaces, dots, hyphens, and apostrophes.'
+    return value
+
+
 def _clean_optional(data, field):
     return data.get(field, '').strip()
 
@@ -2525,9 +2528,273 @@ def _clean_optional(data, field):
 def _clean_phone(data, field, label, errors, length=10):
     value = _clean_optional(data, field)
     if value:
-        if not value.isdigit() or len(value) != length:
-            errors[field] = f'{label} must be a {length}-digit number.'
+        # Remove spaces and hyphens
+        cleaned = value.replace(' ', '').replace('-', '')
+        if not cleaned.isdigit() or len(cleaned) != length:
+            errors[field] = f'{label} must be exactly {length} digits.'
     return value
+
+
+def _clean_aadhar(data, field, label, errors):
+    """Validate Aadhar number (12 digits)."""
+    value = _clean_optional(data, field)
+    if value:
+        cleaned = value.replace(' ', '').replace('-', '')
+        if not cleaned.isdigit() or len(cleaned) != 12:
+            errors[field] = f'{label} must be exactly 12 digits.'
+        return cleaned
+    return value
+
+
+def _clean_pan(data, field, label, errors):
+    """Validate PAN number (5 letters + 4 digits + 1 letter)."""
+    value = _clean_optional(data, field)
+    if value:
+        cleaned = value.replace(' ', '').upper()
+        import re
+        if not re.match(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$', cleaned):
+            errors[field] = f'{label} must be in format: ABCDE1234F (5 letters, 4 digits, 1 letter).'
+        return cleaned
+    return value
+
+
+def _clean_pincode(data, field, label, errors):
+    """Validate pincode (6 digits)."""
+    value = _clean_optional(data, field)
+    if value:
+        if not value.isdigit() or len(value) != 6:
+            errors[field] = f'{label} must be exactly 6 digits.'
+    return value
+
+
+def _clean_ifsc(data, field, label, errors):
+    """Validate IFSC code (4 letters + 0 + 6 alphanumeric)."""
+    value = _clean_optional(data, field)
+    if value:
+        cleaned = value.replace(' ', '').upper()
+        import re
+        if not re.match(r'^[A-Z]{4}0[A-Z0-9]{6}$', cleaned):
+            errors[field] = f'{label} must be in format: ABCD0123456 (4 letters, 0, 6 alphanumeric).'
+        return cleaned
+    return value
+
+
+def _clean_account_number(data, field, label, errors):
+    """Validate account number (9-18 digits)."""
+    value = _clean_optional(data, field)
+    if value:
+        cleaned = value.replace(' ', '').replace(',', '')
+        if not cleaned.isdigit() or len(cleaned) < 9 or len(cleaned) > 18:
+            errors[field] = f'{label} must be 9-18 digits.'
+        return cleaned
+    return value
+
+
+def _clean_percentage(data, field, label, errors):
+    """Validate percentage (0-100)."""
+    value = _clean_optional(data, field)
+    if value:
+        try:
+            num = float(value)
+            if num < 0 or num > 100:
+                errors[field] = f'{label} must be between 0 and 100.'
+        except ValueError:
+            errors[field] = f'{label} must be a valid number.'
+    return value
+
+
+def _clean_year(data, field, label, errors):
+    """Validate year (1900 to current year)."""
+    value = _clean_optional(data, field)
+    if value:
+        try:
+            year = int(value)
+            from datetime import datetime
+            current_year = datetime.now().year
+            if year < 1900 or year > current_year:
+                errors[field] = f'{label} must be between 1900 and {current_year}.'
+        except ValueError:
+            errors[field] = f'{label} must be a valid year.'
+    return value
+
+
+def _clean_salary(data, field, label, errors):
+    """Validate salary/amount (positive number)."""
+    value = _clean_optional(data, field)
+    if value:
+        cleaned = value.replace(',', '').replace(' ', '')
+        try:
+            num = float(cleaned)
+            if num < 0:
+                errors[field] = f'{label} must be a positive number.'
+        except ValueError:
+            errors[field] = f'{label} must be a valid number.'
+        return cleaned
+    return value
+
+
+def _clean_vehicle_reg(data, field, label, errors):
+    """Validate vehicle registration number (Indian format)."""
+    value = _clean_optional(data, field)
+    if value:
+        import re
+        cleaned = value.replace(' ', '').upper()
+        if not re.match(r'^[A-Z]{2}[-\s]?[0-9]{1,2}[-\s]?[A-Z]{1,2}[-\s]?[0-9]{4}$', cleaned):
+            errors[field] = f'{label} must be in format: TN-09-AB-1234.'
+        return cleaned
+    return value
+
+
+def _clean_license(data, field, label, errors):
+    """Validate license number (10-15 alphanumeric)."""
+    value = _clean_optional(data, field)
+    if value:
+        import re
+        cleaned = value.replace(' ', '').upper()
+        if not re.match(r'^[A-Z0-9]{10,15}$', cleaned):
+            errors[field] = f'{label} must be 10-15 alphanumeric characters.'
+        return cleaned
+    return value
+
+
+def _clean_date_not_future(data, field, label, errors):
+    """Validate date is not in the future."""
+    value = _clean_optional(data, field)
+    if value:
+        from datetime import datetime
+        try:
+            date_value = datetime.strptime(value, '%Y-%m-%d').date()
+            today = datetime.now().date()
+            if date_value > today:
+                errors[field] = f'{label} cannot be a future date.'
+            # Check minimum age for DOB (18 years)
+            if 'birth' in field.lower() or 'dob' in field.lower():
+                from datetime import date
+                age = today.year - date_value.year - ((today.month, today.day) < (date_value.month, date_value.day))
+                if age < 18:
+                    errors[field] = f'{label} must be at least 18 years ago.'
+        except ValueError:
+            errors[field] = f'{label} must be a valid date.'
+    return value
+
+
+# Indian States and Union Territories
+INDIAN_STATES = [
+    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+    'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+    'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
+    'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+    'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+    'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+]
+
+# Major Indian Cities by State
+INDIAN_CITIES_BY_STATE = {
+    'Andhra Pradesh': ['Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore', 'Kurnool', 'Rajahmundry', 'Tirupati', 'Kakinada'],
+    'Arunachal Pradesh': ['Itanagar', 'Naharlagun', 'Tawang', 'Pasighat'],
+    'Assam': ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat', 'Nagaon', 'Tinsukia'],
+    'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Purnia', 'Darbhanga'],
+    'Chhattisgarh': ['Raipur', 'Bhilai', 'Bilaspur', 'Korba', 'Durg', 'Rajpur'],
+    'Goa': ['Panaji', 'Vasco da Gama', 'Margao', 'Mapusa'],
+    'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar', 'Gandhinagar'],
+    'Haryana': ['Gurgaon', 'Faridabad', 'Panipat', 'Ambala', 'Yamunanagar', 'Karnal', 'Hisar'],
+    'Himachal Pradesh': ['Shimla', 'Mandi', 'Solan', 'Dharamshala', 'Kullu'],
+    'Jharkhand': ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro', 'Hazaribagh'],
+    'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum', 'Gulbarga', 'Davangere'],
+    'Kerala': ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur', 'Kollam', 'Alappuzha'],
+    'Madhya Pradesh': ['Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain', 'Raipur'],
+    'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad', 'Solapur', 'Thane'],
+    'Manipur': ['Imphal', 'Thoubal', 'Bishnupur'],
+    'Meghalaya': ['Shillong', 'Tura', 'Jowai'],
+    'Mizoram': ['Aizawl', 'Lunglei', 'Champhai'],
+    'Nagaland': ['Kohima', 'Dimapur', 'Mokokchung'],
+    'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur', 'Sambalpur'],
+    'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda', 'Mohali'],
+    'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer', 'Udaipur', 'Bhilwara'],
+    'Sikkim': ['Gangtok', 'Namchi', 'Mangan'],
+    'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode'],
+    'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'Khammam'],
+    'Tripura': ['Agartala', 'Udaipur', 'Dharmanagar'],
+    'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Allahabad', 'Meerut', 'Ghaziabad', 'Noida'],
+    'Uttarakhand': ['Dehradun', 'Haridwar', 'Roorkee', 'Haldwani', 'Rudrapur'],
+    'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri', 'Bardhaman'],
+    'Andaman and Nicobar Islands': ['Port Blair'],
+    'Chandigarh': ['Chandigarh'],
+    'Dadra and Nagar Haveli and Daman and Diu': ['Daman', 'Diu', 'Silvassa'],
+    'Delhi': ['New Delhi', 'Delhi'],
+    'Jammu and Kashmir': ['Srinagar', 'Jammu', 'Anantnag', 'Baramulla'],
+    'Ladakh': ['Leh', 'Kargil'],
+    'Lakshadweep': ['Kavaratti'],
+    'Puducherry': ['Puducherry', 'Karaikal', 'Mahe', 'Yanam']
+}
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_countries(request):
+    """API endpoint to get list of countries."""
+    # Fallback countries list
+    fallback_countries = [
+        'India', 'United States', 'United Kingdom', 'Canada', 'Australia', 
+        'Germany', 'France', 'Japan', 'China', 'Singapore', 'United Arab Emirates',
+        'Saudi Arabia', 'Qatar', 'Kuwait', 'Oman', 'Bahrain', 'Malaysia',
+        'Thailand', 'Indonesia', 'Philippines', 'South Korea', 'New Zealand',
+        'South Africa', 'Brazil', 'Mexico', 'Argentina', 'Chile', 'Russia'
+    ]
+    
+    try:
+        # Try to use REST Countries API if requests library is available
+        try:
+            import requests  # type: ignore[reportMissingModuleSource]
+            response = requests.get('https://restcountries.com/v3.1/all?fields=name', timeout=5)
+            if response.status_code == 200:
+                countries = sorted([country['name']['common'] for country in response.json()])
+                return JsonResponse({'success': True, 'countries': countries})
+        except ImportError:
+            # requests library not installed, use fallback
+            pass
+        except Exception:
+            # API call failed, use fallback
+            pass
+    except Exception:
+        # Any other error, use fallback
+        pass
+    
+    # Return fallback countries
+    return JsonResponse({'success': True, 'countries': sorted(fallback_countries)})
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_states(request):
+    """API endpoint to get list of states (Indian states by default, or by country)."""
+    country = request.GET.get('country', 'India')
+    
+    if country == 'India':
+        states = sorted(INDIAN_STATES)
+    else:
+        # For other countries, return empty or use an API
+        # You can integrate with a states API here
+        states = []
+    
+    return JsonResponse({'success': True, 'states': states})
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_cities(request):
+    """API endpoint to get list of cities by state."""
+    state = request.GET.get('state', '')
+    country = request.GET.get('country', 'India')
+    
+    if country == 'India' and state:
+        cities = INDIAN_CITIES_BY_STATE.get(state, [])
+        cities = sorted(cities)
+    else:
+        cities = []
+    
+    return JsonResponse({'success': True, 'cities': cities})
 
 
 def _clean_email(data, field, label, errors):
@@ -2568,7 +2835,7 @@ def _validate_staff_details(data, unique_id):
     validated_data = {}
     
     # Personal Details
-    staff_name = _clean_required(data, 'staff_name', 'Staff Name', errors)
+    staff_name = _clean_text_only(data, 'staff_name', 'Staff Name', errors)
     staff_id = _clean_required(data, 'staff_id', 'Staff ID', errors)
     
     if staff_id:
@@ -2583,7 +2850,7 @@ def _validate_staff_details(data, unique_id):
     if gender and gender not in [choice[0] for choice in Employee.GENDER_CHOICES]:
         errors['gender'] = 'Invalid gender selected.'
     
-    father_name = _clean_required(data, 'father_name', 'Father Name', errors)
+    father_name = _clean_text_only(data, 'father_name', 'Father Name', errors)
     
     date_of_birth = _clean_date(data, 'date_of_birth', 'Date of Birth', errors)
     doc_dob = _clean_date(data, 'doc_dob', 'Document DOB', errors)
@@ -2620,13 +2887,13 @@ def _validate_staff_details(data, unique_id):
     if not office_email:
         errors['office_email'] = 'Office Email is required.'
     
-    aadhar_no = _clean_aadhar(data, 'aadhar_no', errors)
+    aadhar_no = _clean_aadhar(data, 'aadhar_no', 'Aadhar No', errors)
     if not aadhar_no:
         errors['aadhar_no'] = 'Aadhar number is required.'
     
-    pan_no = _clean_required(data, 'pan_no', 'PAN No', errors)
-    if pan_no and (len(pan_no) != 10 or not pan_no[:5].isalpha() or not pan_no[5:9].isdigit() or not pan_no[9].isalpha()):
-        errors['pan_no'] = 'Invalid PAN number format.'
+    pan_no = _clean_pan(data, 'pan_no', 'PAN No', errors)
+    if not pan_no:
+        errors['pan_no'] = 'PAN number is required.'
     
     medical_claim_str = _clean_required(data, 'medical_claim', 'Medical Claim', errors)
     if medical_claim_str and medical_claim_str not in ['Yes', 'No']:
@@ -2643,9 +2910,9 @@ def _validate_staff_details(data, unique_id):
     present_building = _clean_required(data, 'pre_building', 'Present Building No', errors)
     present_street = _clean_required(data, 'pre_street', 'Present Street', errors)
     present_area = _clean_required(data, 'pre_area', 'Present Area', errors)
-    present_pincode = _clean_required(data, 'pre_pincode', 'Present Pincode', errors)
-    if present_pincode and (not present_pincode.isdigit() or len(present_pincode) != 6):
-        errors['pre_pincode'] = 'Pincode must be 6 digits.'
+    present_pincode = _clean_pincode(data, 'pre_pincode', 'Present Pincode', errors)
+    if not present_pincode:
+        errors['pre_pincode'] = 'Present Pincode is required.'
     
     permanent_country = _clean_required(data, 'perm_country', 'Permanent Country', errors)
     permanent_state = _clean_required(data, 'perm_state', 'Permanent State', errors)
@@ -2653,9 +2920,9 @@ def _validate_staff_details(data, unique_id):
     permanent_building = _clean_required(data, 'perm_building', 'Permanent Building No', errors)
     permanent_street = _clean_required(data, 'perm_street', 'Permanent Street', errors)
     permanent_area = _clean_required(data, 'perm_area', 'Permanent Area', errors)
-    permanent_pincode = _clean_required(data, 'perm_pincode', 'Permanent Pincode', errors)
-    if permanent_pincode and (not permanent_pincode.isdigit() or len(permanent_pincode) != 6):
-        errors['perm_pincode'] = 'Pincode must be 6 digits.'
+    permanent_pincode = _clean_pincode(data, 'perm_pincode', 'Permanent Pincode', errors)
+    if not permanent_pincode:
+        errors['perm_pincode'] = 'Permanent Pincode is required.'
     
     # Official Details
     date_of_join = _clean_date(data, 'date_of_join', 'Date of Join', errors)
@@ -2760,16 +3027,14 @@ def _validate_dependent_details(data):
     rel_date_of_birth = _clean_date(data, 'rel_date_of_birth', 'Date of Birth', errors)
     
     # Validate Aadhar number (required)
-    rel_aadhar_no = _clean_required(data, 'rel_aadhar_no', 'Aadhar No', errors)
-    if rel_aadhar_no:
-        rel_aadhar_no = rel_aadhar_no.replace(' ', '')
-        if not rel_aadhar_no.isdigit() or len(rel_aadhar_no) != 12:
-            errors['rel_aadhar_no'] = 'Aadhar number must be 12 digits.'
+    rel_aadhar_no = _clean_aadhar(data, 'rel_aadhar_no', 'Aadhar No', errors)
+    if not rel_aadhar_no:
+        errors['rel_aadhar_no'] = 'Aadhar number is required.'
     
     # All other fields are required
-    occupation = _clean_required(data, 'occupation', 'Occupation', errors)
+    occupation = _clean_text_only(data, 'occupation', 'Occupation', errors)
     standard = _clean_required(data, 'standard', 'Standard', errors)
-    school = _clean_required(data, 'school', 'School', errors)
+    school = _clean_text_only(data, 'school', 'School', errors)
     existing_illness = _clean_required(data, 'existing_illness', 'Existing Illness', errors)
     description = _clean_required(data, 'description', 'Description', errors)
     existing_insurance = _clean_required(data, 'existing_insurance', 'Existing Insurance', errors)
@@ -2815,25 +3080,17 @@ def _validate_account_details(data):
     if salary_type and salary_type not in [choice[0] for choice in EmployeeAccountInfo.SALARY_TYPE_CHOICES]:
         errors['salary_type'] = 'Invalid salary type selected.'
     
-    accountant_name = _clean_required(data, 'accountant_name', 'Accountant Name', errors)
+    accountant_name = _clean_text_only(data, 'accountant_name', 'Accountant Name', errors)
     
-    account_no = _clean_required(data, 'account_no', 'Account Number', errors)
-    if account_no and not account_no.isdigit():
-        errors['account_no'] = 'Account number must contain only digits.'
+    account_no = _clean_account_number(data, 'account_no', 'Account Number', errors)
+    if not account_no:
+        errors['account_no'] = 'Account number is required.'
     
-    bank_name = _clean_required(data, 'bank_name', 'Bank Name', errors)
+    bank_name = _clean_text_only(data, 'bank_name', 'Bank Name', errors)
     
-    ifsc_code = _clean_required(data, 'ifsc_code', 'IFSC Code', errors)
-    if ifsc_code:
-        ifsc_code = ifsc_code.upper().strip()
-        if len(ifsc_code) != 11:
-            errors['ifsc_code'] = 'IFSC code must be 11 characters.'
-        elif not ifsc_code[:4].isalpha():
-            errors['ifsc_code'] = 'IFSC code must start with 4 alphabets.'
-        elif ifsc_code[4] != '0':
-            errors['ifsc_code'] = 'IFSC code 5th character must be 0.'
-        elif not ifsc_code[5:].isalnum():
-            errors['ifsc_code'] = 'IFSC code last 6 characters must be alphanumeric.'
+    ifsc_code = _clean_ifsc(data, 'ifsc_code', 'IFSC Code', errors)
+    if not ifsc_code:
+        errors['ifsc_code'] = 'IFSC code is required.'
     
     bank_contact_no = _clean_phone(data, 'bank_contact_no', 'Bank Contact', errors)
     if not bank_contact_no:
@@ -2867,25 +3124,17 @@ def _validate_qualification_details(data):
     # All fields are required
     education_type = _clean_required(data, 'education_type', 'Education Type', errors)
     degree = _clean_required(data, 'degree', 'Degree', errors)
-    college_name = _clean_required(data, 'college_name', 'College Name', errors)
+    college_name = _clean_text_only(data, 'college_name', 'College Name', errors)
     
-    year_passing = _clean_required(data, 'year_passing', 'Year of Passing', errors)
-    if year_passing:
-        try:
-            datetime.strptime(year_passing + '-01', '%Y-%m-%d')
-        except ValueError:
-            errors['year_passing'] = 'Enter a valid year for year of passing.'
+    year_passing = _clean_year(data, 'year_passing', 'Year of Passing', errors)
+    if not year_passing:
+        errors['year_passing'] = 'Year of Passing is required.'
     
-    percentage = _clean_required(data, 'percentage', 'Percentage', errors)
-    if percentage:
-        try:
-            percentage_float = float(percentage)
-            if percentage_float < 0 or percentage_float > 100:
-                errors['percentage'] = 'Percentage must be between 0 and 100.'
-        except ValueError:
-            errors['percentage'] = 'Percentage must be a valid number.'
+    percentage = _clean_percentage(data, 'percentage', 'Percentage', errors)
+    if not percentage:
+        errors['percentage'] = 'Percentage is required.'
     
-    university = _clean_required(data, 'university', 'University', errors)
+    university = _clean_text_only(data, 'university', 'University', errors)
     
     # Note: File validation will be done in the save function where request.FILES is available
     validated_data = {
@@ -2910,9 +3159,11 @@ def _validate_experience_details(data):
     validated_data = {}
     
     # All fields are required
-    exp_company_name = _clean_required(data, 'exp_company_name', 'Company', errors)
-    designation_name = _clean_required(data, 'designation_name', 'Designation', errors)
-    salary_amt = _clean_required(data, 'salary_amt', 'Salary', errors)
+    exp_company_name = _clean_text_only(data, 'exp_company_name', 'Company', errors)
+    designation_name = _clean_text_only(data, 'designation_name', 'Designation', errors)
+    salary_amt = _clean_salary(data, 'salary_amt', 'Salary', errors)
+    if not salary_amt:
+        errors['salary_amt'] = 'Salary is required.'
     
     join_month = _clean_required(data, 'join_month', 'Joining Month', errors)
     if join_month:
@@ -3001,8 +3252,8 @@ def _validate_asset_vehicle_details(data):
     # Vehicle Details - all required
     veh_reg_no = _clean_required(data, 'veh_reg_no', 'Vehicle Reg. No', errors)
     vehicle_type = _clean_required(data, 'vehicle_type', 'Vehicle Type', errors)
-    vehicle_company = _clean_required(data, 'vehicle_company', 'Vehicle Company', errors)
-    vehicle_owner = _clean_required(data, 'vehicle_owner', 'Vehicle Owner', errors)
+    vehicle_company = _clean_text_only(data, 'vehicle_company', 'Vehicle Company', errors)
+    vehicle_owner = _clean_text_only(data, 'vehicle_owner', 'Vehicle Owner', errors)
     
     registration_year = _clean_date(data, 'registration_year', 'Year of Registration', errors)
     
@@ -3054,13 +3305,215 @@ def employee_staff_save(request):
     if not unique_id:
         unique_id = str(uuid.uuid4())
     
+    # Check if this is final save (has final_save flag) or intermediate save
+    is_final_save = data.get('final_save', 'false').lower() == 'true'
+    
+    # Check if arrays are present (multiple records format)
+    has_dependents_array = any(key.startswith('dependents[') for key in data.keys())
+    has_accounts_array = any(key.startswith('accounts[') for key in data.keys())
+    has_qualifications_array = any(key.startswith('qualifications[') for key in data.keys())
+    has_experiences_array = any(key.startswith('experiences[') for key in data.keys())
+    has_assets_array = any(key.startswith('assets[') for key in data.keys())
+    
     # Validate each tab separately - one function for each navigation page
     staff_errors, staff_data = _validate_staff_details(data, unique_id)
-    dependent_errors, dependent_data = _validate_dependent_details(data)
-    account_errors, account_data = _validate_account_details(data)
-    qualification_errors, qualification_data = _validate_qualification_details(data)
-    experience_errors, experience_data = _validate_experience_details(data)
-    asset_errors, asset_data = _validate_asset_vehicle_details(data)
+    
+    # Only validate single fields if arrays are not present
+    dependent_errors = {}
+    dependent_data = {}
+    if not has_dependents_array:
+        dependent_errors, dependent_data = _validate_dependent_details(data)
+        # Check if at least one dependent is required (only if no array data)
+        if not dependent_data.get('rel_relationship'):
+            dependent_errors['relationship'] = 'At least one dependent is required.'
+    else:
+        # Check if arrays have at least one record (only on final save)
+        if is_final_save:
+            dep_count = sum(1 for key in data.keys() if key.startswith('dependents[') and key.endswith('][relationship]'))
+            if dep_count == 0:
+                dependent_errors['dependents'] = 'At least one dependent is required.'
+    
+    account_errors = {}
+    account_data = {}
+    if not has_accounts_array:
+        account_errors, account_data = _validate_account_details(data)
+        # Check if at least one account is required (only if no array data)
+        if not account_data.get('bank_status'):
+            account_errors['bank_status'] = 'At least one account is required.'
+    else:
+        # Check if arrays have at least one record (only on final save)
+        if is_final_save:
+            acc_count = sum(1 for key in data.keys() if key.startswith('accounts[') and key.endswith('][bank_status]'))
+            if acc_count == 0:
+                account_errors['accounts'] = 'At least one account is required.'
+    
+    qualification_errors = {}
+    qualification_data = {}
+    if not has_qualifications_array:
+        qualification_errors, qualification_data = _validate_qualification_details(data)
+        # Check if at least one qualification is required (only if no array data)
+        if not qualification_data.get('education_type'):
+            qualification_errors['education_type'] = 'At least one qualification is required.'
+    else:
+        # Check if arrays have at least one record (only on final save)
+        if is_final_save:
+            qual_count = sum(1 for key in data.keys() if key.startswith('qualifications[') and key.endswith('][education_type]'))
+            if qual_count == 0:
+                qualification_errors['qualifications'] = 'At least one qualification is required.'
+    
+    experience_errors = {}
+    experience_data = {}
+    if not has_experiences_array:
+        experience_errors, experience_data = _validate_experience_details(data)
+        # Check if at least one experience is required (only if no array data)
+        if not experience_data.get('exp_company_name'):
+            experience_errors['exp_company_name'] = 'At least one experience is required.'
+    else:
+        # Check if arrays have at least one record (only on final save)
+        if is_final_save:
+            exp_count = sum(1 for key in data.keys() if key.startswith('experiences[') and key.endswith('][exp_company_name]'))
+            if exp_count == 0:
+                experience_errors['experiences'] = 'At least one experience is required.'
+    
+    asset_errors = {}
+    asset_data = {}
+    if not has_assets_array:
+        asset_errors, asset_data = _validate_asset_vehicle_details(data)
+        # Check if at least one asset is required (only if no array data)
+        if not asset_data.get('asset_name'):
+            asset_errors['asset_name'] = 'At least one asset is required.'
+    else:
+        # Check if arrays have at least one record (only on final save)
+        if is_final_save:
+            asset_count = sum(1 for key in data.keys() if key.startswith('assets[') and key.endswith('][asset_name]'))
+            if asset_count == 0:
+                asset_errors['assets'] = 'At least one asset is required.'
+    
+    # Validate arrays if present
+    if has_dependents_array:
+        index = 0
+        dep_count = 0
+        while f'dependents[{index}][relationship]' in data:
+            dep_errors, _ = _validate_dependent_details({
+                'relationship': data.get(f'dependents[{index}][relationship]', ''),
+                'rel_name': data.get(f'dependents[{index}][rel_name]', ''),
+                'rel_gender': data.get(f'dependents[{index}][rel_gender]', ''),
+                'rel_date_of_birth': data.get(f'dependents[{index}][rel_date_of_birth]', ''),
+                'rel_aadhar_no': data.get(f'dependents[{index}][rel_aadhar_no]', ''),
+                'occupation': data.get(f'dependents[{index}][occupation]', ''),
+                'standard': data.get(f'dependents[{index}][standard]', ''),
+                'school': data.get(f'dependents[{index}][school]', ''),
+                'existing_illness': data.get(f'dependents[{index}][existing_illness]', ''),
+                'description': data.get(f'dependents[{index}][description]', ''),
+                'existing_insurance': data.get(f'dependents[{index}][existing_insurance]', ''),
+                'insurance_no': data.get(f'dependents[{index}][insurance_no]', ''),
+                'physically_challenged': data.get(f'dependents[{index}][physically_challenged]', ''),
+                'remarks': data.get(f'dependents[{index}][remarks]', ''),
+            })
+            for key, value in dep_errors.items():
+                dependent_errors[f'dependents[{index}][{key}]'] = value
+            if not dep_errors:  # Only count if no errors
+                dep_count += 1
+            index += 1
+        if dep_count == 0 and index > 0 and is_final_save:
+            # If we found array keys but all had errors, show general message (only on final save)
+            if not dependent_errors:
+                dependent_errors['dependents'] = 'At least one valid dependent is required.'
+    
+    if has_accounts_array:
+        index = 0
+        while f'accounts[{index}][bank_status]' in data:
+            acc_errors, _ = _validate_account_details({
+                'bank_status': data.get(f'accounts[{index}][bank_status]', ''),
+                'salary_type': data.get(f'accounts[{index}][salary_type]', ''),
+                'accountant_name': data.get(f'accounts[{index}][accountant_name]', ''),
+                'account_no': data.get(f'accounts[{index}][account_no]', ''),
+                'bank_name': data.get(f'accounts[{index}][bank_name]', ''),
+                'ifsc_code': data.get(f'accounts[{index}][ifsc_code]', ''),
+                'bank_contact_no': data.get(f'accounts[{index}][bank_contact_no]', ''),
+                'bank_address': data.get(f'accounts[{index}][bank_address]', ''),
+            })
+            for key, value in acc_errors.items():
+                account_errors[f'accounts[{index}][{key}]'] = value
+            index += 1
+        if index == 0:
+            account_errors['accounts'] = 'At least one account is required.'
+    
+    if has_qualifications_array:
+        index = 0
+        qual_count = 0
+        while f'qualifications[{index}][education_type]' in data:
+            qual_errors, _ = _validate_qualification_details({
+                'education_type': data.get(f'qualifications[{index}][education_type]', ''),
+                'degree': data.get(f'qualifications[{index}][degree]', ''),
+                'college_name': data.get(f'qualifications[{index}][college_name]', ''),
+                'year_passing': data.get(f'qualifications[{index}][year_passing]', ''),
+                'percentage': data.get(f'qualifications[{index}][percentage]', ''),
+                'university': data.get(f'qualifications[{index}][university]', ''),
+            })
+            for key, value in qual_errors.items():
+                qualification_errors[f'qualifications[{index}][{key}]'] = value
+            if not qual_errors:  # Only count if no errors
+                qual_count += 1
+            index += 1
+        if qual_count == 0 and index > 0 and is_final_save:
+            if not qualification_errors:
+                qualification_errors['qualifications'] = 'At least one valid qualification is required.'
+    
+    if has_experiences_array:
+        index = 0
+        exp_count = 0
+        while f'experiences[{index}][exp_company_name]' in data:
+            exp_errors, _ = _validate_experience_details({
+                'exp_company_name': data.get(f'experiences[{index}][exp_company_name]', ''),
+                'designation_name': data.get(f'experiences[{index}][designation_name]', ''),
+                'salary_amt': data.get(f'experiences[{index}][salary_amt]', ''),
+                'join_month': data.get(f'experiences[{index}][join_month]', ''),
+                'relieve_month': data.get(f'experiences[{index}][relieve_month]', ''),
+                'exp': data.get(f'experiences[{index}][exp]', ''),
+            })
+            for key, value in exp_errors.items():
+                experience_errors[f'experiences[{index}][{key}]'] = value
+            if not exp_errors:  # Only count if no errors
+                exp_count += 1
+            index += 1
+        if exp_count == 0 and index > 0 and is_final_save:
+            if not experience_errors:
+                experience_errors['experiences'] = 'At least one valid experience is required.'
+    
+    if has_assets_array:
+        index = 0
+        asset_count = 0
+        while f'assets[{index}][asset_name]' in data:
+            asset_errors_temp, _ = _validate_asset_vehicle_details({
+                'asset_name': data.get(f'assets[{index}][asset_name]', ''),
+                'item_no': data.get(f'assets[{index}][item_no]', ''),
+                'qty': data.get(f'assets[{index}][qty]', ''),
+                'status': data.get(f'assets[{index}][status]', ''),
+                'veh_reg_no': data.get(f'assets[{index}][veh_reg_no]', ''),
+                'license_mode': data.get(f'assets[{index}][license_mode]', ''),
+                'dri_license_no': data.get(f'assets[{index}][dri_license_no]', ''),
+                'valid_from': data.get(f'assets[{index}][valid_from]', ''),
+                'valid_to': data.get(f'assets[{index}][valid_to]', ''),
+                'vehicle_type': data.get(f'assets[{index}][vehicle_type]', ''),
+                'vehicle_company': data.get(f'assets[{index}][vehicle_company]', ''),
+                'vehicle_owner': data.get(f'assets[{index}][vehicle_owner]', ''),
+                'registration_year': data.get(f'assets[{index}][registration_year]', ''),
+                'rc_no': data.get(f'assets[{index}][rc_no]', ''),
+                'rc_validity_from': data.get(f'assets[{index}][rc_validity_from]', ''),
+                'rc_validity_to': data.get(f'assets[{index}][rc_validity_to]', ''),
+                'ins_no': data.get(f'assets[{index}][ins_no]', ''),
+                'ins_validity_from': data.get(f'assets[{index}][ins_validity_from]', ''),
+                'ins_validity_to': data.get(f'assets[{index}][ins_validity_to]', ''),
+            })
+            for key, value in asset_errors_temp.items():
+                asset_errors[f'assets[{index}][{key}]'] = value
+            if not asset_errors_temp:  # Only count if no errors
+                asset_count += 1
+            index += 1
+        if asset_count == 0 and index > 0 and is_final_save:
+            if not asset_errors:
+                asset_errors['assets'] = 'At least one valid asset is required.'
     
     # Combine all errors
     all_errors = {}
@@ -3071,27 +3524,62 @@ def employee_staff_save(request):
     all_errors.update(experience_errors)
     all_errors.update(asset_errors)
     
-    # Combine all validated data
+    # Combine all validated data (only for single records, arrays handled separately)
     validated_data = {}
     validated_data.update(staff_data)
-    validated_data.update(dependent_data)
-    validated_data.update(account_data)
-    validated_data.update(qualification_data)
-    validated_data.update(experience_data)
-    validated_data.update(asset_data)
+    if not has_dependents_array:
+        validated_data.update(dependent_data)
+    if not has_accounts_array:
+        validated_data.update(account_data)
+    if not has_qualifications_array:
+        validated_data.update(qualification_data)
+    if not has_experiences_array:
+        validated_data.update(experience_data)
+    if not has_assets_array:
+        validated_data.update(asset_data)
     
-    # Validate required file uploads
-    profile_image = request.FILES.get('profile_image')
-    if not profile_image:
-        all_errors['profile_image'] = 'Profile image is required.'
+    # Validate required file uploads (only on final save)
+    if is_final_save:
+        profile_image = request.FILES.get('profile_image')
+        if not profile_image:
+            all_errors['profile_image'] = 'Profile image is required.'
+        
+        # Check file uploads for arrays
+        if has_qualifications_array:
+            index = 0
+            has_qual_files = False
+            while f'qualifications[{index}][education_type]' in data:
+                qual_file = request.FILES.get(f'qualifications[{index}][qualification_docs]')
+                if qual_file:
+                    has_qual_files = True
+                    break
+                index += 1
+            if not has_qual_files:
+                qualification_errors['qualification_docs'] = 'At least one qualification document is required.'
+        else:
+            qualification_docs_list = request.FILES.getlist('qualification_docs')
+            if not qualification_docs_list or len(qualification_docs_list) == 0:
+                all_errors['qualification_docs'] = 'Document upload is required.'
+        
+        if has_experiences_array:
+            index = 0
+            has_exp_files = False
+            while f'experiences[{index}][exp_company_name]' in data:
+                exp_file = request.FILES.get(f'experiences[{index}][experience_docs]')
+                if exp_file:
+                    has_exp_files = True
+                    break
+                index += 1
+            if not has_exp_files:
+                experience_errors['experience_docs'] = 'At least one experience document is required.'
+        else:
+            experience_docs_list = request.FILES.getlist('experience_docs')
+            if not experience_docs_list or len(experience_docs_list) == 0:
+                all_errors['experience_docs'] = 'Document upload is required.'
     
-    qualification_docs_list = request.FILES.getlist('qualification_docs')
-    if not qualification_docs_list or len(qualification_docs_list) == 0:
-        all_errors['qualification_docs'] = 'Document upload is required.'
-    
-    experience_docs_list = request.FILES.getlist('experience_docs')
-    if not experience_docs_list or len(experience_docs_list) == 0:
-        all_errors['experience_docs'] = 'Document upload is required.'
+    # Update all_errors with array errors
+    all_errors.update(qualification_errors)
+    all_errors.update(experience_errors)
     
     # If there are validation errors, return them
     if all_errors:
@@ -3156,104 +3644,168 @@ def employee_staff_save(request):
             employee.save()
         
         # ========== DEPENDENT DETAILS ==========
-        # All fields are required, so always save dependent details
-        EmployeeDependent.objects.update_or_create(
-            employee=employee,
-            relationship=validated_data['rel_relationship'],
-            defaults={
-                'name': validated_data['rel_name'],
-                'gender': validated_data['rel_gender'],
-                'date_of_birth': validated_data['rel_date_of_birth'],
-                'aadhar_no': validated_data['rel_aadhar_no'],
-                'occupation': validated_data['occupation'],
-                'standard': validated_data['standard'],
-                'school': validated_data['school'],
-                'existing_illness': validated_data['existing_illness'],
-                'description': validated_data['description'],
-                'existing_insurance': validated_data['existing_insurance'],
-                'insurance_no': validated_data['insurance_no'],
-                'physically_challenged': validated_data['physically_challenged'],
-                'remarks': validated_data['remarks'],
+        # Delete existing dependents for this employee (if editing)
+        EmployeeDependent.objects.filter(employee=employee).delete()
+        
+        # Save multiple dependents
+        index = 0
+        while f'dependents[{index}][relationship]' in data:
+            dep_data = {
+                'relationship': data.get(f'dependents[{index}][relationship]', '').strip(),
+                'name': data.get(f'dependents[{index}][rel_name]', '').strip(),
+                'gender': data.get(f'dependents[{index}][rel_gender]', '').strip(),
+                'date_of_birth': _parse_date(data.get(f'dependents[{index}][rel_date_of_birth]', '').strip()),
+                'aadhar_no': data.get(f'dependents[{index}][rel_aadhar_no]', '').strip().replace(' ', ''),
+                'occupation': data.get(f'dependents[{index}][occupation]', '').strip(),
+                'standard': data.get(f'dependents[{index}][standard]', '').strip(),
+                'school': data.get(f'dependents[{index}][school]', '').strip(),
+                'existing_illness': data.get(f'dependents[{index}][existing_illness]', '').strip(),
+                'description': data.get(f'dependents[{index}][description]', '').strip(),
+                'existing_insurance': data.get(f'dependents[{index}][existing_insurance]', '').strip(),
+                'insurance_no': data.get(f'dependents[{index}][insurance_no]', '').strip(),
+                'physically_challenged': data.get(f'dependents[{index}][physically_challenged]', '').strip(),
+                'remarks': data.get(f'dependents[{index}][remarks]', '').strip(),
             }
-        )
+            if dep_data['relationship']:  # Only save if relationship is provided
+                EmployeeDependent.objects.create(employee=employee, **dep_data)
+            index += 1
         
         # ========== ACCOUNT DETAILS ==========
-        # All fields are required, so always save account details
-        EmployeeAccountInfo.objects.update_or_create(
-            employee=employee,
-            defaults={
-                'bank_status': validated_data['bank_status'],
-                'salary_type': validated_data['salary_type'],
-                'accountant_name': validated_data['accountant_name'],
-                'account_no': validated_data['account_no'],
-                'bank_name': validated_data['bank_name'],
-                'ifsc_code': validated_data['ifsc_code'],
-                'contact_no': validated_data['bank_contact_no'],
-                'bank_address': validated_data['bank_address'],
+        # Delete existing accounts for this employee (if editing)
+        EmployeeAccountInfo.objects.filter(employee=employee).delete()
+        
+        # Save multiple accounts (though typically one per employee)
+        index = 0
+        while f'accounts[{index}][bank_status]' in data:
+            acc_data = {
+                'bank_status': data.get(f'accounts[{index}][bank_status]', '').strip(),
+                'salary_type': data.get(f'accounts[{index}][salary_type]', '').strip(),
+                'accountant_name': data.get(f'accounts[{index}][accountant_name]', '').strip(),
+                'account_no': data.get(f'accounts[{index}][account_no]', '').strip(),
+                'bank_name': data.get(f'accounts[{index}][bank_name]', '').strip(),
+                'ifsc_code': data.get(f'accounts[{index}][ifsc_code]', '').strip().upper(),
+                'contact_no': data.get(f'accounts[{index}][bank_contact_no]', '').strip(),
+                'bank_address': data.get(f'accounts[{index}][bank_address]', '').strip(),
             }
-        )
+            if acc_data['bank_status']:  # Only save if bank_status is provided
+                EmployeeAccountInfo.objects.create(employee=employee, **acc_data)
+            index += 1
         
         # ========== QUALIFICATION DETAILS ==========
-        # All fields are required, so always save qualification details
-        qualification_docs_list = request.FILES.getlist('qualification_docs')
-        qualification_docs = qualification_docs_list[0] if qualification_docs_list else None
-        EmployeeQualification.objects.create(
-            employee=employee,
-            education_type=validated_data['education_type'],
-            degree=validated_data['degree'],
-            college_name=validated_data['college_name'],
-            year_of_passing=validated_data['year_passing'],
-            percentage=validated_data['percentage'],
-            university=validated_data['university'],
-            documents=qualification_docs,
-        )
+        # Delete existing qualifications for this employee (if editing)
+        EmployeeQualification.objects.filter(employee=employee).delete()
+        
+        # Save multiple qualifications
+        index = 0
+        while f'qualifications[{index}][education_type]' in data:
+            qual_data = {
+                'education_type': data.get(f'qualifications[{index}][education_type]', '').strip(),
+                'degree': data.get(f'qualifications[{index}][degree]', '').strip(),
+                'college_name': data.get(f'qualifications[{index}][college_name]', '').strip(),
+                'year_of_passing': data.get(f'qualifications[{index}][year_passing]', '').strip(),
+                'percentage': data.get(f'qualifications[{index}][percentage]', '').strip(),
+                'university': data.get(f'qualifications[{index}][university]', '').strip(),
+            }
+            # Handle file upload
+            qual_file = request.FILES.get(f'qualifications[{index}][qualification_docs]')
+            if qual_data['education_type']:  # Only save if education_type is provided
+                EmployeeQualification.objects.create(
+                    employee=employee,
+                    documents=qual_file,
+                    **qual_data
+                )
+            index += 1
         
         # ========== EXPERIENCE DETAILS ==========
-        # All fields are required, so always save experience details
-        experience_docs_list = request.FILES.getlist('experience_docs')
-        experience_docs = experience_docs_list[0] if experience_docs_list else None
-        EmployeeExperience.objects.create(
-            employee=employee,
-            company_name=validated_data['exp_company_name'],
-            designation=validated_data['designation_name'],
-            salary=validated_data['salary_amt'],
-            joining_month=validated_data['join_month'],
-            relieving_month=validated_data['relieve_month'],
-            experience_years=validated_data['exp'],
-            documents=experience_docs,
-        )
+        # Delete existing experiences for this employee (if editing)
+        EmployeeExperience.objects.filter(employee=employee).delete()
+        
+        # Save multiple experiences
+        index = 0
+        while f'experiences[{index}][exp_company_name]' in data:
+            exp_data = {
+                'company_name': data.get(f'experiences[{index}][exp_company_name]', '').strip(),
+                'designation': data.get(f'experiences[{index}][designation_name]', '').strip(),
+                'salary': data.get(f'experiences[{index}][salary_amt]', '').strip(),
+                'joining_month': data.get(f'experiences[{index}][join_month]', '').strip(),
+                'relieving_month': data.get(f'experiences[{index}][relieve_month]', '').strip(),
+                'experience_years': data.get(f'experiences[{index}][exp]', '').strip(),
+            }
+            # Handle file upload
+            exp_file = request.FILES.get(f'experiences[{index}][experience_docs]')
+            if exp_data['company_name']:  # Only save if company_name is provided
+                EmployeeExperience.objects.create(
+                    employee=employee,
+                    documents=exp_file,
+                    **exp_data
+                )
+            index += 1
         
         # ========== ASSET/VEHICLE DETAILS ==========
-        # All fields are required, so always save asset details
-        EmployeeAssetAssignment.objects.create(
-            employee=employee,
-            asset_name=validated_data['asset_name'],
-            serial_no=validated_data['item_no'],
-            quantity=validated_data['qty'],
-            status=validated_data['status'],
-            vehicle_reg_no=validated_data['veh_reg_no'],
-            license_mode=validated_data['license_mode'],
-            license_no=validated_data['dri_license_no'],
-            license_valid_from=validated_data['valid_from'],
-            license_valid_to=validated_data['valid_to'],
-        )
+        # Delete existing assets for this employee (if editing)
+        EmployeeAssetAssignment.objects.filter(employee=employee).delete()
         
-        # Vehicle Details (OneToOne relationship) - All fields are required
-        EmployeeVehicleDetail.objects.update_or_create(
-            employee=employee,
-            defaults={
-                'vehicle_type': validated_data['vehicle_type'],
-                'vehicle_company': validated_data['vehicle_company'],
-                'vehicle_owner': validated_data['vehicle_owner'],
-                'registration_year': validated_data['registration_year'],
-                'rc_no': validated_data['rc_no'],
-                'rc_validity_from': validated_data['rc_validity_from'],
-                'rc_validity_to': validated_data['rc_validity_to'],
-                'insurance_no': validated_data['ins_no'],
-                'insurance_validity_from': validated_data['ins_validity_from'],
-                'insurance_validity_to': validated_data['ins_validity_to'],
+        # Save multiple assets
+        index = 0
+        while f'assets[{index}][asset_name]' in data:
+            asset_data = {
+                'asset_name': data.get(f'assets[{index}][asset_name]', '').strip(),
+                'serial_no': data.get(f'assets[{index}][item_no]', '').strip(),
+                'quantity': int(data.get(f'assets[{index}][qty]', '1').strip() or '1'),
+                'status': data.get(f'assets[{index}][status]', EmployeeAssetAssignment.STATUS_ISSUED).strip(),
+                'vehicle_reg_no': data.get(f'assets[{index}][veh_reg_no]', '').strip(),
+                'license_mode': data.get(f'assets[{index}][license_mode]', '').strip(),
+                'license_no': data.get(f'assets[{index}][dri_license_no]', '').strip(),
+                'license_valid_from': _parse_date(data.get(f'assets[{index}][valid_from]', '').strip()),
+                'license_valid_to': _parse_date(data.get(f'assets[{index}][valid_to]', '').strip()),
             }
-        )
+            if asset_data['asset_name']:  # Only save if asset_name is provided
+                EmployeeAssetAssignment.objects.create(employee=employee, **asset_data)
+            index += 1
+        
+        # Vehicle Details (OneToOne relationship) - Get from last asset or validated_data
+        vehicle_data = {}
+        if has_assets_array:
+            # Get vehicle details from last asset in array
+            index = 0
+            last_index = -1
+            while f'assets[{index}][asset_name]' in data:
+                last_index = index
+                index += 1
+            if last_index >= 0:
+                vehicle_data = {
+                    'vehicle_type': data.get(f'assets[{last_index}][vehicle_type]', '').strip(),
+                    'vehicle_company': data.get(f'assets[{last_index}][vehicle_company]', '').strip(),
+                    'vehicle_owner': data.get(f'assets[{last_index}][vehicle_owner]', '').strip(),
+                    'registration_year': _parse_date(data.get(f'assets[{last_index}][registration_year]', '').strip()),
+                    'rc_no': data.get(f'assets[{last_index}][rc_no]', '').strip(),
+                    'rc_validity_from': _parse_date(data.get(f'assets[{last_index}][rc_validity_from]', '').strip()),
+                    'rc_validity_to': _parse_date(data.get(f'assets[{last_index}][rc_validity_to]', '').strip()),
+                    'insurance_no': data.get(f'assets[{last_index}][ins_no]', '').strip(),
+                    'insurance_validity_from': _parse_date(data.get(f'assets[{last_index}][ins_validity_from]', '').strip()),
+                    'insurance_validity_to': _parse_date(data.get(f'assets[{last_index}][ins_validity_to]', '').strip()),
+                }
+        else:
+            # Get from validated_data (single record)
+            vehicle_data = {
+                'vehicle_type': validated_data.get('vehicle_type', ''),
+                'vehicle_company': validated_data.get('vehicle_company', ''),
+                'vehicle_owner': validated_data.get('vehicle_owner', ''),
+                'registration_year': validated_data.get('registration_year'),
+                'rc_no': validated_data.get('rc_no', ''),
+                'rc_validity_from': validated_data.get('rc_validity_from'),
+                'rc_validity_to': validated_data.get('rc_validity_to'),
+                'insurance_no': validated_data.get('ins_no', ''),
+                'insurance_validity_from': validated_data.get('ins_validity_from'),
+                'insurance_validity_to': validated_data.get('ins_validity_to'),
+            }
+        
+        # Only save vehicle details if at least vehicle_type is provided
+        if vehicle_data.get('vehicle_type'):
+            EmployeeVehicleDetail.objects.update_or_create(
+                employee=employee,
+                defaults=vehicle_data
+            )
         
         action = 'created' if created else 'updated'
         return JsonResponse({
