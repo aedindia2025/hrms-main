@@ -1,0 +1,3032 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Employee Edit - Staff Details{% endblock %}
+
+{% block extra_css %}
+<style>
+.employee-form .form-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: block;
+  margin-top: 2rem;
+  margin-bottom: 0.8rem;
+}
+.d-flex.justify-content-end.gap-2 {
+  margin-top: 3%;
+}
+.employee-form .form-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.employee-form .form-field .form-label {
+  width: 30%;
+  height: 30px;
+  margin-bottom: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+.employee-form .form-field .form-label .text-danger {
+  color: #dc3545 !important;
+  font-weight: 700;
+  margin-left: 2px;
+  display: inline-block;
+}
+.employee-form .form-field .form-control,
+.employee-form .form-field .form-select,
+.employee-form .form-field input,
+.employee-form .form-field textarea {
+  flex: 1;
+  min-height: 36px;
+  font-size: 0.9rem;
+}
+.table-action-btn {
+  border: 1px solid #ced4da;
+  background: #ffffff;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  margin-right: 6px;
+  transition: all 0.15s ease-in-out;
+  padding: 0;
+}
+.table-action-btn svg {
+  pointer-events: none;
+}
+.table-action-btn.edit {
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+.table-action-btn.delete {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+.table-action-btn.edit:hover {
+  background: #0d6efd;
+  color: #ffffff;
+}
+.table-action-btn.delete:hover {
+  background: #dc3545;
+  color: #ffffff;
+}
+.sublist-nav-controls {
+  display: flex;
+  justify-content: flex-end;
+}
+.employee-form .form-control.is-invalid,
+.employee-form .form-select.is-invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.2);
+}
+.employee-form .form-control.is-valid,
+.employee-form .form-select.is-valid {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.15rem rgba(25, 135, 84, 0.2);
+}
+.employee-form .invalid-feedback {
+  font-size: 0.78rem;
+  color: #dc3545;
+  display: block !important;
+  width: 100%;
+}
+.employee-form .form-field .invalid-feedback {
+  flex-basis: 100%;
+  margin-left: 30%;
+  margin-top: 0.25rem;
+  padding-left: 0.25rem;
+  color: #dc3545;
+  font-size: 0.875rem;
+  display: block !important;
+}
+.employee-form .form-field .validity-labels-container {
+  width: 30%;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 1rem;
+}
+.employee-form .form-field .validity-labels-container .text-muted.d-block {
+  width: auto;
+  height: 30px;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 30px;
+}
+.employee-form .form-field .validity-inputs-container {
+  flex: 1;
+}
+.employee-step-nav {
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.employee-step-nav .nav-link {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  color: #495057;
+  font-weight: 600;
+  min-width: 180px;
+}
+.employee-step-nav .nav-link.active {
+  background-color: #198754;
+  border-color: #198754;
+  color: #fff;
+}
+.employee-tab-pane {
+  padding-top: 0.5rem;
+}
+.table-placeholder {
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-main-body">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="mb-0 fw-bold text-secondary">Master / <span class="text-dark">Employee Edit</span></h6>
+
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <ul class="nav nav-pills employee-step-nav mb-4" id="employeeCreateTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tab-staff-details-tab" data-bs-toggle="pill" data-bs-target="#tab-staff-details" type="button" role="tab" aria-controls="tab-staff-details" aria-selected="true">
+            Staff Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-dependent-details-tab" data-bs-toggle="pill" data-bs-target="#tab-dependent-details" type="button" role="tab" aria-controls="tab-dependent-details" aria-selected="false">
+            Dependent Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-account-details-tab" data-bs-toggle="pill" data-bs-target="#tab-account-details" type="button" role="tab" aria-controls="tab-account-details" aria-selected="false">
+            Account Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-qualification-details-tab" data-bs-toggle="pill" data-bs-target="#tab-qualification-details" type="button" role="tab" aria-controls="tab-qualification-details" aria-selected="false">
+            Qualification Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-experience-details-tab" data-bs-toggle="pill" data-bs-target="#tab-experience-details" type="button" role="tab" aria-controls="tab-experience-details" aria-selected="false">
+            Experience Details
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-asset-details-tab" data-bs-toggle="pill" data-bs-target="#tab-asset-details" type="button" role="tab" aria-controls="tab-asset-details" aria-selected="false">
+            Asset / Vehicle Details
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="employeeCreateTabContent">
+        <div class="tab-pane fade show active employee-tab-pane" id="tab-staff-details" role="tabpanel" aria-labelledby="tab-staff-details-tab">
+          <form class="needs-validation employee-form" id="staff-create-form" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="unique_id" value="{{ staff.unique_id|default:'' }}">
+            <div id="staffFormMessage" class="alert d-none" role="alert"></div>
+
+            <div class="mb-4">
+              <h7 class="form-section-title text-danger mb-3">Personal Details</h7>
+              <div class="row g-3">
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Staff Name <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="staff_name" value="{{ employee.staff_name|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Staff ID <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="staff_id" value="{{ employee.staff_id|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Gender <span class="text-danger">*</span></label>
+                  <select class="form-select" name="gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male" {% if employee.gender == 'Male' %}selected{% endif %}>Male</option>
+                    <option value="Female" {% if employee.gender == 'Female' %}selected{% endif %}>Female</option>
+                    <option value="Others" {% if employee.gender == 'Others' %}selected{% endif %}>Others</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Father Name <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="father_name" value="{{ employee.father_name|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" name="date_of_birth" value="{% if employee.date_of_birth %}{{ employee.date_of_birth|date:'Y-m-d' }}{% endif %}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Document DOB <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" name="doc_dob" value="{% if employee.document_date_of_birth %}{{ employee.document_date_of_birth|date:'Y-m-d' }}{% endif %}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Age <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control" name="age" value="{{ employee.age|default:'' }}" min="18" max="70" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Marital Status <span class="text-danger">*</span></label>
+                  <select class="form-select" name="marital_status" required>
+                    <option value="">Select</option>
+                    <option value="Married" {% if employee.marital_status == 'Married' %}selected{% endif %}>Married</option>
+                    <option value="Unmarried" {% if employee.marital_status == 'Unmarried' %}selected{% endif %}>Unmarried</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Personal Contact No <span class="text-danger">*</span></label>
+                  <input type="tel" class="form-control" name="personal_contact" value="{{ employee.personal_contact|default:'' }}" maxlength="10" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Office Contact No <span class="text-danger">*</span></label>
+                  <input type="tel" class="form-control" name="office_contact" value="{{ employee.office_contact|default:'' }}" maxlength="10" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Personal Email <span class="text-danger">*</span></label>
+                  <input type="email" class="form-control" name="personal_email" value="{{ employee.personal_email|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Office Email <span class="text-danger">*</span></label>
+                  <input type="email" class="form-control" name="office_email" value="{{ employee.office_email|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Aadhar No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="aadhar_no" value="{% if employee.aadhar_no %}{{ employee.aadhar_no|slice:':4' }} {{ employee.aadhar_no|slice:'4:8' }} {{ employee.aadhar_no|slice:'8:' }}{% endif %}" placeholder="0000 0000 0000" maxlength="14" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">PAN No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pan_no" value="{{ employee.pan_no|default:'' }}" maxlength="10" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Medical Claim <span class="text-danger">*</span></label>
+                  <select class="form-select" name="medical_claim" required>
+                    <option value="">Select</option>
+                    <option value="Yes" {% if employee.medical_claim %}selected{% endif %}>Yes</option>
+                    <option value="No" {% if not employee.medical_claim %}selected{% endif %}>No</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Blood Group <span class="text-danger">*</span></label>
+                  <select class="form-select" name="blood_group" required>
+                    <option value="">Select</option>
+                    <option value="A+" {% if employee.blood_group == 'A+' %}selected{% endif %}>A+</option>
+                    <option value="A-" {% if employee.blood_group == 'A-' %}selected{% endif %}>A-</option>
+                    <option value="B+" {% if employee.blood_group == 'B+' %}selected{% endif %}>B+</option>
+                    <option value="B-" {% if employee.blood_group == 'B-' %}selected{% endif %}>B-</option>
+                    <option value="O+" {% if employee.blood_group == 'O+' %}selected{% endif %}>O+</option>
+                    <option value="O-" {% if employee.blood_group == 'O-' %}selected{% endif %}>O-</option>
+                    <option value="AB+" {% if employee.blood_group == 'AB+' %}selected{% endif %}>AB+</option>
+                    <option value="AB-" {% if employee.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Qualification <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="qualification" value="{{ employee.qualification|default:'' }}" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h7 class="form-section-title text-danger mb-0">Present &amp; Permanent Address</h7>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="sameAddressToggle">
+                  <label class="form-check-label" for="sameAddressToggle">Same as present address</label>
+                </div>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Present Country <span class="text-danger">*</span></label>
+                  <select class="form-select country-select" name="pre_country" data-address-type="present" required>
+                    <option value="">Select Country</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Permanent Country <span class="text-danger">*</span></label>
+                  <select class="form-select country-select" name="perm_country" data-address-type="permanent" required>
+                    <option value="">Select Country</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Present State <span class="text-danger">*</span></label>
+                  <select class="form-select state-select" name="pre_state" data-address-type="present" required>
+                    <option value="">Select State</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Permanent State <span class="text-danger">*</span></label>
+                  <select class="form-select state-select" name="perm_state" data-address-type="permanent" required>
+                    <option value="">Select State</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Present City <span class="text-danger">*</span></label>
+                  <select class="form-select city-select" name="pre_city" data-address-type="present" required>
+                    <option value="">Select City</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Permanent City <span class="text-danger">*</span></label>
+                  <select class="form-select city-select" name="perm_city" data-address-type="permanent" required>
+                    <option value="">Select City</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Building No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_building" value="{{ employee.present_building|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Building No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_building" value="{{ employee.permanent_building|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Street <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_street" value="{{ employee.present_street|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Street <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_street" value="{{ employee.permanent_street|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Area <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_area" value="{{ employee.present_area|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Area <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_area" value="{{ employee.permanent_area|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Pincode <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pre_pincode" value="{{ employee.present_pincode|default:'' }}" maxlength="6" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Pincode <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="perm_pincode" value="{{ employee.permanent_pincode|default:'' }}" maxlength="6" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h7 class="form-section-title text-danger mb-3">Official Details</h7>
+              <div class="row g-3">
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Date of Join <span class="text-danger">*</span></label>
+                  <input type="date" class="form-control" name="date_of_join" value="{% if employee.date_of_join %}{{ employee.date_of_join|date:'Y-m-d' }}{% endif %}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Designation <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="designation" value="{{ employee.designation|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Department <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="department" value="{{ employee.department|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Work Location <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="work_location" value="{{ employee.work_location|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">ESI No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="esi_no" value="{{ employee.esi_no|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">PF No <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="pf_no" value="{{ employee.pf_no|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Bio Metric ID <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="biometric_id" value="{{ employee.biometric_id|default:'' }}" required>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Company Name <span class="text-danger">*</span></label>
+                  <select class="form-select" name="company_name" required>
+                    <option value="">Select Company</option>
+                    {% for company in companies %}
+                      <option value="{{ company.pk }}" {% if employee.company.pk == company.pk %}selected{% endif %}>{{ company.company_group|default:'-' }}{% if company.company_group and company.billing_name %} / {% endif %}{{ company.billing_name|default:'-' }}</option>
+                    {% empty %}
+                      <option value="">No companies available</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Salary Category <span class="text-danger">*</span></label>
+                  <select class="form-select" name="salary_category" required>
+                    <option value="">Select Category</option>
+                    <option value="Monthly" {% if employee.salary_category == 'Monthly' %}selected{% endif %}>Monthly</option>
+                    <option value="Wages" {% if employee.salary_category == 'Wages' %}selected{% endif %}>Wages</option>
+                    <option value="Contract" {% if employee.salary_category == 'Contract' %}selected{% endif %}>Contract</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Profile Image <span class="text-danger">*</span></label>
+                  <input type="file" class="form-control" name="profile_image" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h7 class="form-section-title text-danger mb-3">Attendance &amp; Branch Details</h7>
+              <div class="row g-3">
+                <div class="col-md-6 form-field">
+                  <label class="form-label mb-0">Premises Type</label>
+                  <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <label class="form-check mb-0 d-flex align-items-center gap-2">
+                      <input class="form-check-input" type="radio" name="premises_type" id="premises_out" value="OUT" {% if employee.premises_type == 'OUT' or not employee.premises_type %}checked{% endif %}>
+                      <span>Out Premises</span>
+                    </label>
+                    <label class="form-check mb-0 d-flex align-items-center gap-2">
+                      <input class="form-check-input" type="radio" name="premises_type" id="premises_in" value="IN" {% if employee.premises_type == 'IN' %}checked{% endif %}>
+                      <span>In Premises</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label ">Branch <span class="text-danger">*</span></label>
+                  <select class="form-select" name="branch_ids" id="branch_ids" required>
+                    <option value="">-- Select Branch --</option>
+                    <option value="Branch 1" {% if employee.branch == 'Branch 1' %}selected{% endif %}>Branch 1</option>
+                    <option value="Branch 2" {% if employee.branch == 'Branch 2' %}selected{% endif %}>Branch 2</option>
+                    <option value="Branch 3" {% if employee.branch == 'Branch 3' %}selected{% endif %}>Branch 3</option>
+                    <option value="Branch 4" {% if employee.branch == 'Branch 4' %}selected{% endif %}>Branch 4</option>
+                    <option value="Branch 5" {% if employee.branch == 'Branch 5' %}selected{% endif %}>Branch 5</option>
+                  </select>
+                  </div>
+
+               
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Attendance Setting <span class="text-danger">*</span></label>
+                  <select class="form-select" name="attendance_setting" required>
+                    <option value="">Select Setting</option>
+                    <option value="Default" {% if employee.attendance_setting == 'Default' %}selected{% endif %}>Default</option>
+                    <option value="Night Shift" {% if employee.attendance_setting == 'Night Shift' %}selected{% endif %}>Night Shift</option>
+                  </select>
+                </div>
+                <div class="col-md-6 form-field">
+                  <label class="form-label">Reporting Officer <span class="text-danger">*</span></label>
+                  <select class="form-select" name="reporting_officer" required>
+                    <option value="">Select Officer</option>
+                    <option value="RO1" {% if employee.reporting_officer == 'RO1' %}selected{% endif %}>Officer 1</option>
+                    <option value="RO2" {% if employee.reporting_officer == 'RO2' %}selected{% endif %}>Officer 2</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'master:employee_list' %}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-dependent-details-tab" data-validation-form="staff-create-form">Next</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-dependent-details" role="tabpanel" aria-labelledby="tab-dependent-details-tab">
+          <form class="needs-validation employee-form" id="dependent-details-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Dependent Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Relationship <span class="text-danger">*</span></label>
+                <select class="form-select" name="relationship" required>
+                  <option value="">Select Relationship</option>
+                  <option value="Spouse">Spouse</option>
+                  <option value="Father">Father</option>
+                  <option value="Mother">Mother</option>
+                  <option value="Child">Child</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="rel_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Gender <span class="text-danger">*</span></label>
+                <select class="form-select" name="rel_gender" required>
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Others">Others</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="rel_date_of_birth" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Aadhar No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="rel_aadhar_no" maxlength="12" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Occupation <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="occupation" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Standard <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="standard" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">School <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="school" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Existing Illness <span class="text-danger">*</span></label>
+                <select class="form-select" name="existing_illness" required>
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Description <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="description" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Existing Insurance <span class="text-danger">*</span></label>
+                <select class="form-select" name="existing_insurance" required>
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Insurance No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="insurance_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Physically Challenged <span class="text-danger">*</span></label>
+                <select class="form-select" name="physically_challenged" required>
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Remarks <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="remarks" required>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end align-items-center mt-5 mb-3">
+              <button type="button" class="btn btn-primary" onclick="addDependentToList(); return false;">
+                <i data-feather="plus" width="14" height="14"></i> Add to List
+              </button>
+            </div>
+            <div class="table-responsive mt-3">
+              <table class="table table-sm table-striped table-bordered align-middle" id="dependents-table">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Relationship</th>
+                    <th>Name</th>
+                    <th>Gender</th>
+                    <th>DOB</th>
+                    <th>Aadhar No</th>
+                    <th>Occupation</th>
+                    <th>Std.</th>
+                    <th>School</th>
+                    <th>Existing Illness</th>
+                    <th>Description</th>
+                    <th>Existing Insurance</th>
+                    <th>Insurance No</th>
+                    <th>Physically Challenged</th>
+                    <th>Remarks</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="dependents-tbody">
+                  <tr id="dependents-empty-row">
+                    <td colspan="16" class="text-center table-placeholder">No dependents added yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex align-items-center mt-3 sublist-nav-controls">
+              <div class="d-flex gap-2 nav-tab-controls ms-auto">
+                <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-staff-details-tab">Back</button>
+                <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-account-details-tab" data-validation-form="dependent-details-form">Next</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-account-details" role="tabpanel" aria-labelledby="tab-account-details-tab">
+          <form class="needs-validation employee-form" id="account-details-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Account Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Bank Status <span class="text-danger">*</span></label>
+                <select class="form-select" name="bank_status" required>
+                  <option value="">Select Option</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Salary Type <span class="text-danger">*</span></label>
+                <select class="form-select" name="salary_type" required>
+                  <option value="">Select Type</option>
+                  <option value="Axis Bank">Axis Bank</option>
+                  <option value="NEFT">NEFT</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Hold">Hold</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Accountant Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="accountant_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Account Number <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="account_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Bank Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="bank_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">IFSC Code <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="ifsc_code" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Contact No <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" name="bank_contact_no" maxlength="10" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Bank Address <span class="text-danger">*</span></label>
+                <textarea class="form-control" name="bank_address" rows="2" required></textarea>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end align-items-center mt-5 mb-3">
+              <button type="button" class="btn btn-primary" onclick="addAccountToList()">
+                <i data-feather="plus" width="14" height="14"></i> Add to List
+              </button>
+            </div>
+             <div class="table-responsive mt-3">
+              <table class="table table-sm table-striped table-bordered align-middle" id="accounts-table">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Bank Status</th>
+                    <th>Salary Type</th>
+                    <th>Acc. Name</th>
+                    <th>Acc. No</th>
+                    <th>Bank Name</th>
+                    <th>IFSC Code</th>
+                    <th>Ph.No</th>
+                    <th>Bank Address</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="accounts-tbody">
+                  <tr id="accounts-empty-row">
+                    <td colspan="10" class="text-center table-placeholder">No account records yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex align-items-center mt-3 sublist-nav-controls">
+              <div class="d-flex gap-2 nav-tab-controls ms-auto">
+                <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-dependent-details-tab">Back</button>
+                <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-qualification-details-tab" data-validation-form="account-details-form">Next</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-qualification-details" role="tabpanel" aria-labelledby="tab-qualification-details-tab">
+          <form class="needs-validation employee-form" id="qualification-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Qualification Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Education Type <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="education_type" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Degree <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="degree" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">College Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="college_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Year of Passing <span class="text-danger">*</span></label>
+                <input type="month" class="form-control" name="year_passing" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Percentage <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="percentage" maxlength="10" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">University <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="university" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Document Upload <span class="text-danger">*</span></label>
+                <input type="file" class="form-control" name="qualification_docs" multiple required>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end align-items-center mt-5 mb-3">
+              <button type="button" class="btn btn-primary" onclick="addQualificationToList()">
+                <i data-feather="plus" width="14" height="14"></i> Add to List
+              </button>
+            </div>
+            <div class="table-responsive mt-3">
+              <table class="table table-sm table-striped table-bordered align-middle" id="qualifications-table">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Education Type</th>
+                    <th>Degree</th>
+                    <th>Document</th>
+                    <th>College Name</th>
+                    <th>Year of Passing</th>
+                    <th>Percentage</th>
+                    <th>University</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="qualifications-tbody">
+                  <tr id="qualifications-empty-row">
+                    <td colspan="9" class="text-center table-placeholder">No qualification records yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex align-items-center mt-3 sublist-nav-controls">
+              <div class="d-flex gap-2 nav-tab-controls ms-auto">
+                <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-account-details-tab">Back</button>
+                <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-experience-details-tab" data-validation-form="qualification-form">Next</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-experience-details" role="tabpanel" aria-labelledby="tab-experience-details-tab">
+          <form class="needs-validation employee-form" id="experience-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Experience Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Company <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="exp_company_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Designation <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="designation_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Salary <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="salary_amt" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Joining Month <span class="text-danger">*</span></label>
+                <input type="month" class="form-control" name="join_month" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Relieving Month <span class="text-danger">*</span></label>
+                <input type="month" class="form-control" name="relieve_month" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Experience (years) <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="exp" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Document Upload <span class="text-danger">*</span></label>
+                <input type="file" class="form-control" name="experience_docs" multiple required>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end align-items-center mt-5 mb-3">
+              <button type="button" class="btn btn-primary" onclick="addExperienceToList()">
+                <i data-feather="plus" width="14" height="14"></i> Add to List
+              </button>
+            </div>
+            <div class="table-responsive mt-3">
+              <table class="table table-sm table-striped table-bordered align-middle" id="experiences-table">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Company</th>
+                    <th>Designation</th>
+                    <th>Document</th>
+                    <th>Salary</th>
+                    <th>Joining Month</th>
+                    <th>Relieving Month</th>
+                    <th>Experience</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="experiences-tbody">
+                  <tr id="experiences-empty-row">
+                    <td colspan="9" class="text-center table-placeholder">No experience records yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex align-items-center mt-3 sublist-nav-controls">
+              <div class="d-flex gap-2 nav-tab-controls ms-auto">
+                <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-qualification-details-tab">Back</button>
+                <button type="button" class="btn btn-success tab-nav-btn" data-tab-target="#tab-asset-details-tab" data-validation-form="experience-form">Next</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="tab-pane fade employee-tab-pane" id="tab-asset-details" role="tabpanel" aria-labelledby="tab-asset-details-tab">
+          <form class="needs-validation employee-form" id="asset-form" novalidate>
+            <h7 class="form-section-title text-danger mb-3">Asset / Vehicle Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Asset Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="asset_name" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Serial / Item No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="item_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="qty" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Status <span class="text-danger">*</span></label>
+                <select class="form-select" name="status" required>
+                  <option value="">Select Status</option>
+                  <option value="Issued">Issued</option>
+                  <option value="Returned">Returned</option>
+                  <option value="In Repair">In Repair</option>
+                </select>
+              </div>
+            </div>
+            <h7 class="form-section-title text-danger mb-3">Vehicle Details</h7>
+            <div class="row g-3">
+              <div class="col-md-6 form-field">
+                <label class="form-label">Vehicle Reg. No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="veh_reg_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">License Mode <span class="text-danger">*</span></label>
+                <select class="form-select" name="license_mode" required>
+                  <option value="">Select Mode</option>
+                  <option value="Two Wheeler">Two Wheeler</option>
+                  <option value="Four Wheeler">Four Wheeler</option>
+                  <option value="Heavy Vehicle">Heavy Vehicle</option>
+                </select>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">License No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="dri_license_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <div class="validity-labels-container">
+                  <small class="text-muted d-block">From <span class="text-danger">*</span></small>
+                  <small class="text-muted d-block">To <span class="text-danger">*</span></small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap validity-inputs-container">
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="valid_from" required>
+                  </div>
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="valid_to" required>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Vehicle Type <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="vehicle_type" id="vehicle_type" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Vehicle Company <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="vehicle_company" id="vehicle_company" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Vehicle Owner <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="vehicle_owner" id="vehicle_owner" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Year of Registration <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="registration_year" id="registration_year" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">RC No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="rc_no" id="rc_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <div class="validity-labels-container">
+                  <small class="text-muted d-block">From <span class="text-danger">*</span></small>
+                  <small class="text-muted d-block">To <span class="text-danger">*</span></small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap validity-inputs-container">
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="rc_validity_from" id="rc_validity_from" required>
+                  </div>
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="rc_validity_to" id="rc_validity_to" required>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 form-field">
+                <label class="form-label">Insurance No <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="ins_no" id="ins_no" required>
+              </div>
+              <div class="col-md-6 form-field">
+                <div class="validity-labels-container">
+                  <small class="text-muted d-block">From <span class="text-danger">*</span></small>
+                  <small class="text-muted d-block">To <span class="text-danger">*</span></small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap validity-inputs-container">
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="ins_validity_from" id="ins_validity_from" required>
+                  </div>
+                  <div class="flex-fill">
+                    <input type="date" class="form-control" name="ins_validity_to" id="ins_validity_to" required>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-end align-items-center mt-5 mb-3">
+              <button type="button" class="btn btn-primary" onclick="addAssetToList()">
+                <i data-feather="plus" width="14" height="14"></i> Add to List
+              </button>
+            </div>
+            <div class="table-responsive mt-3">
+              <table class="table table-sm table-striped table-bordered align-middle" id="assets-table">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Asset</th>
+                    <th>Serial / Item No</th>
+                    <th>Qty</th>
+                    <th>Status</th>
+                    <th>Vehicle Reg. No</th>
+                    <th>License Mode</th>
+                    <th>License No</th>
+                    <th>Validity</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="assets-tbody">
+                  <tr id="assets-empty-row">
+                    <td colspan="10" class="text-center table-placeholder">No assets assigned yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex align-items-center mt-3 sublist-nav-controls">
+              <div class="d-flex gap-2 nav-tab-controls ms-auto">
+                <button type="button" class="btn btn-outline-secondary tab-nav-btn" data-tab-target="#tab-experience-details-tab">Back</button>
+                <button type="button" class="btn btn-success" data-validation-form="asset-form" id="final-save-btn">Save Employee</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const sameAddressToggle = document.getElementById('sameAddressToggle');
+    const presentFields = ['pre_country', 'pre_state', 'pre_city', 'pre_building', 'pre_street', 'pre_area', 'pre_pincode'];
+    const permFields = ['perm_country', 'perm_state', 'perm_city', 'perm_building', 'perm_street', 'perm_area', 'perm_pincode'];
+    const tabNavButtons = document.querySelectorAll('.tab-nav-btn[data-tab-target]');
+
+    function copyAddress() {
+      presentFields.forEach((field, index) => {
+        const presentInput = document.querySelector(`[name="${field}"]`);
+        const permInput = document.querySelector(`[name="${permFields[index]}"]`);
+        if (!presentInput || !permInput) {
+          return;
+        }
+        if (sameAddressToggle.checked) {
+          permInput.value = presentInput.value;
+        }
+      });
+    }
+
+    const staffSaveUrl = "{% url 'master:employee_staff_save' %}";
+    const csrfTokenInput = document.querySelector('#staff-create-form input[name="csrfmiddlewaretoken"]');
+    const staffFormMessage = document.getElementById('staffFormMessage');
+    let currentEmployeeUniqueId = document.querySelector('#staff-create-form input[name="unique_id"]')?.value || '';
+    let redirectTimeout = null;
+
+    // ========== MULTIPLE RECORDS ARRAYS ==========
+    // Pre-populate with existing data for edit mode
+    let dependentsList = [
+      {% for dep in dependents %}
+      {
+        _id: 'dep_{{ forloop.counter0 }}',
+        relationship: '{{ dep.relationship|default:'' }}',
+        rel_name: '{{ dep.name|default:'' }}',
+        rel_gender: '{{ dep.gender|default:'' }}',
+        rel_date_of_birth: '{% if dep.date_of_birth %}{{ dep.date_of_birth|date:"Y-m-d" }}{% endif %}',
+        rel_aadhar_no: '{{ dep.aadhar_no|default:'' }}',
+        occupation: '{{ dep.occupation|default:'' }}',
+        standard: '{{ dep.standard|default:'' }}',
+        school: '{{ dep.school|default:'' }}',
+        existing_illness: '{{ dep.existing_illness|default:'' }}',
+        description: '{{ dep.description|default:'' }}',
+        existing_insurance: '{{ dep.existing_insurance|default:'' }}',
+        insurance_no: '{{ dep.insurance_no|default:'' }}',
+        physically_challenged: '{{ dep.physically_challenged|default:'' }}',
+        remarks: '{{ dep.remarks|default:'' }}'
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+    
+    let accountsList = [
+      {% if employee.account_info %}
+      {
+        _id: 'acc_0',
+        bank_status: '{{ employee.account_info.bank_status|default:'' }}',
+        salary_type: '{{ employee.account_info.salary_type|default:'' }}',
+        accountant_name: '{{ employee.account_info.accountant_name|default:'' }}',
+        account_no: '{{ employee.account_info.account_no|default:'' }}',
+        bank_name: '{{ employee.account_info.bank_name|default:'' }}',
+        ifsc_code: '{{ employee.account_info.ifsc_code|default:'' }}',
+        bank_contact_no: '{{ employee.account_info.contact_no|default:'' }}',
+        bank_address: '{{ employee.account_info.bank_address|default:'' }}'
+      }
+      {% endif %}
+    ];
+    
+    let qualificationsList = [
+      {% for qual in qualifications %}
+      {
+        _id: 'qual_{{ forloop.counter0 }}',
+        education_type: '{{ qual.education_type|default:'' }}',
+        degree: '{{ qual.degree|default:'' }}',
+        college_name: '{{ qual.college_name|default:'' }}',
+        year_passing: '{% if qual.year_of_passing %}{{ qual.year_of_passing }}{% endif %}',
+        percentage: '{{ qual.percentage|default:'' }}',
+        university: '{{ qual.university|default:'' }}'
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+    
+    let experiencesList = [
+      {% for exp in experiences %}
+      {
+        _id: 'exp_{{ forloop.counter0 }}',
+        exp_company_name: '{{ exp.company_name|default:'' }}',
+        designation_name: '{{ exp.designation|default:'' }}',
+        salary_amt: '{{ exp.salary|default:'' }}',
+        join_month: '{{ exp.joining_month|default:'' }}',
+        relieve_month: '{{ exp.relieving_month|default:'' }}',
+        exp: '{{ exp.experience_years|default:'' }}'
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+    
+    let assetsList = [
+      {% for asset in assets %}
+      {
+        _id: 'asset_{{ forloop.counter0 }}',
+        asset_name: '{{ asset.asset_name|default:'' }}',
+        item_no: '{{ asset.serial_no|default:'' }}',
+        qty: '{{ asset.quantity|default:1 }}',
+        status: '{{ asset.status|default:'' }}',
+        veh_reg_no: '{{ asset.vehicle_reg_no|default:'' }}',
+        license_mode: '{{ asset.license_mode|default:'' }}',
+        dri_license_no: '{{ asset.license_no|default:'' }}',
+        valid_from: '{% if asset.license_valid_from %}{{ asset.license_valid_from|date:"Y-m-d" }}{% endif %}',
+        valid_to: '{% if asset.license_valid_to %}{{ asset.license_valid_to|date:"Y-m-d" }}{% endif %}',
+        vehicle_type: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.vehicle_type|default:'' }}{% endif %}',
+        vehicle_company: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.vehicle_company|default:'' }}{% endif %}',
+        vehicle_owner: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.vehicle_owner|default:'' }}{% endif %}',
+        registration_year: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.registration_year %}{{ asset.employee.vehicle_detail.registration_year|date:"Y-m-d" }}{% endif %}',
+        rc_no: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.rc_no|default:'' }}{% endif %}',
+        rc_validity_from: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.rc_validity_from %}{{ asset.employee.vehicle_detail.rc_validity_from|date:"Y-m-d" }}{% endif %}',
+        rc_validity_to: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.rc_validity_to %}{{ asset.employee.vehicle_detail.rc_validity_to|date:"Y-m-d" }}{% endif %}',
+        ins_no: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.insurance_no|default:'' }}{% endif %}',
+        ins_validity_from: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.insurance_validity_from %}{{ asset.employee.vehicle_detail.insurance_validity_from|date:"Y-m-d" }}{% endif %}',
+        ins_validity_to: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.insurance_validity_to %}{{ asset.employee.vehicle_detail.insurance_validity_to|date:"Y-m-d" }}{% endif %}'
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    function getListCountForForm(formId) {
+      switch (formId) {
+        case 'dependent-details-form':
+          return dependentsList.length;
+        case 'account-details-form':
+          return accountsList.length;
+        case 'qualification-form':
+          return qualificationsList.length;
+        case 'experience-form':
+          return experiencesList.length;
+        case 'asset-form':
+          return assetsList.length;
+        default:
+          return 0;
+      }
+    }
+
+    function markFieldInvalid(field, message = 'This field is required.') {
+      if (!field) return;
+      field.classList.add('is-invalid');
+      field.classList.remove('is-valid');
+      
+      // Find the form-field container
+      const formField = field.closest('.form-field');
+      if (!formField) {
+        console.warn('Field is not inside a .form-field container');
+        return;
+      }
+      
+      // Look for existing feedback in the form-field
+      let feedback = formField.querySelector('.invalid-feedback');
+      if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback d-block';
+        feedback.style.display = 'block';
+        feedback.style.color = '#dc3545';
+        feedback.style.fontSize = '0.875rem';
+        feedback.style.marginTop = '0.25rem';
+        feedback.style.paddingLeft = '0.25rem';
+        // Append at the end of form-field
+        formField.appendChild(feedback);
+      }
+      feedback.textContent = message;
+      feedback.style.display = 'block';
+      feedback.style.visibility = 'visible';
+      feedback.style.opacity = '1';
+    }
+
+    function markFieldValid(field) {
+      if (!field) return;
+      field.classList.remove('is-invalid');
+      field.classList.add('is-valid');
+      const formField = field.closest('.form-field');
+      if (formField) {
+        const feedback = formField.querySelector('.invalid-feedback');
+        if (feedback) {
+          feedback.remove();
+        }
+      }
+    }
+    
+    // Validate text fields that should only accept letters (names, etc.)
+    function validateTextOnlyField(field, value) {
+      // List of field names that should only accept letters and spaces
+      const textOnlyFields = [
+        'staff_name', 'father_name', 'rel_name', 'accountant_name',
+        'college_name', 'school', 'university', 'bank_name',
+        'designation_name', 'exp_company_name', 'vehicle_company', 'vehicle_owner',
+        'occupation'
+      ];
+      
+      const fieldName = field.getAttribute('name');
+      if (!fieldName || !textOnlyFields.includes(fieldName)) {
+        return { isValid: true, message: '' };
+      }
+      
+      // Allow letters, spaces, dots, hyphens, apostrophes (for names like O'Brien, Mary-Jane, etc.)
+      const textOnlyPattern = /^[a-zA-Z\s\.\-\']+$/;
+      
+      if (value && !textOnlyPattern.test(value)) {
+        const label = field.closest('.form-field')?.querySelector('.form-label');
+        const labelText = label ? label.textContent.replace(/\s*\*\s*$/, '').trim() : 'This field';
+        return {
+          isValid: false,
+          message: `${labelText} should only contain letters, spaces, dots, hyphens, and apostrophes.`
+        };
+      }
+      
+      return { isValid: true, message: '' };
+    }
+    
+    // Real-world validation for all field types
+    function validateFieldByType(field, value) {
+      if (!value) return { isValid: true, message: '' };
+      
+      const fieldName = field.getAttribute('name');
+      const fieldType = field.type;
+      const label = field.closest('.form-field')?.querySelector('.form-label');
+      const labelText = label ? label.textContent.replace(/\s*\*\s*$/, '').trim() : 'This field';
+      
+      // Email validation
+      if (fieldType === 'email' || fieldName?.includes('email')) {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(value)) {
+          return { isValid: false, message: `${labelText} must be a valid email address.` };
+        }
+      }
+      
+      // Phone number validation (10 digits)
+      if (fieldType === 'tel' || fieldName?.includes('contact') || fieldName?.includes('phone')) {
+        const phonePattern = /^[0-9]{10}$/;
+        if (!phonePattern.test(value.replace(/\s|-/g, ''))) {
+          return { isValid: false, message: `${labelText} must be exactly 10 digits.` };
+        }
+      }
+      
+      // Aadhar number validation (12 digits)
+      if (fieldName?.includes('aadhar')) {
+        const aadharPattern = /^[0-9]{12}$/;
+        const cleaned = value.replace(/\s/g, '');
+        if (!aadharPattern.test(cleaned)) {
+          return { isValid: false, message: `${labelText} must be exactly 12 digits.` };
+        }
+      }
+      
+      // PAN number validation (5 letters + 4 digits + 1 letter)
+      if (fieldName?.includes('pan')) {
+        const panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+        const cleaned = value.replace(/\s/g, '').toUpperCase();
+        if (!panPattern.test(cleaned)) {
+          return { isValid: false, message: `${labelText} must be in format: ABCDE1234F (5 letters, 4 digits, 1 letter).` };
+        }
+      }
+      
+      // Pincode validation (6 digits)
+      if (fieldName?.includes('pincode')) {
+        const pincodePattern = /^[0-9]{6}$/;
+        if (!pincodePattern.test(value)) {
+          return { isValid: false, message: `${labelText} must be exactly 6 digits.` };
+        }
+      }
+      
+      // IFSC Code validation (4 letters + 0 + 6 alphanumeric)
+      if (fieldName?.includes('ifsc')) {
+        const ifscPattern = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+        const cleaned = value.replace(/\s/g, '').toUpperCase();
+        if (!ifscPattern.test(cleaned)) {
+          return { isValid: false, message: `${labelText} must be in format: ABCD0123456 (4 letters, 0, 6 alphanumeric).` };
+        }
+      }
+      
+      // Account number validation (numeric, 9-18 digits)
+      if (fieldName?.includes('account_no') || fieldName?.includes('account_number')) {
+        const accountPattern = /^[0-9]{9,18}$/;
+        if (!accountPattern.test(value.replace(/\s/g, ''))) {
+          return { isValid: false, message: `${labelText} must be 9-18 digits.` };
+        }
+      }
+      
+      // Percentage validation (0-100)
+      if (fieldName?.includes('percentage')) {
+        const num = parseFloat(value);
+        if (isNaN(num) || num < 0 || num > 100) {
+          return { isValid: false, message: `${labelText} must be between 0 and 100.` };
+        }
+      }
+      
+      // Year validation (1900 to current year)
+      if (fieldName?.includes('year') || fieldName?.includes('passing')) {
+        const year = parseInt(value);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(year) || year < 1900 || year > currentYear) {
+          return { isValid: false, message: `${labelText} must be between 1900 and ${currentYear}.` };
+        }
+      }
+      
+      // Salary/Amount validation (positive number)
+      if (fieldName?.includes('salary') || fieldName?.includes('amt')) {
+        const num = parseFloat(value.replace(/,/g, ''));
+        if (isNaN(num) || num < 0) {
+          return { isValid: false, message: `${labelText} must be a positive number.` };
+        }
+      }
+      
+      // Date validation (not future date for DOB)
+      if (fieldType === 'date') {
+        const dateValue = new Date(value);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        
+        if (fieldName?.includes('birth') || fieldName?.includes('dob')) {
+          if (dateValue > today) {
+            return { isValid: false, message: `${labelText} cannot be a future date.` };
+          }
+          // Check minimum age (18 years)
+          const age = Math.floor((today - dateValue) / (365.25 * 24 * 60 * 60 * 1000));
+          if (age < 18) {
+            return { isValid: false, message: `${labelText} must be at least 18 years ago.` };
+          }
+        }
+        
+        // Validate date range (valid_from < valid_to)
+        if (fieldName?.includes('valid_from') || fieldName?.includes('validity_from')) {
+          const form = field.closest('form');
+          const toField = form?.querySelector('[name*="valid_to"], [name*="validity_to"]');
+          if (toField && toField.value) {
+            const fromDate = new Date(value);
+            const toDate = new Date(toField.value);
+            if (fromDate >= toDate) {
+              return { isValid: false, message: `${labelText} must be before the "To" date.` };
+            }
+          }
+        }
+      }
+      
+      // Month validation (YYYY-MM format)
+      if (fieldType === 'month') {
+        const monthPattern = /^\d{4}-\d{2}$/;
+        if (!monthPattern.test(value)) {
+          return { isValid: false, message: `${labelText} must be in format: YYYY-MM.` };
+        }
+        // Validate join_month < relieve_month
+        if (fieldName?.includes('join_month')) {
+          const form = field.closest('form');
+          const relieveField = form?.querySelector('[name*="relieve_month"]');
+          if (relieveField && relieveField.value) {
+            const joinDate = new Date(value + '-01');
+            const relieveDate = new Date(relieveField.value + '-01');
+            if (joinDate >= relieveDate) {
+              return { isValid: false, message: `Joining month must be before relieving month.` };
+            }
+          }
+        }
+      }
+      
+      // Vehicle registration number validation (Indian format)
+      if (fieldName?.includes('reg_no') || fieldName?.includes('registration')) {
+        const regPattern = /^[A-Z]{2}[-\s]?[0-9]{1,2}[-\s]?[A-Z]{1,2}[-\s]?[0-9]{4}$/i;
+        if (!regPattern.test(value)) {
+          return { isValid: false, message: `${labelText} must be in format: TN-09-AB-1234.` };
+        }
+      }
+      
+      // License number validation (alphanumeric, 10-15 characters)
+      if (fieldName?.includes('license') && !fieldName?.includes('mode')) {
+        const licensePattern = /^[A-Z0-9]{10,15}$/i;
+        if (!licensePattern.test(value.replace(/\s/g, ''))) {
+          return { isValid: false, message: `${labelText} must be 10-15 alphanumeric characters.` };
+        }
+      }
+      
+      // RC number validation
+      if (fieldName?.includes('rc_no')) {
+        const rcPattern = /^[A-Z0-9]{8,15}$/i;
+        if (!rcPattern.test(value.replace(/\s/g, ''))) {
+          return { isValid: false, message: `${labelText} must be 8-15 alphanumeric characters.` };
+        }
+      }
+      
+      // Insurance number validation
+      if (fieldName?.includes('insurance_no') || fieldName?.includes('ins_no')) {
+        const insPattern = /^[A-Z0-9]{8,20}$/i;
+        if (!insPattern.test(value.replace(/\s/g, ''))) {
+          return { isValid: false, message: `${labelText} must be 8-20 alphanumeric characters.` };
+        }
+      }
+      
+      // Quantity validation (positive integer)
+      if (fieldName?.includes('qty') || fieldName?.includes('quantity')) {
+        const qty = parseInt(value);
+        if (isNaN(qty) || qty < 1) {
+          return { isValid: false, message: `${labelText} must be at least 1.` };
+        }
+      }
+      
+      return { isValid: true, message: '' };
+    }
+
+    function shouldValidateField(field) {
+      if (!field) return false;
+      if (field.disabled) return false;
+      const type = field.type;
+      return !['hidden', 'button', 'submit', 'checkbox', 'radio'].includes(type);
+    }
+
+    function validateFormFields(form) {
+      if (!form) return true;
+      let isValid = true;
+      const invalidFields = [];
+      const fields = Array.from(form.querySelectorAll('input, select, textarea'))
+        .filter(shouldValidateField);
+
+      fields.forEach((field) => {
+        // Check if field has required attribute
+        const hasRequiredAttr = field.hasAttribute('required');
+        
+        // Check if field label has red asterisk (required indicator)
+        const formField = field.closest('.form-field');
+        const hasRequiredIndicator = formField?.querySelector('.form-label .text-danger') !== null;
+        
+        const isRequired = hasRequiredAttr || hasRequiredIndicator;
+        const value = (field.value || '').trim();
+        
+        if (isRequired && !value) {
+          // Get field label for better error message
+          const label = formField?.querySelector('.form-label');
+          const labelText = label ? label.textContent.replace(/\s*\*\s*$/, '').trim() : 'This field';
+          markFieldInvalid(field, `${labelText} is required.`);
+          invalidFields.push(field);
+          isValid = false;
+        } else if (value) {
+          let fieldValid = true;
+          
+          // Validate text-only fields (names, etc.)
+          if (field.type === 'text') {
+            const textValidation = validateTextOnlyField(field, value);
+            if (!textValidation.isValid) {
+              markFieldInvalid(field, textValidation.message);
+              invalidFields.push(field);
+              isValid = false;
+              fieldValid = false;
+            }
+          }
+          
+          // Real-world validation by field type
+          if (fieldValid) {
+            const typeValidation = validateFieldByType(field, value);
+            if (!typeValidation.isValid) {
+              markFieldInvalid(field, typeValidation.message);
+              invalidFields.push(field);
+              isValid = false;
+              fieldValid = false;
+            }
+          }
+          
+          if (fieldValid) {
+            markFieldValid(field);
+          }
+        } else {
+          // Clear validation state for optional empty fields
+          field.classList.remove('is-invalid', 'is-valid');
+          const formFieldContainer = field.closest('.form-field');
+          if (formFieldContainer) {
+            const feedback = formFieldContainer.querySelector('.invalid-feedback');
+            if (feedback) {
+              feedback.remove();
+            }
+          }
+        }
+      });
+
+      // If there are invalid fields, scroll to the first one and switch to its tab
+      if (!isValid && invalidFields.length > 0) {
+        const firstInvalidField = invalidFields[0];
+        const tabPane = firstInvalidField.closest('.tab-pane');
+        
+        if (tabPane) {
+          const tabId = tabPane.id;
+          const tabButton = document.querySelector(`[data-bs-target="#${tabId}"], [href="#${tabId}"]`);
+          
+          if (tabButton) {
+            // Switch to the tab containing the first error
+            if (window.bootstrap && bootstrap.Tab) {
+              const tabInstance = bootstrap.Tab.getOrCreateInstance(tabButton);
+              tabInstance.show();
+            } else {
+              tabButton.click();
+            }
+          }
+        }
+        
+        // Scroll to the first invalid field after a short delay
+        setTimeout(() => {
+          firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          firstInvalidField.focus();
+        }, 300);
+      }
+
+      return isValid;
+    }
+
+    function attachRealtimeValidation(form) {
+      if (!form) return;
+      const fields = Array.from(form.querySelectorAll('input, select, textarea'))
+        .filter(shouldValidateField);
+      fields.forEach((field) => {
+        // Add input restriction and formatting for different field types
+        const fieldName = field.getAttribute('name');
+        const fieldType = field.type;
+        
+        // Text-only fields (names, etc.) - prevent numbers/special chars
+        if (fieldType === 'text') {
+          const textOnlyFields = [
+            'staff_name', 'father_name', 'rel_name', 'accountant_name',
+            'college_name', 'school', 'university', 'bank_name',
+            'designation_name', 'exp_company_name', 'vehicle_company', 'vehicle_owner',
+            'occupation'
+          ];
+          
+          if (fieldName && textOnlyFields.includes(fieldName)) {
+            // Prevent typing numbers and special characters
+            field.addEventListener('input', function(e) {
+              let value = e.target.value;
+              const cleaned = value.replace(/[^a-zA-Z\s\.\-\']/g, '');
+              if (value !== cleaned) {
+                e.target.value = cleaned;
+                setTimeout(() => {
+                  const event = new Event('input', { bubbles: true });
+                  e.target.dispatchEvent(event);
+                }, 0);
+              }
+            });
+            
+            field.addEventListener('paste', function(e) {
+              e.preventDefault();
+              const paste = (e.clipboardData || window.clipboardData).getData('text');
+              const cleaned = paste.replace(/[^a-zA-Z\s\.\-\']/g, '');
+              const start = e.target.selectionStart;
+              const end = e.target.selectionEnd;
+              const currentValue = e.target.value;
+              e.target.value = currentValue.substring(0, start) + cleaned + currentValue.substring(end);
+              e.target.setSelectionRange(start + cleaned.length, start + cleaned.length);
+              const event = new Event('input', { bubbles: true });
+              e.target.dispatchEvent(event);
+            });
+          }
+          
+          // Aadhar number - only digits, format with spaces
+          if (fieldName && fieldName.includes('aadhar')) {
+            field.addEventListener('input', function(e) {
+              let value = e.target.value.replace(/\s/g, '');
+              if (!/^\d*$/.test(value)) {
+                value = value.replace(/\D/g, '');
+              }
+              if (value.length > 12) value = value.substring(0, 12);
+              // Format: XXXX XXXX XXXX
+              if (value.length > 8) {
+                e.target.value = value.substring(0, 4) + ' ' + value.substring(4, 8) + ' ' + value.substring(8);
+              } else if (value.length > 4) {
+                e.target.value = value.substring(0, 4) + ' ' + value.substring(4);
+              } else {
+                e.target.value = value;
+              }
+            });
+          }
+          
+          // PAN number - uppercase, format: ABCDE1234F
+          if (fieldName && fieldName.includes('pan')) {
+            field.addEventListener('input', function(e) {
+              let value = e.target.value.replace(/\s/g, '').toUpperCase();
+              // First 5: letters, next 4: digits, last 1: letter
+              let formatted = '';
+              for (let i = 0; i < value.length && i < 10; i++) {
+                if (i < 5) {
+                  if (/[A-Z]/.test(value[i])) formatted += value[i];
+                } else if (i < 9) {
+                  if (/\d/.test(value[i])) formatted += value[i];
+                } else {
+                  if (/[A-Z]/.test(value[i])) formatted += value[i];
+                }
+              }
+              e.target.value = formatted;
+            });
+          }
+          
+          // Pincode - only digits, max 6
+          if (fieldName && fieldName.includes('pincode')) {
+            field.addEventListener('input', function(e) {
+              let value = e.target.value.replace(/\D/g, '');
+              if (value.length > 6) value = value.substring(0, 6);
+              e.target.value = value;
+            });
+          }
+          
+          // IFSC Code - uppercase, format: ABCD0123456
+          if (fieldName && fieldName.includes('ifsc')) {
+            field.addEventListener('input', function(e) {
+              let value = e.target.value.replace(/\s/g, '').toUpperCase();
+              // First 4: letters, then 0, then 6 alphanumeric
+              let formatted = '';
+              for (let i = 0; i < value.length && i < 11; i++) {
+                if (i < 4) {
+                  if (/[A-Z]/.test(value[i])) formatted += value[i];
+                } else if (i === 4) {
+                  if (value[i] === '0') formatted += '0';
+                } else {
+                  if (/[A-Z0-9]/.test(value[i])) formatted += value[i];
+                }
+              }
+              e.target.value = formatted;
+            });
+          }
+          
+          // Account number - only digits
+          if (fieldName && (fieldName.includes('account_no') || fieldName.includes('account_number'))) {
+            field.addEventListener('input', function(e) {
+              let value = e.target.value.replace(/\D/g, '');
+              if (value.length > 18) value = value.substring(0, 18);
+              e.target.value = value;
+            });
+          }
+          
+          // Vehicle registration - format: TN-09-AB-1234
+          if (fieldName && (fieldName.includes('reg_no') || fieldName.includes('registration'))) {
+            field.addEventListener('input', function(e) {
+              let value = e.target.value.replace(/\s/g, '').toUpperCase();
+              // Allow letters, digits, hyphens
+              value = value.replace(/[^A-Z0-9-]/g, '');
+              e.target.value = value;
+            });
+          }
+          
+          // License number - alphanumeric, uppercase
+          if (fieldName && fieldName.includes('license') && !fieldName.includes('mode')) {
+            field.addEventListener('input', function(e) {
+              let value = e.target.value.replace(/\s/g, '').toUpperCase();
+              value = value.replace(/[^A-Z0-9]/g, '');
+              if (value.length > 15) value = value.substring(0, 15);
+              e.target.value = value;
+            });
+          }
+        }
+        
+        // Phone number - only digits, max 10
+        if (fieldType === 'tel' || (fieldName && (fieldName.includes('contact') || fieldName.includes('phone')))) {
+          field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 10) value = value.substring(0, 10);
+            e.target.value = value;
+          });
+        }
+        
+        // Email - lowercase conversion
+        if (fieldType === 'email') {
+          field.addEventListener('blur', function(e) {
+            e.target.value = e.target.value.toLowerCase().trim();
+          });
+        }
+        
+        // Percentage - 0-100, allow decimals
+        if (fieldName && fieldName.includes('percentage')) {
+          field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9.]/g, '');
+            // Only one decimal point
+            const parts = value.split('.');
+            if (parts.length > 2) {
+              value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            // Max 100
+            const num = parseFloat(value);
+            if (!isNaN(num) && num > 100) {
+              value = '100';
+            }
+            e.target.value = value;
+          });
+        }
+        
+        // Salary/Amount - numeric, allow commas for formatting
+        if (fieldName && (fieldName.includes('salary') || fieldName.includes('amt'))) {
+          field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9,]/g, '');
+            // Remove commas, validate, then format
+            const numValue = value.replace(/,/g, '');
+            if (numValue) {
+              const num = parseInt(numValue);
+              if (!isNaN(num) && num >= 0) {
+                e.target.value = num.toLocaleString('en-IN');
+              }
+            }
+          });
+        }
+        
+        // Quantity - only positive integers
+        if (fieldName && (fieldName.includes('qty') || fieldName.includes('quantity'))) {
+          field.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value === '0') value = '1';
+            e.target.value = value;
+          });
+        }
+        
+        const handler = () => {
+          // Check if field is required
+          const hasRequiredAttr = field.hasAttribute('required');
+          const formField = field.closest('.form-field');
+          const hasRequiredIndicator = formField?.querySelector('.form-label .text-danger') !== null;
+          const isRequired = hasRequiredAttr || hasRequiredIndicator;
+          
+          const value = (field.value || '').trim();
+          
+          if (isRequired && !value) {
+            markFieldInvalid(field, 'This field is required.');
+          } else if (value) {
+            let fieldValid = true;
+            
+            // Validate text-only fields (names, etc.)
+            if (field.type === 'text') {
+              const textValidation = validateTextOnlyField(field, value);
+              if (!textValidation.isValid) {
+                markFieldInvalid(field, textValidation.message);
+                fieldValid = false;
+              }
+            }
+            
+            // Real-world validation by field type
+            if (fieldValid) {
+              const typeValidation = validateFieldByType(field, value);
+              if (!typeValidation.isValid) {
+                markFieldInvalid(field, typeValidation.message);
+                fieldValid = false;
+              }
+            }
+            
+            if (fieldValid) {
+              markFieldValid(field);
+            }
+          } else {
+            // Optional field is empty - clear validation state
+            field.classList.remove('is-invalid', 'is-valid');
+            if (formField) {
+              const feedback = formField.querySelector('.invalid-feedback');
+              if (feedback) {
+                feedback.remove();
+              }
+            }
+          }
+        };
+        field.addEventListener('input', handler);
+        field.addEventListener('blur', handler);
+        field.addEventListener('change', handler);
+      });
+    }
+
+    if (sameAddressToggle) {
+      sameAddressToggle.addEventListener('change', copyAddress);
+    }
+
+    // Ensure all required field asterisks are visible
+    function ensureRequiredIndicatorsVisible() {
+      const allForms = document.querySelectorAll('.employee-form');
+      allForms.forEach(form => {
+        const requiredFields = form.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+          const formField = field.closest('.form-field');
+          if (formField) {
+            const label = formField.querySelector('.form-label');
+            if (label) {
+              const asterisk = label.querySelector('.text-danger');
+              if (asterisk) {
+                asterisk.style.display = 'inline';
+                asterisk.style.visibility = 'visible';
+                asterisk.style.color = '#dc3545';
+                asterisk.style.fontWeight = '700';
+              }
+            }
+          }
+        });
+      });
+    }
+
+    // Attach real-time validation to all forms
+    attachRealtimeValidation(document.getElementById('staff-create-form'));
+    attachRealtimeValidation(document.getElementById('dependent-details-form'));
+    attachRealtimeValidation(document.getElementById('account-details-form'));
+    attachRealtimeValidation(document.getElementById('qualification-form'));
+    attachRealtimeValidation(document.getElementById('experience-form'));
+    attachRealtimeValidation(document.getElementById('asset-form'));
+    
+    // Ensure required indicators are visible on page load
+    ensureRequiredIndicatorsVisible();
+    
+    // Re-check when tabs are switched
+    document.addEventListener('shown.bs.tab', () => {
+      setTimeout(ensureRequiredIndicatorsVisible, 100);
+    });
+
+    function showTab(targetSelector) {
+      if (!targetSelector) return;
+      const tabTriggerElement = document.querySelector(targetSelector);
+      if (!tabTriggerElement) return;
+      if (window.bootstrap && bootstrap.Tab) {
+        const tabInstance = bootstrap.Tab.getOrCreateInstance(tabTriggerElement);
+        tabInstance.show();
+      } else {
+        tabTriggerElement.click();
+      }
+    }
+
+    function showFormMessage(type, text) {
+      if (!staffFormMessage) return;
+      staffFormMessage.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning');
+      staffFormMessage.classList.add(`alert-${type}`);
+      staffFormMessage.textContent = text;
+    }
+
+    function clearFormMessage() {
+      if (!staffFormMessage) return;
+      staffFormMessage.classList.add('d-none');
+      staffFormMessage.textContent = '';
+      staffFormMessage.classList.remove('alert-success', 'alert-danger', 'alert-warning');
+    }
+
+    function applyServerErrors(errorMap = {}) {
+      if (!errorMap || Object.keys(errorMap).length === 0) {
+        console.warn('No errors to apply');
+        return;
+      }
+      
+      console.log('Applying server errors:', errorMap);
+      
+      // Find all fields with errors and identify their tabs
+      const allForms = document.querySelectorAll('form');
+      const fieldErrors = [];
+      let firstErrorField = null;
+      let firstErrorTab = null;
+      
+      // Collect all field errors
+      Object.entries(errorMap).forEach(([fieldName, message]) => {
+        let field = null;
+        
+        // Search in all forms to find the field
+        for (let form of allForms) {
+          field = form.querySelector(`[name="${fieldName}"]`);
+          if (field) break;
+        }
+        
+        if (field) {
+          const tabPane = field.closest('.tab-pane');
+          const tabId = tabPane ? tabPane.id : null;
+          
+          fieldErrors.push({ field, message, fieldName, tabId });
+          
+          // Track the first error
+          if (!firstErrorField) {
+            firstErrorField = field;
+            firstErrorTab = tabId;
+          }
+        } else {
+          console.warn(`Field "${fieldName}" not found in any form`);
+        }
+      });
+      
+      // Function to apply errors to fields
+      const applyErrorsToFields = () => {
+        fieldErrors.forEach(({ field, message }) => {
+          markFieldInvalid(field, message);
+        });
+        
+        // Scroll to the first error field
+        if (firstErrorField) {
+          setTimeout(() => {
+            firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstErrorField.focus();
+          }, 100);
+        }
+      };
+      
+      // If first error is in a tab, switch to it first
+      if (firstErrorTab) {
+        const tabButton = document.querySelector(`[data-bs-target="#${firstErrorTab}"]`);
+        if (tabButton) {
+          const tabPane = document.querySelector(`#${firstErrorTab}`);
+          if (tabPane && !tabPane.classList.contains('show')) {
+            // Show the tab with the error
+            if (window.bootstrap && bootstrap.Tab) {
+              // Listen for tab shown event on the button
+              const handleTabShown = () => {
+                applyErrorsToFields();
+                tabButton.removeEventListener('shown.bs.tab', handleTabShown);
+              };
+              tabButton.addEventListener('shown.bs.tab', handleTabShown);
+              
+              const tabInstance = bootstrap.Tab.getOrCreateInstance(tabButton);
+              tabInstance.show();
+              
+              // Fallback timeout in case event doesn't fire
+              setTimeout(applyErrorsToFields, 400);
+            } else {
+              tabButton.click();
+              setTimeout(applyErrorsToFields, 300);
+            }
+          } else {
+            // Tab is already shown, apply errors immediately
+            applyErrorsToFields();
+          }
+        } else {
+          // Tab button not found, apply errors anyway
+          applyErrorsToFields();
+        }
+      } else {
+        // No tab, apply errors immediately
+        applyErrorsToFields();
+      }
+    }
+
+    async function saveStaffDetails(shouldRedirect = false, currentFormId = null) {
+      // If currentFormId is provided, validate that form first
+      // Otherwise, validate the staff form (for backward compatibility)
+      const formToValidate = currentFormId ? document.getElementById(currentFormId) : document.getElementById('staff-create-form');
+      
+      if (formToValidate) {
+        const isValid = validateFormFields(formToValidate);
+        if (!isValid) {
+          // Individual error messages are already shown by validateFormFields
+          // No need for a generic message
+          return false;
+        }
+      }
+      
+      clearFormMessage();
+      
+      // Always get the staff form for data collection
+      const form = document.getElementById('staff-create-form');
+      if (!form) return false;
+      
+      const formData = new FormData(form);
+      
+      // ========== COLLECT MULTIPLE RECORDS FROM ARRAYS ==========
+      
+      // Multiple Dependents
+      dependentsList.forEach((dep, index) => {
+        Object.keys(dep).forEach(key => {
+          formData.append(`dependents[${index}][${key}]`, dep[key]);
+        });
+      });
+      
+      // Multiple Accounts
+      accountsList.forEach((acc, index) => {
+        Object.keys(acc).forEach(key => {
+          formData.append(`accounts[${index}][${key}]`, acc[key]);
+        });
+      });
+      
+      // Multiple Qualifications
+      qualificationsList.forEach((qual, index) => {
+        Object.keys(qual).forEach(key => {
+          if (key === 'qualification_docs' && qual[key] instanceof File) {
+            formData.append(`qualifications[${index}][qualification_docs]`, qual[key]);
+          } else if (key !== 'qualification_docs') {
+            formData.append(`qualifications[${index}][${key}]`, qual[key]);
+          }
+        });
+      });
+      
+      // Multiple Experiences
+      experiencesList.forEach((exp, index) => {
+        Object.keys(exp).forEach(key => {
+          if (key === 'experience_docs' && exp[key] instanceof File) {
+            formData.append(`experiences[${index}][experience_docs]`, exp[key]);
+          } else if (key !== 'experience_docs') {
+            formData.append(`experiences[${index}][${key}]`, exp[key]);
+          }
+        });
+      });
+      
+      // Multiple Assets
+      assetsList.forEach((asset, index) => {
+        Object.keys(asset).forEach(key => {
+          formData.append(`assets[${index}][${key}]`, asset[key]);
+        });
+      });
+      
+      // Add final_save flag - true if shouldRedirect is true (final save), false otherwise (intermediate save)
+      formData.append('final_save', shouldRedirect ? 'true' : 'false');
+      
+      try {
+        const response = await fetch(staffSaveUrl, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': csrfTokenInput?.value || ''
+          }
+        });
+        
+        let result;
+        try {
+          result = await response.json();
+        } catch (jsonError) {
+          console.error('JSON parse error:', jsonError);
+          showFormMessage('danger', 'Invalid response from server. Please try again.');
+          return false;
+        }
+        
+        if (result.status === 1) {
+          // Clear any existing redirect timeout
+          if (redirectTimeout) {
+            clearTimeout(redirectTimeout);
+            redirectTimeout = null;
+          }
+          
+          if (shouldRedirect) {
+            // Final save - show success and redirect
+            showFormMessage('success', result.msg);
+            if (result.unique_id) {
+              currentEmployeeUniqueId = result.unique_id;
+              document.querySelector('#staff-create-form input[name="unique_id"]').value = result.unique_id;
+            }
+            // Redirect after delay
+            redirectTimeout = setTimeout(() => {
+              window.location.href = "{% url 'master:employee_list' %}";
+            }, 2000);
+          } else {
+            // Intermediate save - show brief success message (no redirect)
+            showFormMessage('success', 'Data saved successfully. You can continue to the next tab.');
+            if (result.unique_id) {
+              currentEmployeeUniqueId = result.unique_id;
+              document.querySelector('#staff-create-form input[name="unique_id"]').value = result.unique_id;
+            }
+            // Clear the success message after a short delay
+            setTimeout(() => {
+              clearFormMessage();
+            }, 3000);
+          }
+          return true;
+        } else {
+          if (result.errors) {
+            console.log('Server errors:', result.errors);
+            // Apply errors across all forms - function now searches all forms
+            // Individual error messages are shown for each field, no need for generic message
+            applyServerErrors(result.errors);
+          } else {
+            // Only show generic message if there are no individual field errors
+            showFormMessage('danger', result.msg || 'Failed to save employee data.');
+            console.warn('No errors object in response:', result);
+          }
+          return false;
+        }
+      } catch (error) {
+        showFormMessage('danger', 'An error occurred while saving. Please try again.');
+        console.error('Fetch error:', error);
+        return false;
+      }
+    }
+
+    tabNavButtons.forEach((btn) => {
+      btn.addEventListener('click', async (event) => {
+        const validationFormId = btn.getAttribute('data-validation-form');
+        const targetSelector = btn.getAttribute('data-tab-target');
+        const isLastTab = btn.textContent.trim() === 'Next' && btn.disabled;
+
+        // If it's the last tab's Next button, save the form and redirect
+        if (isLastTab && validationFormId === 'asset-form') {
+          event.preventDefault();
+          event.stopPropagation();
+          await saveStaffDetails(true); // true = redirect after save
+          return;
+        }
+
+        if (validationFormId) {
+          const form = document.getElementById(validationFormId);
+          const listCount = getListCountForForm(validationFormId);
+          const isMultiRecordForm = listCount > 0;
+
+          if (!isMultiRecordForm) {
+          const isValid = validateFormFields(form);
+          if (!isValid) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+            }
+          } else {
+            // Clear validation states because data already exists in the sublist
+            clearFormValidation(form);
+          }
+          
+          let saved = true;
+          // Only hit server when staff form or when no list data exists yet
+          if (validationFormId === 'staff-create-form' || !isMultiRecordForm) {
+          // Save all data to server for validation when moving between tabs
+          // This ensures server-side validation runs for all tabs
+          // Pass the current form ID so it validates the correct form
+            saved = await saveStaffDetails(false, validationFormId); // false = don't redirect, pass current form ID
+          }
+          if (saved && targetSelector) {
+            event.preventDefault();
+            event.stopPropagation();
+            showTab(targetSelector);
+          } else if (!saved) {
+            event.preventDefault();
+            event.stopPropagation();
+            // Errors are already displayed by applyServerErrors
+          }
+          return;
+        }
+
+        if (targetSelector) {
+          event.preventDefault();
+          event.stopPropagation();
+          showTab(targetSelector);
+        }
+      });
+    });
+    
+    // Add save button handler for the final save button
+    const finalSaveBtn = document.getElementById('final-save-btn');
+    if (finalSaveBtn) {
+      finalSaveBtn.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Validate the asset form first
+        const assetForm = document.getElementById('asset-form');
+        if (assetForm) {
+          const isValid = validateFormFields(assetForm);
+          if (!isValid) {
+            // Individual error messages are already shown by validateFormFields
+            // No need for a generic message
+            return;
+          }
+        }
+        
+        // Save all data and redirect
+        await saveStaffDetails(true); // true = redirect after save
+      });
+    }
+
+    // ========== MULTIPLE RECORDS FUNCTIONS ==========
+    
+    // Dependent Functions
+    function addDependentToList() {
+      console.log('addDependentToList called');
+      
+      const form = document.getElementById('dependent-details-form');
+      if (!form) {
+        alert('Error: Dependent form not found!');
+        console.error('Dependent form not found');
+        return false;
+      }
+      
+      console.log('Form found, validating...');
+      
+      // Validate form
+      const isValid = validateFormFields(form);
+      console.log('Validation result:', isValid);
+      
+      if (!isValid) {
+        alert('Please fill all required fields correctly!');
+        console.log('Form validation failed');
+        return false;
+      }
+      
+      console.log('Validation passed, collecting data...');
+      
+      // Collect form data
+      const formData = new FormData(form);
+      const dependentData = {
+        _id: 'DEP_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9), // Unique ID for screen tracking
+        _timestamp: new Date().toISOString()
+      };
+      
+      // Add all form fields to dependentData
+      for (let [key, value] of formData.entries()) {
+        dependentData[key] = value;
+      }
+      
+      console.log('Data collected:', dependentData);
+      
+      // Add to array (CLIENT-SIDE ONLY - No backend call)
+      dependentsList.push(dependentData);
+      console.log('Added to array. Total dependents:', dependentsList.length);
+      
+      // Refresh table to show new record
+      refreshDependentsTable();
+      console.log('Table refreshed');
+      
+      // Clear form completely - DO THIS FIRST
+      form.reset();
+      console.log('Form reset called');
+      
+      // Clear all validation states
+      clearFormValidation(form);
+      console.log('Validation cleared');
+      
+      // Reset select fields to first option
+      const selectFields = form.querySelectorAll('select');
+      selectFields.forEach(select => {
+        if (select.options.length > 0) {
+          select.selectedIndex = 0;
+        }
+      });
+      
+      // Clear date inputs explicitly
+      const dateInputs = form.querySelectorAll('input[type="date"]');
+      dateInputs.forEach(input => {
+        input.value = '';
+      });
+      
+      // Clear text inputs explicitly
+      const textInputs = form.querySelectorAll('input[type="text"]');
+      textInputs.forEach(input => {
+        input.value = '';
+      });
+      
+      console.log('All fields cleared');
+      
+      // Show success message
+      console.log('Showing success message...');
+      showAddToListSuccess('✅ Dependent added successfully!');
+      
+      // Scroll to table to show the added record
+      setTimeout(() => {
+        const table = document.getElementById('dependents-tbody');
+        if (table) {
+          table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
+      
+      console.log('Dependent added to list successfully:', dependentData);
+      return true;
+    }
+    
+    function clearFormValidation(form) {
+      if (!form) return;
+      
+      const fields = form.querySelectorAll('input, select, textarea');
+      fields.forEach(field => {
+        // Remove validation classes
+        field.classList.remove('is-valid', 'is-invalid');
+        
+        // Clear validation feedback
+        const formField = field.closest('.form-field');
+        if (formField) {
+          const feedback = formField.querySelector('.invalid-feedback');
+          if (feedback) feedback.remove();
+        }
+        
+        // Reset radio buttons
+        if (field.type === 'radio') {
+          field.checked = false;
+        }
+        
+        // Reset checkboxes
+        if (field.type === 'checkbox') {
+          field.checked = false;
+        }
+        
+        // Reset file inputs
+        if (field.type === 'file') {
+          field.value = '';
+          // Also clear any file preview if exists
+          const filePreview = formField.querySelector('.file-preview');
+          if (filePreview) filePreview.remove();
+        }
+        
+        // Clear text inputs
+        if (field.type === 'text' || field.type === 'email' || field.type === 'tel' || field.type === 'number') {
+          field.value = '';
+        }
+        
+        // Clear date inputs
+        if (field.type === 'date') {
+          field.value = '';
+        }
+      });
+    }
+    
+    function showAddToListSuccess(message) {
+      console.log('showAddToListSuccess called with message:', message);
+      
+      // Remove existing message if any
+      const existingMsg = document.getElementById('addToListMessage');
+      if (existingMsg) {
+        existingMsg.remove();
+      }
+      
+      // Create new message element
+      const messageDiv = document.createElement('div');
+      messageDiv.id = 'addToListMessage';
+      messageDiv.className = 'alert alert-success alert-dismissible fade show';
+      messageDiv.style.cssText = `
+        position: fixed !important;
+        top: 20px !important;
+        right: 20px !important;
+        z-index: 99999 !important;
+        min-width: 300px !important;
+        max-width: 400px !important;
+        padding: 15px 20px !important;
+        background-color: #d4edda !important;
+        border: 1px solid #c3e6cb !important;
+        color: #155724 !important;
+        border-radius: 5px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2) !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        display: block !important;
+        opacity: 1 !important;
+      `;
+      
+      messageDiv.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span><strong>${message}</strong></span>
+          <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()" aria-label="Close" style="margin-left: 15px;"></button>
+        </div>
+      `;
+      
+      document.body.appendChild(messageDiv);
+      console.log('Message element added to DOM');
+      
+      // Force visibility
+      messageDiv.style.display = 'block';
+      messageDiv.style.visibility = 'visible';
+      messageDiv.style.opacity = '1';
+      
+      // Auto hide after 4 seconds
+      setTimeout(() => {
+        if (messageDiv && messageDiv.parentElement) {
+          messageDiv.style.transition = 'opacity 0.5s ease-out';
+          messageDiv.style.opacity = '0';
+          setTimeout(() => {
+            if (messageDiv && messageDiv.parentElement) {
+              messageDiv.remove();
+              console.log('Message removed');
+            }
+          }, 500);
+        }
+      }, 4000);
+    }
+
+    function editDependent(index) {
+      const dependent = dependentsList[index];
+      const form = document.getElementById('dependent-details-form');
+      
+      Object.keys(dependent).forEach(key => {
+        const field = form.querySelector(`[name="${key}"]`);
+        if (field) field.value = dependent[key];
+      });
+      
+      dependentsList.splice(index, 1);
+      refreshDependentsTable();
+    }
+
+    function deleteDependent(index) {
+      dependentsList.splice(index, 1);
+      refreshDependentsTable();
+    }
+
+    function refreshDependentsTable() {
+      const tbody = document.getElementById('dependents-tbody');
+      tbody.innerHTML = '';
+      
+      if (dependentsList.length === 0) {
+        tbody.innerHTML = '<tr id="dependents-empty-row"><td colspan="16" class="text-center table-placeholder">No dependents added yet.</td></tr>';
+        return;
+      }
+      
+      dependentsList.forEach((dep, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${dep.relationship || '-'}</td>
+          <td>${dep.rel_name || '-'}</td>
+          <td>${dep.rel_gender || '-'}</td>
+          <td>${dep.rel_date_of_birth || '-'}</td>
+          <td>${dep.rel_aadhar_no || '-'}</td>
+          <td>${dep.occupation || '-'}</td>
+          <td>${dep.standard || '-'}</td>
+          <td>${dep.school || '-'}</td>
+          <td>${dep.existing_illness || '-'}</td>
+          <td>${dep.description || '-'}</td>
+          <td>${dep.existing_insurance || '-'}</td>
+          <td>${dep.insurance_no || '-'}</td>
+          <td>${dep.physically_challenged || '-'}</td>
+          <td>${dep.remarks || '-'}</td>
+          <td>
+            <button type="button" class="table-action-btn edit" onclick="editDependent(${index})" title="Edit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
+              </svg>
+            </button>
+            <button type="button" class="table-action-btn delete" onclick="deleteDependent(${index})" title="Delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+              </svg>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Account Functions
+    function addAccountToList() {
+      const form = document.getElementById('account-details-form');
+      if (!validateFormFields(form)) return;
+      
+      const formData = new FormData(form);
+      const accountData = {};
+      for (let [key, value] of formData.entries()) {
+        accountData[key] = value;
+      }
+      
+      accountsList.push(accountData);
+      refreshAccountsTable();
+      
+      // Clear form and validation states
+      form.reset();
+      clearFormValidation(form);
+      
+      // Show success message
+      showAddToListSuccess('Account added successfully!');
+    }
+
+    function editAccount(index) {
+      const account = accountsList[index];
+      const form = document.getElementById('account-details-form');
+      
+      Object.keys(account).forEach(key => {
+        const field = form.querySelector(`[name="${key}"]`);
+        if (field) field.value = account[key];
+      });
+      
+      accountsList.splice(index, 1);
+      refreshAccountsTable();
+    }
+
+    function deleteAccount(index) {
+      accountsList.splice(index, 1);
+      refreshAccountsTable();
+    }
+
+    function refreshAccountsTable() {
+      const tbody = document.getElementById('accounts-tbody');
+      tbody.innerHTML = '';
+      
+      if (accountsList.length === 0) {
+        tbody.innerHTML = '<tr id="accounts-empty-row"><td colspan="10" class="text-center table-placeholder">No account records yet.</td></tr>';
+        return;
+      }
+      
+      accountsList.forEach((acc, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${acc.bank_status || '-'}</td>
+          <td>${acc.salary_type || '-'}</td>
+          <td>${acc.accountant_name || '-'}</td>
+          <td>${acc.account_no || '-'}</td>
+          <td>${acc.bank_name || '-'}</td>
+          <td>${acc.ifsc_code || '-'}</td>
+          <td>${acc.bank_contact_no || '-'}</td>
+          <td>${acc.bank_address || '-'}</td>
+          <td>
+            <button type="button" class="table-action-btn edit" onclick="editAccount(${index})" title="Edit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
+              </svg>
+            </button>
+            <button type="button" class="table-action-btn delete" onclick="deleteAccount(${index})" title="Delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+              </svg>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Qualification Functions
+    function addQualificationToList() {
+      const form = document.getElementById('qualification-form');
+      if (!form) {
+        console.error('Qualification form not found');
+        return;
+      }
+      
+      if (!validateFormFields(form)) return;
+      
+      const formData = new FormData(form);
+      const qualData = {
+        _id: 'QUAL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        _timestamp: new Date().toISOString()
+      };
+      
+      for (let [key, value] of formData.entries()) {
+        if (key !== 'qualification_docs') {
+          qualData[key] = value;
+        }
+      }
+      
+      const fileInput = form.querySelector('input[name="qualification_docs"]');
+      if (fileInput && fileInput.files.length > 0) {
+        qualData.qualification_docs = fileInput.files[0];
+        qualData._fileName = fileInput.files[0].name;
+      }
+      
+      qualificationsList.push(qualData);
+      refreshQualificationsTable();
+      
+      form.reset();
+      clearFormValidation(form);
+      
+      const selectFields = form.querySelectorAll('select');
+      selectFields.forEach(select => {
+        if (select.options.length > 0) select.selectedIndex = 0;
+      });
+      
+      showAddToListSuccess('✅ Qualification added successfully!');
+      
+      const table = document.getElementById('qualifications-tbody');
+      if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function editQualification(index) {
+      const qual = qualificationsList[index];
+      const form = document.getElementById('qualification-form');
+      
+      Object.keys(qual).forEach(key => {
+        if (key !== 'qualification_docs') {
+          const field = form.querySelector(`[name="${key}"]`);
+          if (field) field.value = qual[key];
+        }
+      });
+      
+      qualificationsList.splice(index, 1);
+      refreshQualificationsTable();
+    }
+
+    function deleteQualification(index) {
+      qualificationsList.splice(index, 1);
+      refreshQualificationsTable();
+    }
+
+    function refreshQualificationsTable() {
+      const tbody = document.getElementById('qualifications-tbody');
+      tbody.innerHTML = '';
+      
+      if (qualificationsList.length === 0) {
+        tbody.innerHTML = '<tr id="qualifications-empty-row"><td colspan="9" class="text-center table-placeholder">No qualification records yet.</td></tr>';
+        return;
+      }
+      
+      qualificationsList.forEach((qual, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${qual.education_type || '-'}</td>
+          <td>${qual.degree || '-'}</td>
+          <td>${qual.qualification_docs ? qual.qualification_docs.name : '-'}</td>
+          <td>${qual.college_name || '-'}</td>
+          <td>${qual.year_passing || '-'}</td>
+          <td>${qual.percentage || '-'}</td>
+          <td>${qual.university || '-'}</td>
+          <td>
+            <button type="button" class="table-action-btn edit" onclick="editQualification(${index})" title="Edit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
+              </svg>
+            </button>
+            <button type="button" class="table-action-btn delete" onclick="deleteQualification(${index})" title="Delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+              </svg>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Experience Functions
+    function addExperienceToList() {
+      const form = document.getElementById('experience-form');
+      if (!form) {
+        console.error('Experience form not found');
+        return;
+      }
+      
+      if (!validateFormFields(form)) return;
+      
+      const formData = new FormData(form);
+      const expData = {
+        _id: 'EXP_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        _timestamp: new Date().toISOString()
+      };
+      
+      for (let [key, value] of formData.entries()) {
+        if (key !== 'experience_docs') {
+          expData[key] = value;
+        }
+      }
+      
+      const fileInput = form.querySelector('input[name="experience_docs"]');
+      if (fileInput && fileInput.files.length > 0) {
+        expData.experience_docs = fileInput.files[0];
+        expData._fileName = fileInput.files[0].name;
+      }
+      
+      experiencesList.push(expData);
+      refreshExperiencesTable();
+      
+      form.reset();
+      clearFormValidation(form);
+      
+      const selectFields = form.querySelectorAll('select');
+      selectFields.forEach(select => {
+        if (select.options.length > 0) select.selectedIndex = 0;
+      });
+      
+      showAddToListSuccess('✅ Experience added successfully!');
+      
+      const table = document.getElementById('experiences-tbody');
+      if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function editExperience(index) {
+      const exp = experiencesList[index];
+      const form = document.getElementById('experience-form');
+      
+      Object.keys(exp).forEach(key => {
+        if (key !== 'experience_docs') {
+          const field = form.querySelector(`[name="${key}"]`);
+          if (field) field.value = exp[key];
+        }
+      });
+      
+      experiencesList.splice(index, 1);
+      refreshExperiencesTable();
+    }
+
+    function deleteExperience(index) {
+      experiencesList.splice(index, 1);
+      refreshExperiencesTable();
+    }
+
+    function refreshExperiencesTable() {
+      const tbody = document.getElementById('experiences-tbody');
+      tbody.innerHTML = '';
+      
+      if (experiencesList.length === 0) {
+        tbody.innerHTML = '<tr id="experiences-empty-row"><td colspan="9" class="text-center table-placeholder">No experience records yet.</td></tr>';
+        return;
+      }
+      
+      experiencesList.forEach((exp, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${exp.exp_company_name || '-'}</td>
+          <td>${exp.designation_name || '-'}</td>
+          <td>${exp.experience_docs ? exp.experience_docs.name : '-'}</td>
+          <td>${exp.salary_amt || '-'}</td>
+          <td>${exp.join_month || '-'}</td>
+          <td>${exp.relieve_month || '-'}</td>
+          <td>${exp.exp || '-'}</td>
+          <td>
+            <button type="button" class="table-action-btn edit" onclick="editExperience(${index})" title="Edit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
+              </svg>
+            </button>
+            <button type="button" class="table-action-btn delete" onclick="deleteExperience(${index})" title="Delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+              </svg>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Asset Functions
+    function addAssetToList() {
+      const form = document.getElementById('asset-form');
+      if (!form) {
+        console.error('Asset form not found');
+        return;
+      }
+      
+      if (!validateFormFields(form)) return;
+      
+      const formData = new FormData(form);
+      const assetData = {
+        _id: 'ASSET_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        _timestamp: new Date().toISOString()
+      };
+      
+      for (let [key, value] of formData.entries()) {
+        assetData[key] = value;
+      }
+      
+      assetsList.push(assetData);
+      refreshAssetsTable();
+      
+      form.reset();
+      clearFormValidation(form);
+      
+      const selectFields = form.querySelectorAll('select');
+      selectFields.forEach(select => {
+        if (select.options.length > 0) select.selectedIndex = 0;
+      });
+      
+      const dateInputs = form.querySelectorAll('input[type="date"]');
+      dateInputs.forEach(input => input.value = '');
+      
+      showAddToListSuccess('✅ Asset added successfully!');
+      
+      const table = document.getElementById('assets-tbody');
+      if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function editAsset(index) {
+      const asset = assetsList[index];
+      const form = document.getElementById('asset-form');
+      
+      Object.keys(asset).forEach(key => {
+        const field = form.querySelector(`[name="${key}"]`);
+        if (field) {
+          if (field.type === 'radio') {
+            const radio = form.querySelector(`[name="${key}"][value="${asset[key]}"]`);
+            if (radio) radio.checked = true;
+          } else {
+            field.value = asset[key];
+          }
+        }
+      });
+      
+      assetsList.splice(index, 1);
+      refreshAssetsTable();
+    }
+
+    function deleteAsset(index) {
+      assetsList.splice(index, 1);
+      refreshAssetsTable();
+    }
+
+    function refreshAssetsTable() {
+      const tbody = document.getElementById('assets-tbody');
+      tbody.innerHTML = '';
+      
+      if (assetsList.length === 0) {
+        tbody.innerHTML = '<tr id="assets-empty-row"><td colspan="10" class="text-center table-placeholder">No assets assigned yet.</td></tr>';
+        return;
+      }
+      
+      assetsList.forEach((asset, index) => {
+        const validity = asset.valid_from && asset.valid_to ? `${asset.valid_from} to ${asset.valid_to}` : '-';
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${asset.asset_name || '-'}</td>
+          <td>${asset.item_no || '-'}</td>
+          <td>${asset.qty || '-'}</td>
+          <td>${asset.status || '-'}</td>
+          <td>${asset.veh_reg_no || '-'}</td>
+          <td>${asset.license_mode || '-'}</td>
+          <td>${asset.dri_license_no || '-'}</td>
+          <td>${validity}</td>
+          <td>
+            <button type="button" class="table-action-btn edit" onclick="editAsset(${index})" title="Edit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
+              </svg>
+            </button>
+            <button type="button" class="table-action-btn delete" onclick="deleteAsset(${index})" title="Delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+              </svg>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Make functions globally accessible
+    window.addDependentToList = addDependentToList;
+    window.editDependent = editDependent;
+    window.deleteDependent = deleteDependent;
+    window.addAccountToList = addAccountToList;
+    window.editAccount = editAccount;
+    window.deleteAccount = deleteAccount;
+    window.addQualificationToList = addQualificationToList;
+    window.editQualification = editQualification;
+    window.deleteQualification = deleteQualification;
+    window.addExperienceToList = addExperienceToList;
+    window.editExperience = editExperience;
+    window.deleteExperience = deleteExperience;
+    window.addAssetToList = addAssetToList;
+    window.editAsset = editAsset;
+    window.deleteAsset = deleteAsset;
+    window.clearFormValidation = clearFormValidation;
+    window.showAddToListSuccess = showAddToListSuccess;
+  });
+
+  // Country, State, City Dropdown Population
+  document.addEventListener('DOMContentLoaded', function() {
+    const countriesUrl = '{% url "master:get_countries" %}';
+    const statesUrl = '{% url "master:get_states" %}';
+    const citiesUrl = '{% url "master:get_cities" %}';
+
+    // Load countries on page load
+    function loadCountries() {
+      fetch(countriesUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.countries) {
+            const countrySelects = document.querySelectorAll('.country-select');
+            countrySelects.forEach(select => {
+              // Clear existing options except the first one
+              const firstOption = select.querySelector('option[value=""]');
+              select.innerHTML = '';
+              if (firstOption) {
+                select.appendChild(firstOption);
+              } else {
+                select.innerHTML = '<option value="">Select Country</option>';
+              }
+              
+              // Add countries
+              data.countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country;
+                option.textContent = country;
+                select.appendChild(option);
+              });
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error loading countries:', error);
+        });
+    }
+
+    // Load states based on selected country
+    function loadStates(countrySelect) {
+      const country = countrySelect.value;
+      const addressType = countrySelect.getAttribute('data-address-type');
+      const stateSelect = document.querySelector(`.state-select[data-address-type="${addressType}"]`);
+      const citySelect = document.querySelector(`.city-select[data-address-type="${addressType}"]`);
+      
+      if (!stateSelect) return;
+      
+      // Reset state and city dropdowns
+      stateSelect.innerHTML = '<option value="">Select State</option>';
+      if (citySelect) {
+        citySelect.innerHTML = '<option value="">Select City</option>';
+      }
+      
+      if (!country) return;
+      
+      fetch(`${statesUrl}?country=${encodeURIComponent(country)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.states) {
+            stateSelect.innerHTML = '<option value="">Select State</option>';
+            data.states.forEach(state => {
+              const option = document.createElement('option');
+              option.value = state;
+              option.textContent = state;
+              stateSelect.appendChild(option);
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error loading states:', error);
+        });
+    }
+
+    // Load cities based on selected state
+    function loadCities(stateSelect) {
+      const state = stateSelect.value;
+      const addressType = stateSelect.getAttribute('data-address-type');
+      const countrySelect = document.querySelector(`.country-select[data-address-type="${addressType}"]`);
+      const citySelect = document.querySelector(`.city-select[data-address-type="${addressType}"]`);
+      
+      if (!citySelect) return;
+      
+      // Reset city dropdown
+      citySelect.innerHTML = '<option value="">Select City</option>';
+      
+      if (!state) return;
+      
+      const country = countrySelect ? countrySelect.value : 'India';
+      
+      fetch(`${citiesUrl}?state=${encodeURIComponent(state)}&country=${encodeURIComponent(country)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.cities) {
+            citySelect.innerHTML = '<option value="">Select City</option>';
+            data.cities.forEach(city => {
+              const option = document.createElement('option');
+              option.value = city;
+              option.textContent = city;
+              citySelect.appendChild(option);
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error loading cities:', error);
+        });
+    }
+
+    // Event listeners for country changes
+    document.querySelectorAll('.country-select').forEach(select => {
+      select.addEventListener('change', function() {
+        loadStates(this);
+      });
+    });
+
+    // Event listeners for state changes
+    document.querySelectorAll('.state-select').forEach(select => {
+      select.addEventListener('change', function() {
+        loadCities(this);
+      });
+    });
+
+    // Load countries on page load
+    loadCountries();
+    
+    // Pre-populate country/state/city dropdowns for edit mode
+    {% if employee.present_country %}
+    setTimeout(() => {
+      const preCountry = document.querySelector('.country-select[data-address-type="present"]');
+      if (preCountry) {
+        preCountry.value = '{{ employee.present_country }}';
+        loadStates(preCountry);
+        setTimeout(() => {
+          const preState = document.querySelector('.state-select[data-address-type="present"]');
+          if (preState) {
+            preState.value = '{{ employee.present_state }}';
+            loadCities(preState);
+            setTimeout(() => {
+              const preCity = document.querySelector('.city-select[data-address-type="present"]');
+              if (preCity) preCity.value = '{{ employee.present_city }}';
+            }, 500);
+          }
+        }, 500);
+      }
+    }, 1000);
+    {% endif %}
+    
+    {% if employee.permanent_country %}
+    setTimeout(() => {
+      const permCountry = document.querySelector('.country-select[data-address-type="permanent"]');
+      if (permCountry) {
+        permCountry.value = '{{ employee.permanent_country }}';
+        loadStates(permCountry);
+        setTimeout(() => {
+          const permState = document.querySelector('.state-select[data-address-type="permanent"]');
+          if (permState) {
+            permState.value = '{{ employee.permanent_state }}';
+            loadCities(permState);
+            setTimeout(() => {
+              const permCity = document.querySelector('.city-select[data-address-type="permanent"]');
+              if (permCity) permCity.value = '{{ employee.permanent_city }}';
+            }, 500);
+          }
+        }, 500);
+      }
+    }, 1500);
+    {% endif %}
+    
+    // Pre-populate sublist tables with existing data
+    if (dependentsList.length > 0) {
+      dependentsList.forEach((dep, index) => {
+        dep._id = 'dep_' + Date.now() + '_' + index;
+      });
+      refreshDependentsTable();
+    }
+    
+    if (accountsList.length > 0) {
+      accountsList.forEach((acc, index) => {
+        acc._id = 'acc_' + Date.now() + '_' + index;
+      });
+      refreshAccountsTable();
+    }
+    
+    if (qualificationsList.length > 0) {
+      qualificationsList.forEach((qual, index) => {
+        qual._id = 'qual_' + Date.now() + '_' + index;
+      });
+      refreshQualificationsTable();
+    }
+    
+    if (experiencesList.length > 0) {
+      experiencesList.forEach((exp, index) => {
+        exp._id = 'exp_' + Date.now() + '_' + index;
+      });
+      refreshExperiencesTable();
+    }
+    
+    if (assetsList.length > 0) {
+      assetsList.forEach((asset, index) => {
+        asset._id = 'asset_' + Date.now() + '_' + index;
+      });
+      refreshAssetsTable();
+    }
+  });
+</script>
+{% endblock %}
+
