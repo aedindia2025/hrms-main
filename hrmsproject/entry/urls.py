@@ -8,6 +8,8 @@ urlpatterns = [
     # Entry -> Comp Off
     path('comp-off/create/', views.comp_off_create, name='comp_off_create'),
     path('comp-off/list/', views.comp_off_list, name='comp_off_list'),
+    path('comp-off/edit/<int:pk>/', views.comp_off_edit, name='comp_off_edit'),
+    path('comp-off/delete/<int:pk>/', views.comp_off_delete, name='comp_off_delete'),
 
     # Entry -> Leave
     path('leave/create/', views.leave_entry_create, name='leave_entry_create'),
@@ -25,9 +27,10 @@ urlpatterns = [
     path('permission/print/', views.permission_entry_print, name='permission_entry_print'),
 
     # Entry -> Site
-    path('site/create/', views.site_entry_create, name='site_entry_create'),
-    path('site/edit/', views.site_entry_edit, name='site_entry_edit'),
     path('site/list/', views.site_entry_list, name='site_entry_list'),
+    path('site/create/', views.site_entry_create, name='site_entry_create'),
+    path('site/edit/<int:pk>/', views.site_entry_edit, name='site_entry_edit'),
+    path('site/delete/<int:pk>/', views.site_entry_delete, name='site_entry_delete'),
 
     # Entry -> TADA
     path('tada/create/', views.tada_entry_create, name='tada_entry_create'),

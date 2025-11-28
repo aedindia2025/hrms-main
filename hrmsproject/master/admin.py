@@ -31,6 +31,13 @@ class CompanyAdmin(admin.ModelAdmin):
     ordering = ('billing_name',)
 
 
+@admin.register(Site)
+class SiteAdmin(admin.ModelAdmin):
+    list_display = ('name', 'city', 'state')
+    search_fields = ('name', 'city', 'state', 'address')
+    list_filter = ('state',)
+    ordering = ('name',)
+
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
@@ -114,7 +121,6 @@ admin.site.register(
         LeaveType,
         AdditionDeduction,
         SubExpense,
-        Site,
         Plant,
     ]
 )

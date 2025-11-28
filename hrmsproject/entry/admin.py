@@ -1,6 +1,25 @@
 from django.contrib import admin
 
-from .models import SiteEntry
+from .models import CompOffEntry, SiteEntry
+
+
+@admin.register(CompOffEntry)
+class CompOffEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        'work_date',
+        'employee',
+        'site',
+        'day_status',
+        'head_approval_status',
+    )
+    list_filter = ('day_status', 'head_approval_status', 'work_date')
+    search_fields = (
+        'employee__staff_name',
+        'employee__staff_id',
+        'site__name',
+    )
+    autocomplete_fields = ('employee', 'site')
+    date_hierarchy = 'work_date'
 
 
 @admin.register(SiteEntry)
