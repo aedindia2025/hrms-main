@@ -47,8 +47,8 @@
 .table-action-btn {
   border: 1px solid #ced4da;
   background: #ffffff;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -146,6 +146,27 @@
   font-size: 0.85rem;
   color: #6c757d;
 }
+.employee-form .table,
+.employee-form .table td,
+.employee-form .table th {
+  font-size: 0.9rem;
+}
+.employee-form .table-sm {
+  font-size: 0.9rem;
+}
+.employee-form .btn-primary,
+.employee-form .tab-nav-btn,
+.employee-form button.btn-success[data-validation-form],
+.employee-form button.btn-success#final-save-btn {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  line-height: 1.4;
+}
+.employee-step-nav .nav-link.disabled {
+  pointer-events: auto;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 </style>
 {% endblock %}
 
@@ -165,27 +186,27 @@
           </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-dependent-details-tab" data-bs-toggle="pill" data-bs-target="#tab-dependent-details" type="button" role="tab" aria-controls="tab-dependent-details" aria-selected="false">
+          <button class="nav-link disabled" id="tab-dependent-details-tab" data-bs-toggle="pill" data-bs-target="#tab-dependent-details" type="button" role="tab" aria-controls="tab-dependent-details" aria-selected="false">
             Dependent Details
           </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-account-details-tab" data-bs-toggle="pill" data-bs-target="#tab-account-details" type="button" role="tab" aria-controls="tab-account-details" aria-selected="false">
+          <button class="nav-link disabled" id="tab-account-details-tab" data-bs-toggle="pill" data-bs-target="#tab-account-details" type="button" role="tab" aria-controls="tab-account-details" aria-selected="false">
             Account Details
           </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-qualification-details-tab" data-bs-toggle="pill" data-bs-target="#tab-qualification-details" type="button" role="tab" aria-controls="tab-qualification-details" aria-selected="false">
+          <button class="nav-link disabled" id="tab-qualification-details-tab" data-bs-toggle="pill" data-bs-target="#tab-qualification-details" type="button" role="tab" aria-controls="tab-qualification-details" aria-selected="false">
             Qualification Details
           </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-experience-details-tab" data-bs-toggle="pill" data-bs-target="#tab-experience-details" type="button" role="tab" aria-controls="tab-experience-details" aria-selected="false">
+          <button class="nav-link disabled" id="tab-experience-details-tab" data-bs-toggle="pill" data-bs-target="#tab-experience-details" type="button" role="tab" aria-controls="tab-experience-details" aria-selected="false">
             Experience Details
           </button>
         </li>
         <li class="nav-item" role="presentation">
-          <button class="nav-link" id="tab-asset-details-tab" data-bs-toggle="pill" data-bs-target="#tab-asset-details" type="button" role="tab" aria-controls="tab-asset-details" aria-selected="false">
+          <button class="nav-link disabled" id="tab-asset-details-tab" data-bs-toggle="pill" data-bs-target="#tab-asset-details" type="button" role="tab" aria-controls="tab-asset-details" aria-selected="false">
             Asset / Vehicle Details
           </button>
         </li>
@@ -428,7 +449,16 @@
                 </div>
                 <div class="col-md-6 form-field">
                   <label class="form-label">Profile Image <span class="text-danger">*</span></label>
-                  <input type="file" class="form-control" name="profile_image" required>
+                  <div class="d-flex gap-2 align-items-center">
+                    <input type="file" class="form-control d-none" id="profile_image_input" name="profile_image" accept="image/*" required>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openFilePickerForInput('profile_image_input')">
+                      Upload
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="openCameraForInput('profile_image_input', 'profile_image_preview')">
+                      Snap
+                    </button>
+                  </div>
+                  <div id="profile_image_preview" class="mt-2 file-preview"></div>
                 </div>
               </div>
             </div>
@@ -731,7 +761,16 @@
               </div>
               <div class="col-md-6 form-field">
                 <label class="form-label">Document Upload <span class="text-danger">*</span></label>
-                <input type="file" class="form-control" name="qualification_docs" multiple required>
+                <div class="d-flex gap-2 align-items-center">
+                  <input type="file" class="form-control d-none" id="qualification_docs_input" name="qualification_docs" accept="image/*" multiple required>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openFilePickerForInput('qualification_docs_input')">
+                    Upload
+                  </button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="openCameraForInput('qualification_docs_input', 'qualification_docs_preview')">
+                    Snap
+                  </button>
+                </div>
+                <div id="qualification_docs_preview" class="mt-2 file-preview"></div>
               </div>
             </div>
             <div class="d-flex justify-content-end align-items-center mt-5 mb-3">
@@ -800,7 +839,16 @@
               </div>
               <div class="col-md-6 form-field">
                 <label class="form-label">Document Upload <span class="text-danger">*</span></label>
-                <input type="file" class="form-control" name="experience_docs" multiple required>
+                <div class="d-flex gap-2 align-items-center">
+                  <input type="file" class="form-control d-none" id="experience_docs_input" name="experience_docs" accept="image/*" multiple required>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openFilePickerForInput('experience_docs_input')">
+                    Upload
+                  </button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="openCameraForInput('experience_docs_input', 'experience_docs_preview')">
+                    Snap
+                  </button>
+                </div>
+                <div id="experience_docs_preview" class="mt-2 file-preview"></div>
               </div>
             </div>
             <div class="d-flex justify-content-end align-items-center mt-5 mb-3">
@@ -992,8 +1040,247 @@
   </div>
 </div>
 
+<!-- Image lightbox for full-size preview -->
+<div id="image-lightbox-overlay" style="display:none;
+  position:fixed; inset:0; background:rgba(0,0,0,0.8);
+  z-index:20000; align-items:center; justify-content:center;">
+  <div style="position:relative; max-width:90%; max-height:90%;">
+    <img id="image-lightbox-img" src="" alt="Preview"
+         style="max-width:100%; max-height:100%; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.5);" />
+    <button type="button"
+            onclick="hideImageLightbox()"
+            style="position:absolute; top:-10px; right:-10px; border:none;
+                   background:#fff; border-radius:50%; width:28px; height:28px; font-weight:bold;">
+      ×
+    </button>
+  </div>
+</div>
+
+<!-- Warning Modal for Skipping Forms -->
+<div class="modal fade" id="formSkipWarningModal" tabindex="-1" aria-labelledby="formSkipWarningModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title" id="formSkipWarningModalLabel">⚠️ Form Not Completed</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0" id="formSkipWarningMessage">Please complete the current form before proceeding to the next section.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    // Track completed forms
+    const completedForms = {
+      'staff-create-form': false,
+      'dependent-details-form': false,
+      'account-details-form': false,
+      'qualification-form': false,
+      'experience-form': false,
+      'asset-form': false
+    };
+    
+    // Tab order mapping
+    const tabOrder = {
+      'tab-staff-details-tab': { formId: 'staff-create-form', nextTab: 'tab-dependent-details-tab' },
+      'tab-dependent-details-tab': { formId: 'dependent-details-form', nextTab: 'tab-account-details-tab' },
+      'tab-account-details-tab': { formId: 'account-details-form', nextTab: 'tab-qualification-details-tab' },
+      'tab-qualification-details-tab': { formId: 'qualification-form', nextTab: 'tab-experience-details-tab' },
+      'tab-experience-details-tab': { formId: 'experience-form', nextTab: 'tab-asset-details-tab' },
+      'tab-asset-details-tab': { formId: 'asset-form', nextTab: null }
+    };
+    
+    // Function to enable a tab
+    function enableTab(tabId) {
+      const tab = document.getElementById(tabId);
+      if (tab) {
+        tab.classList.remove('disabled');
+        tab.style.pointerEvents = 'auto';
+        tab.style.opacity = '1';
+        tab.style.cursor = 'pointer';
+      }
+    }
+    
+    // Function to disable a tab
+    function disableTab(tabId) {
+      const tab = document.getElementById(tabId);
+      if (tab) {
+        tab.classList.add('disabled');
+        tab.style.pointerEvents = 'auto'; // Keep pointer events so we can show modal
+        tab.style.opacity = '0.6';
+        tab.style.cursor = 'not-allowed';
+      }
+    }
+    
+    // Initialize: Disable all tabs except first one
+    Object.keys(tabOrder).forEach((tabId, index) => {
+      if (index > 0) {
+        disableTab(tabId);
+      }
+    });
+    
+    // Function to check if previous forms are completed
+    function canAccessTab(tabId) {
+      const tabInfo = tabOrder[tabId];
+      if (!tabInfo) return true;
+      
+      // Check all previous forms
+      for (const [key, value] of Object.entries(tabOrder)) {
+        if (key === tabId) break;
+        if (!completedForms[value.formId]) {
+          return false;
+        }
+      }
+      return true;
+    }
+    
+    // Function to get required form name for warning
+    function getRequiredFormName(tabId) {
+      for (const [key, value] of Object.entries(tabOrder)) {
+        if (key === tabId && !completedForms[value.formId]) {
+          const formNames = {
+            'staff-create-form': 'Staff Details',
+            'dependent-details-form': 'Dependent Details',
+            'account-details-form': 'Account Details',
+            'qualification-form': 'Qualification Details',
+            'experience-form': 'Experience Details',
+            'asset-form': 'Asset Details'
+          };
+          return formNames[value.formId] || 'the previous form';
+        }
+        if (!completedForms[value.formId]) {
+          const formNames = {
+            'staff-create-form': 'Staff Details',
+            'dependent-details-form': 'Dependent Details',
+            'account-details-form': 'Account Details',
+            'qualification-form': 'Qualification Details',
+            'experience-form': 'Experience Details',
+            'asset-form': 'Asset Details'
+          };
+          return formNames[value.formId] || 'the previous form';
+        }
+      }
+      return 'the previous form';
+    }
+    
+    // Function to show warning modal
+    function showWarningModal(tabId) {
+      console.log('showWarningModal called for tab:', tabId);
+      const warningModal = document.getElementById('formSkipWarningModal');
+      const warningMessage = document.getElementById('formSkipWarningMessage');
+      
+      if (!warningModal) {
+        console.error('Warning modal element not found');
+        alert('Please complete the previous form first before accessing this section.');
+        return;
+      }
+      
+      if (!warningMessage) {
+        console.error('Warning message element not found');
+        alert('Please complete the previous form first before accessing this section.');
+        return;
+      }
+      
+      const requiredForm = getRequiredFormName(tabId);
+      warningMessage.textContent = `Please complete "${requiredForm}" form first before accessing this section.`;
+      console.log('Warning message set:', warningMessage.textContent);
+      
+      // Show modal using Bootstrap
+      if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        try {
+          const modalInstance = bootstrap.Modal.getOrCreateInstance(warningModal);
+          modalInstance.show();
+          console.log('Modal shown via Bootstrap');
+        } catch (err) {
+          console.error('Error showing modal with Bootstrap:', err);
+          // Fallback
+          warningModal.style.display = 'block';
+          warningModal.classList.add('show');
+          document.body.classList.add('modal-open');
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop fade show';
+          backdrop.id = 'warningModalBackdrop';
+          document.body.appendChild(backdrop);
+        }
+      } else {
+        console.log('Bootstrap not available, using fallback');
+        // Fallback if Bootstrap not available
+        warningModal.style.display = 'block';
+        warningModal.classList.add('show');
+        document.body.classList.add('modal-open');
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        backdrop.id = 'warningModalBackdrop';
+        document.body.appendChild(backdrop);
+      }
+    }
+    
+    // Intercept Bootstrap tab switching using show.bs.tab event
+    const allTabs = document.querySelectorAll('[id^="tab-"][id$="-tab"]');
+    console.log('Found tabs:', allTabs.length);
+    
+    allTabs.forEach(tab => {
+      const tabId = tab.id;
+      console.log('Setting up handlers for tab:', tabId);
+      
+      // Use Bootstrap's show.bs.tab event (fires before tab is shown)
+      tab.addEventListener('show.bs.tab', function(e) {
+        console.log('show.bs.tab event fired for:', tabId);
+        
+        // Allow switching to current active tab
+        if (this.classList.contains('active')) {
+          console.log('Tab is already active, allowing');
+          return;
+        }
+        
+        // Check if tab is disabled or previous forms not completed
+        const isDisabled = this.classList.contains('disabled');
+        const canAccess = canAccessTab(tabId);
+        console.log('Tab check - disabled:', isDisabled, 'canAccess:', canAccess);
+        
+        if (isDisabled || !canAccess) {
+          console.log('Preventing tab switch and showing modal');
+          e.preventDefault();
+          e.stopPropagation();
+          showWarningModal(tabId);
+          return false;
+        }
+      });
+      
+      // Also add click handler (fires before Bootstrap event)
+      tab.addEventListener('click', function(e) {
+        console.log('Click event fired for tab:', tabId);
+        
+        // Allow clicking on current active tab
+        if (this.classList.contains('active')) {
+          console.log('Tab is already active, allowing click');
+          return;
+        }
+        
+        // Check if tab is disabled or previous forms not completed
+        const isDisabled = this.classList.contains('disabled');
+        const canAccess = canAccessTab(tabId);
+        console.log('Click check - disabled:', isDisabled, 'canAccess:', canAccess);
+        
+        if (isDisabled || !canAccess) {
+          console.log('Preventing click and showing modal');
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          showWarningModal(tabId);
+          return false;
+        }
+      }, true); // Use capture phase to catch before Bootstrap
+    });
+    
+    console.log('Tab event handlers setup complete');
+    
     const sameAddressToggle = document.getElementById('sameAddressToggle');
     const presentFields = ['pre_country', 'pre_state', 'pre_city', 'pre_building', 'pre_street', 'pre_area', 'pre_pincode'];
     const permFields = ['perm_country', 'perm_state', 'perm_city', 'perm_building', 'perm_street', 'perm_area', 'perm_pincode'];
@@ -1024,6 +1311,227 @@
     let qualificationsList = [];
     let experiencesList = [];
     let assetsList = [];
+
+    // ========== CAMERA CAPTURE (PROFILE & DOCUMENTS) ==========
+    let cameraStream = null;
+    let cameraTargetInputId = null;
+    let cameraTargetPreviewId = null;
+
+    function ensureCameraOverlay() {
+      let overlay = document.getElementById('camera-capture-overlay');
+      if (overlay) return overlay;
+
+      overlay = document.createElement('div');
+      overlay.id = 'camera-capture-overlay';
+      overlay.style.position = 'fixed';
+      overlay.style.inset = '0';
+      overlay.style.background = 'rgba(0,0,0,0.7)';
+      overlay.style.zIndex = '1055';
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:8px;max-width:500px;width:100%;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+          <h6 class="mb-2">Capture Image</h6>
+          <div class="ratio ratio-4x3 mb-2" style="background:#000;border-radius:4px;overflow:hidden;">
+            <video id="camera-capture-video" autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+          </div>
+          <canvas id="camera-capture-canvas" style="display:none;"></canvas>
+          <div class="d-flex justify-content-between mt-2">
+            <div>
+              <button type="button" class="btn btn-sm btn-secondary me-2" id="camera-capture-close-btn">Close</button>
+            </div>
+            <div>
+              <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="camera-capture-retake-btn" disabled>Retake</button>
+              <button type="button" class="btn btn-sm btn-primary" id="camera-capture-snap-btn">Capture</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const closeBtn = overlay.querySelector('#camera-capture-close-btn');
+      const snapBtn = overlay.querySelector('#camera-capture-snap-btn');
+      const retakeBtn = overlay.querySelector('#camera-capture-retake-btn');
+      const video = overlay.querySelector('#camera-capture-video');
+      const canvas = overlay.querySelector('#camera-capture-canvas');
+
+      function stopCameraStream() {
+        if (cameraStream) {
+          cameraStream.getTracks().forEach(t => t.stop());
+          cameraStream = null;
+        }
+        if (video) {
+          video.srcObject = null;
+        }
+      }
+
+      function hideOverlay() {
+        stopCameraStream();
+        overlay.style.display = 'none';
+        retakeBtn.disabled = true;
+        canvas.style.display = 'none';
+        video.style.display = 'block';
+      }
+
+      closeBtn.addEventListener('click', hideOverlay);
+
+      retakeBtn.addEventListener('click', async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert('Camera not supported on this device.');
+          return;
+        }
+        canvas.style.display = 'none';
+        video.style.display = 'block';
+        retakeBtn.disabled = true;
+        try {
+          cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = cameraStream;
+        } catch (err) {
+          console.error('Error accessing camera for retake:', err);
+          alert('Unable to access camera.');
+        }
+      });
+
+      snapBtn.addEventListener('click', async () => {
+        if (!cameraTargetInputId) return;
+        const input = document.getElementById(cameraTargetInputId);
+        if (!input) return;
+
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth || 1280;
+        canvas.height = video.videoHeight || 720;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const fileName = `capture_${Date.now()}.jpg`;
+          const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+          // Assign to file input via DataTransfer
+          const dataTransfer = new DataTransfer();
+          if (input.multiple) {
+            Array.from(input.files || []).forEach(f => dataTransfer.items.add(f));
+          }
+          dataTransfer.items.add(file);
+          input.files = dataTransfer.files;
+
+          // Update preview
+          if (cameraTargetPreviewId) {
+            const preview = document.getElementById(cameraTargetPreviewId);
+            if (preview) {
+              const url = URL.createObjectURL(file);
+              preview.innerHTML = `<img src="${url}" alt="Preview"
+                style="max-width:120px;max-height:120px;border-radius:4px;border:1px solid #dee2e6;cursor:pointer;">`;
+              const imgEl = preview.querySelector('img');
+              if (imgEl) {
+                imgEl.addEventListener('click', () => showImageLightbox(url));
+              }
+            }
+          }
+
+          // Auto-close overlay after successful capture
+          hideOverlay();
+        }, 'image/jpeg', 0.9);
+      });
+
+      overlay._stopCameraStream = stopCameraStream;
+
+      return overlay;
+    }
+
+    function openCameraForInput(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      if (!input) {
+        console.error('Camera target input not found:', inputId);
+        return;
+      }
+
+      cameraTargetInputId = inputId;
+      cameraTargetPreviewId = previewId;
+
+      const overlay = ensureCameraOverlay();
+      const video = overlay.querySelector('#camera-capture-video');
+      const retakeBtn = overlay.querySelector('#camera-capture-retake-btn');
+      const canvas = overlay.querySelector('#camera-capture-canvas');
+
+      overlay.style.display = 'flex';
+      canvas.style.display = 'none';
+      video.style.display = 'block';
+      retakeBtn.disabled = true;
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Camera not supported on this device/browser.');
+        return;
+      }
+
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          cameraStream = stream;
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          console.error('Error accessing camera:', err);
+          alert('Unable to access camera.');
+        });
+    }
+
+    function openFilePickerForInput(inputId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.click();
+    }
+
+    function showImageLightbox(url) {
+      const overlay = document.getElementById('image-lightbox-overlay');
+      const img = document.getElementById('image-lightbox-img');
+      if (!overlay || !img) return;
+      img.src = url;
+      overlay.style.display = 'flex';
+    }
+
+    function hideImageLightbox() {
+      const overlay = document.getElementById('image-lightbox-overlay');
+      const img = document.getElementById('image-lightbox-img');
+      if (!overlay || !img) return;
+      img.src = '';
+      overlay.style.display = 'none';
+    }
+
+    function attachPreviewOnChange(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      if (!input || !preview) return;
+
+      input.addEventListener('change', () => {
+        if (!input.files || input.files.length === 0) {
+          preview.innerHTML = '';
+          return;
+        }
+        const file = input.files[input.files.length - 1];
+        if (!file || !file.type.startsWith('image/')) {
+          preview.innerHTML = '';
+          return;
+        }
+        const url = URL.createObjectURL(file);
+        preview.innerHTML = `<img src="${url}" alt="Preview"
+          style="max-width:120px;max-height:120px;border-radius:4px;border:1px solid #dee2e6;cursor:pointer;">`;
+        const imgEl = preview.querySelector('img');
+        if (imgEl) {
+          imgEl.addEventListener('click', () => showImageLightbox(url));
+        }
+      });
+    }
+
+    // Attach previews for camera/file inputs
+    attachPreviewOnChange('profile_image_input', 'profile_image_preview');
+    attachPreviewOnChange('qualification_docs_input', 'qualification_docs_preview');
+    attachPreviewOnChange('experience_docs_input', 'experience_docs_preview');
+
+    // Expose lightbox hide function for inline onclick
+    window.hideImageLightbox = hideImageLightbox;
 
     function getListCountForForm(formId) {
       switch (formId) {
@@ -1150,8 +1658,8 @@
         }
       }
       
-      // PAN number validation (5 letters + 4 digits + 1 letter)
-      if (fieldName?.includes('pan')) {
+      // PAN number validation (5 letters + 4 digits + 1 letter) - only for pan_no field
+      if (fieldName === 'pan_no' || fieldName?.startsWith('pan_')) {
         const panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
         const cleaned = value.replace(/\s/g, '').toUpperCase();
         if (!panPattern.test(cleaned)) {
@@ -1192,8 +1700,8 @@
         }
       }
       
-      // Year validation (1900 to current year)
-      if (fieldName?.includes('year') || fieldName?.includes('passing')) {
+      // Year validation (1900 to current year) - only for text fields with year, not date fields like registration_year
+      if ((fieldName?.includes('year') || fieldName?.includes('passing')) && !fieldName?.includes('registration_year') && fieldType !== 'date' && fieldType !== 'month') {
         const year = parseInt(value);
         const currentYear = new Date().getFullYear();
         if (isNaN(year) || year < 1900 || year > currentYear) {
@@ -1260,8 +1768,8 @@
         }
       }
       
-      // Vehicle registration number validation (Indian format)
-      if (fieldName?.includes('reg_no') || fieldName?.includes('registration')) {
+      // Vehicle registration number validation (Indian format) - only for veh_reg_no, not registration_year
+      if (fieldName?.includes('veh_reg_no') || (fieldName?.includes('reg_no') && !fieldName?.includes('registration_year'))) {
         const regPattern = /^[A-Z]{2}[-\s]?[0-9]{1,2}[-\s]?[A-Z]{1,2}[-\s]?[0-9]{4}$/i;
         if (!regPattern.test(value)) {
           return { isValid: false, message: `${labelText} must be in format: TN-09-AB-1234.` };
@@ -1527,8 +2035,8 @@
             });
           }
           
-          // Vehicle registration - format: TN-09-AB-1234
-          if (fieldName && (fieldName.includes('reg_no') || fieldName.includes('registration'))) {
+          // Vehicle registration - format: TN-09-AB-1234 (only for veh_reg_no, not registration_year)
+          if (fieldName && (fieldName.includes('veh_reg_no') || (fieldName.includes('reg_no') && !fieldName.includes('registration_year')))) {
             field.addEventListener('input', function(e) {
               let value = e.target.value.replace(/\s/g, '').toUpperCase();
               // Allow letters, digits, hyphens
@@ -1933,6 +2441,17 @@
               currentEmployeeUniqueId = result.unique_id;
               document.querySelector('#staff-create-form input[name="unique_id"]').value = result.unique_id;
             }
+            
+            // Mark current form as completed and enable next tab
+            const formIdToMark = currentFormId || 'staff-create-form';
+            if (completedForms.hasOwnProperty(formIdToMark)) {
+              completedForms[formIdToMark] = true;
+              const currentTab = Object.keys(tabOrder).find(tabId => tabOrder[tabId].formId === formIdToMark);
+              if (currentTab && tabOrder[currentTab].nextTab) {
+                enableTab(tabOrder[currentTab].nextTab);
+              }
+            }
+            
             // Clear the success message after a short delay
             setTimeout(() => {
               clearFormMessage();
@@ -2290,13 +2809,13 @@
           <td>${dep.remarks || '-'}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editDependent(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteDependent(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2373,13 +2892,13 @@
           <td>${acc.bank_address || '-'}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editAccount(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteAccount(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2480,13 +2999,13 @@
           <td>${qual.university || '-'}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editQualification(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteQualification(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2587,13 +3106,13 @@
           <td>${exp.exp || '-'}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editExperience(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteExperience(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2696,13 +3215,13 @@
           <td>${validity}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editAsset(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteAsset(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2734,6 +3253,8 @@
     window.deleteAsset = deleteAsset;
     window.clearFormValidation = clearFormValidation;
     window.showAddToListSuccess = showAddToListSuccess;
+    window.openCameraForInput = openCameraForInput;
+    window.openFilePickerForInput = openFilePickerForInput;
   });
 
   // Country, State, City Dropdown Population

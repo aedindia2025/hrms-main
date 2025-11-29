@@ -3,7 +3,7 @@ import json
 import uuid
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
@@ -154,7 +154,7 @@ def _parse_date(value: str | None) -> date | None:
         return None
 
 
-@login_required
+@permission_required('master.view_company', raise_exception=True)
 def company_list(request):
     companies = Company.objects.all()
     query = request.GET.get('q', '').strip()
@@ -173,7 +173,7 @@ def company_list(request):
     return render(request, 'content/master/company_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_company', raise_exception=True)
 def company_create1(request):
     if request.method == 'POST':
         submitted = request.POST.dict()
@@ -250,7 +250,7 @@ def company_create1(request):
     })
 
 
-@login_required
+@permission_required('master.add_company', raise_exception=True)
 def company_add(request):
     if request.method == 'POST':
         submitted = request.POST.dict()
@@ -329,7 +329,7 @@ def company_add(request):
     })
 
 
-@login_required
+@permission_required('master.change_company', raise_exception=True)
 def company_edit(request, pk):
     company = get_object_or_404(Company, pk=pk)
 
@@ -412,7 +412,7 @@ def company_edit(request, pk):
     })
 
 
-@login_required
+@permission_required('master.delete_company', raise_exception=True)
 def company_delete(request, pk):
     company = get_object_or_404(Company, pk=pk)
     if request.method == 'POST':
@@ -423,7 +423,7 @@ def company_delete(request, pk):
     return render(request, 'content/master/company_creation/confirm_delete.html', {'company': company})
 
 
-@login_required
+@permission_required('master.view_company', raise_exception=True)
 def company_list1(request):
     companies = Company.objects.order_by('-created_at')
     return render(request, 'content/master/company_creation/list1.html', {'companies': companies})
@@ -431,7 +431,7 @@ def company_list1(request):
 
 # ==================== Legacy Master Templates ====================
 
-@login_required
+@permission_required('master.view_additiondeduction', raise_exception=True)
 def addition_list(request):
     per_page = request.GET.get('per_page', '').strip() or '10'
     search_query = request.GET.get('q', '').strip()
@@ -471,7 +471,7 @@ def addition_list(request):
     return render(request, 'content/master/addition_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_additiondeduction', raise_exception=True)
 def addition_create(request):
     values = {
         'type': '',
@@ -516,7 +516,7 @@ def addition_create(request):
     return render(request, 'content/master/addition_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_additiondeduction', raise_exception=True)
 def addition_edit(request, pk):
     addition = get_object_or_404(AdditionDeduction, pk=pk)
     values = {
@@ -562,7 +562,7 @@ def addition_edit(request, pk):
     return render(request, 'content/master/addition_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_additiondeduction', raise_exception=True)
 def addition_delete(request, pk):
     addition = get_object_or_404(AdditionDeduction, pk=pk)
     if request.method == 'POST':
@@ -576,7 +576,7 @@ def addition_delete(request, pk):
     return render(request, 'content/master/addition_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_assettype', raise_exception=True)
 def asset_list(request):
     per_page = request.GET.get('per_page', '').strip() or '10'
     search_query = request.GET.get('q', '').strip()
@@ -614,12 +614,12 @@ def asset_list(request):
     return render(request, 'content/master/asset_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.view_employeeassetassignment', raise_exception=True)
 def asset_create_list(request):
     return render(request, 'content/master/assetCreate_creation/list.html')
 
 
-@login_required
+@permission_required('master.add_employeeassetassignment', raise_exception=True)
 def asset_create(request):
     values = {
         'name': '',
@@ -654,7 +654,7 @@ def asset_create(request):
     return render(request, 'content/master/asset_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_employeeassetassignment', raise_exception=True)
 def asset_edit(request, pk):
     asset = get_object_or_404(AssetType, pk=pk)
     values = {
@@ -694,7 +694,7 @@ def asset_edit(request, pk):
     return render(request, 'content/master/asset_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_employeeassetassignment', raise_exception=True)
 def asset_delete(request, pk):
     asset = get_object_or_404(AssetType, pk=pk)
     if request.method == 'POST':
@@ -708,7 +708,7 @@ def asset_delete(request, pk):
     return render(request, 'content/master/asset_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_department', raise_exception=True)
 def department_list(request):
     departments = Department.objects.order_by('name')
     status_filter = request.GET.get('status', '').strip()
@@ -751,7 +751,7 @@ def department_list(request):
     return render(request, 'content/master/department_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_department', raise_exception=True)
 def department_create(request):
     values = {
         'name': '',
@@ -790,7 +790,7 @@ def department_create(request):
     return render(request, 'content/master/department_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_department', raise_exception=True)
 def department_edit(request, pk):
     department = get_object_or_404(Department, pk=pk)
     values = {
@@ -835,7 +835,7 @@ def department_edit(request, pk):
     return render(request, 'content/master/department_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_department', raise_exception=True)
 def department_delete(request, pk):
     department = get_object_or_404(Department, pk=pk)
     if request.method == 'POST':
@@ -849,7 +849,7 @@ def department_delete(request, pk):
     return render(request, 'content/master/department_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_designation', raise_exception=True)
 def designation_list(request):
     designations = (
         Designation.objects.select_related('department')
@@ -903,7 +903,7 @@ def designation_list(request):
     return render(request, 'content/master/designation_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_designation', raise_exception=True)
 def designation_create(request):
     departments = Department.objects.order_by('name')
     values = {
@@ -959,7 +959,7 @@ def designation_create(request):
     return render(request, 'content/master/designation_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_designation', raise_exception=True)
 def designation_edit(request, pk):
     designation = get_object_or_404(Designation.objects.select_related('department'), pk=pk)
     departments = Department.objects.order_by('name')
@@ -1016,7 +1016,7 @@ def designation_edit(request, pk):
     return render(request, 'content/master/designation_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_designation', raise_exception=True)
 def designation_delete(request, pk):
     designation = get_object_or_404(Designation.objects.select_related('department'), pk=pk)
     if request.method == 'POST':
@@ -1030,7 +1030,7 @@ def designation_delete(request, pk):
     return render(request, 'content/master/designation_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_degree', raise_exception=True)
 def degree_list(request):
     degrees = Degree.objects.order_by('education_type', 'name')
 
@@ -1069,7 +1069,7 @@ def degree_list(request):
     return render(request, 'content/master/degree_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_degree', raise_exception=True)
 def degree_create(request):
     values = {
         'education_type': Degree.TYPE_UG,
@@ -1106,7 +1106,7 @@ def degree_create(request):
     return render(request, 'content/master/degree_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_degree', raise_exception=True)
 def degree_edit(request, pk):
     degree = get_object_or_404(Degree, pk=pk)
     values = {
@@ -1144,7 +1144,7 @@ def degree_edit(request, pk):
     return render(request, 'content/master/degree_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_degree', raise_exception=True)
 def degree_delete(request, pk):
     degree = get_object_or_404(Degree, pk=pk)
     if request.method == 'POST':
@@ -1158,12 +1158,12 @@ def degree_delete(request, pk):
     return render(request, 'content/master/degree_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_expensetype', raise_exception=True)
 def expense_list(request):
     return render(request, 'content/master/expense_creation/list.html')
 
 
-@login_required
+@permission_required('master.view_subexpense', raise_exception=True)
 def sub_expense_list(request):
     per_page = request.GET.get('per_page', '').strip() or '10'
     search_query = request.GET.get('q', '').strip()
@@ -1203,7 +1203,7 @@ def sub_expense_list(request):
     return render(request, 'content/master/subExpense_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_subexpense', raise_exception=True)
 def sub_expense_create(request):
     expense_types = ExpenseType.objects.order_by('name')
     values = {
@@ -1285,7 +1285,7 @@ def sub_expense_create(request):
     return render(request, 'content/master/subExpense_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_subexpense', raise_exception=True)
 def sub_expense_edit(request, pk):
     sub_expense = get_object_or_404(SubExpense.objects.select_related('expense_type'), pk=pk)
     expense_types = ExpenseType.objects.order_by('name')
@@ -1368,7 +1368,7 @@ def sub_expense_edit(request, pk):
     return render(request, 'content/master/subExpense_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_subexpense', raise_exception=True)
 def sub_expense_delete(request, pk):
     sub_expense = get_object_or_404(SubExpense.objects.select_related('expense_type'), pk=pk)
     if request.method == 'POST':
@@ -1382,7 +1382,7 @@ def sub_expense_delete(request, pk):
     return render(request, 'content/master/subExpense_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_site', raise_exception=True)
 def site_list(request):
     per_page = request.GET.get('per_page', '').strip() or '10'
     search_query = request.GET.get('q', '').strip()
@@ -1423,7 +1423,7 @@ def site_list(request):
     return render(request, 'content/master/site_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_site', raise_exception=True)
 def site_create(request):
     values = {
         'name': '',
@@ -1480,7 +1480,7 @@ def site_create(request):
     return render(request, 'content/master/site_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_site', raise_exception=True)
 def site_edit(request, pk):
     site = get_object_or_404(Site, pk=pk)
     values = {
@@ -1538,7 +1538,7 @@ def site_edit(request, pk):
     return render(request, 'content/master/site_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_site', raise_exception=True)
 def site_delete(request, pk):
     site = get_object_or_404(Site, pk=pk)
     if request.method == 'POST':
@@ -1552,7 +1552,7 @@ def site_delete(request, pk):
     return render(request, 'content/master/site_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_plant', raise_exception=True)
 def plant_list(request):
     per_page = request.GET.get('per_page', '').strip() or '10'
     search_query = request.GET.get('q', '').strip()
@@ -1591,7 +1591,7 @@ def plant_list(request):
     return render(request, 'content/master/plant_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_plant', raise_exception=True)
 def plant_create(request):
     sites = Site.objects.order_by('name')
     values = {
@@ -1638,7 +1638,7 @@ def plant_create(request):
     return render(request, 'content/master/plant_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_plant', raise_exception=True)
 def plant_edit(request, pk):
     plant = get_object_or_404(Plant.objects.select_related('site'), pk=pk)
     sites = Site.objects.order_by('name')
@@ -1686,7 +1686,7 @@ def plant_edit(request, pk):
     return render(request, 'content/master/plant_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_plant', raise_exception=True)
 def plant_delete(request, pk):
     plant = get_object_or_404(Plant.objects.select_related('site'), pk=pk)
     if request.method == 'POST':
@@ -1700,7 +1700,7 @@ def plant_delete(request, pk):
     return render(request, 'content/master/plant_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_holiday', raise_exception=True)
 def holidays_list(request):
     per_page = request.GET.get('per_page', '').strip() or '10'
     search_query = request.GET.get('q', '').strip()
@@ -1739,7 +1739,7 @@ def holidays_list(request):
     return render(request, 'content/master/holidays_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_holiday', raise_exception=True)
 def holidays_create(request):
     values = {
         'date': '',
@@ -1782,7 +1782,7 @@ def holidays_create(request):
     return render(request, 'content/master/holidays_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_holiday', raise_exception=True)
 def holidays_edit(request, pk):
     holiday = get_object_or_404(Holiday, pk=pk)
     values = {
@@ -1826,7 +1826,7 @@ def holidays_edit(request, pk):
     return render(request, 'content/master/holidays_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_holiday', raise_exception=True)
 def holidays_delete(request, pk):
     holiday = get_object_or_404(Holiday, pk=pk)
     if request.method == 'POST':
@@ -1835,7 +1835,7 @@ def holidays_delete(request, pk):
     return redirect('master:holidays_list')
 
 
-@login_required
+@permission_required('master.view_leavetype', raise_exception=True)
 def leave_list(request):
     per_page = request.GET.get('per_page', '').strip() or '10'
     search_query = request.GET.get('q', '').strip()
@@ -1875,7 +1875,7 @@ def leave_list(request):
     return render(request, 'content/master/leave_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_leavetype', raise_exception=True)
 def leave_create(request):
     values = {
         'leave_type': '',
@@ -1916,7 +1916,7 @@ def leave_create(request):
     return render(request, 'content/master/leave_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_leavetype', raise_exception=True)
 def leave_edit(request, pk):
     leave_type = get_object_or_404(LeaveType, pk=pk)
     values = {
@@ -1966,7 +1966,7 @@ def leave_edit(request, pk):
     return render(request, 'content/master/leave_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_leavetype', raise_exception=True)
 def leave_delete(request, pk):
     leave_type = get_object_or_404(LeaveType, pk=pk)
     if request.method == 'POST':
@@ -1980,7 +1980,7 @@ def leave_delete(request, pk):
     return render(request, 'content/master/leave_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_salarytype', raise_exception=True)
 def salary_list(request):
     query = request.GET.get('q', '').strip()
     per_page = request.GET.get('per_page', '').strip() or '10'
@@ -2015,7 +2015,7 @@ def salary_list(request):
     return render(request, 'content/master/salary_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_salarytype', raise_exception=True)
 def salary_create(request):
     values = {
         'name': '',
@@ -2048,7 +2048,7 @@ def salary_create(request):
     return render(request, 'content/master/salary_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_salarytype', raise_exception=True)
 def salary_edit(request, pk):
     salary_type = get_object_or_404(SalaryType, pk=pk)
 
@@ -2087,7 +2087,7 @@ def salary_edit(request, pk):
     return render(request, 'content/master/salary_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_salarytype', raise_exception=True)
 def salary_delete(request, pk):
     salary_type = get_object_or_404(SalaryType, pk=pk)
     if request.method == 'POST':
@@ -2101,7 +2101,7 @@ def salary_delete(request, pk):
     return render(request, 'content/master/salary_creation/confirm_delete.html', context)
 
 
-@login_required
+@permission_required('master.view_shift', raise_exception=True)
 def shift_list(request):
     shifts = Shift.objects.order_by('created_at', 'name')
     search_query = request.GET.get('q', '').strip()
@@ -2139,7 +2139,7 @@ def shift_list(request):
     return render(request, 'content/master/shift_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.view_shift', raise_exception=True)
 def shift_roster_list(request):
     summary = {
         'total_week': len(WEEK_ROSTERS),
@@ -2173,7 +2173,7 @@ def shift_roster_list(request):
     return render(request, 'content/master/shift_roster/list.html', context)
 
 
-@login_required
+@permission_required('master.view_shift', raise_exception=True)
 def shift_roster_main(request):
     context = {
         'week_url': reverse('master:shift_roster_week'),
@@ -2182,7 +2182,7 @@ def shift_roster_main(request):
     return render(request, 'content/master/shift_roster/main.html', context)
 
 
-@login_required
+@permission_required('master.view_shift', raise_exception=True)
 def shift_roster_week(request):
     filters = {
         'from_date': request.GET.get('from_date', '').strip(),
@@ -2215,7 +2215,7 @@ def shift_roster_week(request):
     return render(request, 'content/master/shift_roster/week_roster.html', context)
 
 
-@login_required
+@permission_required('master.add_shift', raise_exception=True)
 def shift_roster_create(request):
     values = {
         'site_name': '',
@@ -2257,7 +2257,7 @@ def shift_roster_create(request):
     return render(request, 'content/master/shift_roster/create.html', context)
 
 
-@login_required
+@permission_required('master.view_shift', raise_exception=True)
 def shift_roster_month(request):
     filters = {
         'from_date': request.GET.get('from_date', '').strip(),
@@ -2291,7 +2291,7 @@ def shift_roster_month(request):
     return render(request, 'content/master/shift_roster/month_roster.html', context)
 
 
-@login_required
+@permission_required('master.change_shift', raise_exception=True)
 def shift_roster_month_update(request):
     roster_id = request.GET.get('id')
     selected = None
@@ -2338,7 +2338,7 @@ def shift_roster_month_update(request):
     return render(request, 'content/master/shift_roster/monthUpdate.html', context)
 
 
-@login_required
+@permission_required('master.add_shift', raise_exception=True)
 def shift_edit_form(request):
     shift_id = request.GET.get('id')
     shift = None
@@ -2411,7 +2411,7 @@ def shift_edit_form(request):
     return render(request, 'content/master/shift_creation/editForm.html', context)
 
 
-@login_required
+@permission_required('master.delete_shift', raise_exception=True)
 def shift_delete(request, pk):
     shift = get_object_or_404(Shift, pk=pk)
     if request.method == 'POST':
@@ -2422,7 +2422,7 @@ def shift_delete(request, pk):
     return render(request, 'content/master/shift_creation/confirm_delete.html', {'shift': shift})
 
 
-@login_required
+@permission_required('master.view_employee', raise_exception=True)
 def employee_list(request):
     staff_status = request.GET.get('staff_status', '').strip()
     company_name = request.GET.get('company_name', '').strip()
@@ -2452,7 +2452,7 @@ def employee_list(request):
     return render(request, 'content/master/employee_creation/list.html', context)
 
 
-@login_required
+@permission_required('master.add_employee', raise_exception=True)
 def employee_create(request):
     companies = Company.objects.all().order_by('billing_name')
     last_employee = Employee.objects.order_by('-id').first()
@@ -2465,7 +2465,7 @@ def employee_create(request):
     return render(request, 'content/master/employee_creation/create.html', context)
 
 
-@login_required
+@permission_required('master.change_employee', raise_exception=True)
 def employee_edit(request, pk):
     """Edit employee with all related data."""
     employee = get_object_or_404(
@@ -2492,7 +2492,7 @@ def employee_edit(request, pk):
     return render(request, 'content/master/employee_creation/edit.html', context)
 
 
-@login_required
+@permission_required('master.delete_employee', raise_exception=True)
 @require_POST
 def employee_delete(request, pk):
     """Delete employee and all related data."""
@@ -3294,7 +3294,7 @@ def _validate_asset_vehicle_details(data):
     return errors, validated_data
 
 
-@login_required
+@permission_required('master.add_employee', raise_exception=True)
 @require_POST
 def employee_staff_save(request):
     """Save employee data from all tabs with comprehensive validation."""

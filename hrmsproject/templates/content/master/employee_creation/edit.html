@@ -47,8 +47,8 @@
 .table-action-btn {
   border: 1px solid #ced4da;
   background: #ffffff;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -145,6 +145,22 @@
 .table-placeholder {
   font-size: 0.85rem;
   color: #6c757d;
+}
+.employee-form .table,
+.employee-form .table td,
+.employee-form .table th {
+  font-size: 0.9rem;
+}
+.employee-form .table-sm {
+  font-size: 0.9rem;
+}
+.employee-form .btn-primary,
+.employee-form .tab-nav-btn,
+.employee-form button.btn-success[data-validation-form],
+.employee-form button.btn-success#final-save-btn {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  line-height: 1.4;
 }
 </style>
 {% endblock %}
@@ -428,7 +444,16 @@
                 </div>
                 <div class="col-md-6 form-field">
                   <label class="form-label">Profile Image <span class="text-danger">*</span></label>
-                  <input type="file" class="form-control" name="profile_image" required>
+                  <div class="d-flex gap-2 align-items-center">
+                    <input type="file" class="form-control d-none" id="profile_image_input" name="profile_image" accept="image/*" required>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openFilePickerForInput('profile_image_input')">
+                      Upload
+                    </button>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="openCameraForInput('profile_image_input', 'profile_image_preview')">
+                      Snap
+                    </button>
+                  </div>
+                  <div id="profile_image_preview" class="mt-2 file-preview"></div>
                 </div>
               </div>
             </div>
@@ -731,7 +756,16 @@
               </div>
               <div class="col-md-6 form-field">
                 <label class="form-label">Document Upload <span class="text-danger">*</span></label>
-                <input type="file" class="form-control" name="qualification_docs" multiple required>
+                <div class="d-flex gap-2 align-items-center">
+                  <input type="file" class="form-control d-none" id="qualification_docs_input" name="qualification_docs" accept="image/*" multiple required>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openFilePickerForInput('qualification_docs_input')">
+                    Upload
+                  </button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="openCameraForInput('qualification_docs_input', 'qualification_docs_preview')">
+                    Snap
+                  </button>
+                </div>
+                <div id="qualification_docs_preview" class="mt-2 file-preview"></div>
               </div>
             </div>
             <div class="d-flex justify-content-end align-items-center mt-5 mb-3">
@@ -800,7 +834,16 @@
               </div>
               <div class="col-md-6 form-field">
                 <label class="form-label">Document Upload <span class="text-danger">*</span></label>
-                <input type="file" class="form-control" name="experience_docs" multiple required>
+                <div class="d-flex gap-2 align-items-center">
+                  <input type="file" class="form-control d-none" id="experience_docs_input" name="experience_docs" accept="image/*" multiple required>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openFilePickerForInput('experience_docs_input')">
+                    Upload
+                  </button>
+                  <button type="button" class="btn btn-outline-primary btn-sm" onclick="openCameraForInput('experience_docs_input', 'experience_docs_preview')">
+                    Snap
+                  </button>
+                </div>
+                <div id="experience_docs_preview" class="mt-2 file-preview"></div>
               </div>
             </div>
             <div class="d-flex justify-content-end align-items-center mt-5 mb-3">
@@ -992,6 +1035,123 @@
   </div>
 </div>
 
+<!-- Image lightbox for full-size preview -->
+<div id="image-lightbox-overlay" style="display:none;
+  position:fixed; inset:0; background:rgba(0,0,0,0.8);
+  z-index:20000; align-items:center; justify-content:center;">
+  <div style="position:relative; max-width:90%; max-height:90%;">
+    <img id="image-lightbox-img" src="" alt="Preview"
+         style="max-width:100%; max-height:100%; border-radius:4px; box-shadow:0 4px 12px rgba(0,0,0,0.5);" />
+    <button type="button"
+            onclick="hideImageLightbox()"
+            style="position:absolute; top:-10px; right:-10px; border:none;
+                   background:#fff; border-radius:50%; width:28px; height:28px; font-weight:bold;">
+      ×
+    </button>
+  </div>
+</div>
+
+{% load static %}
+<script type="application/json" id="employee-edit-data">
+{
+  "dependents": [
+    {% for dep in dependents %}
+    {
+      "_id": "dep_{{ forloop.counter0 }}",
+      "relationship": "{{ dep.relationship|default:''|escapejs }}",
+      "rel_name": "{{ dep.name|default:''|escapejs }}",
+      "rel_gender": "{{ dep.gender|default:''|escapejs }}",
+      "rel_date_of_birth": "{% if dep.date_of_birth %}{{ dep.date_of_birth|date:'Y-m-d' }}{% endif %}",
+      "rel_aadhar_no": "{{ dep.aadhar_no|default:''|escapejs }}",
+      "occupation": "{{ dep.occupation|default:''|escapejs }}",
+      "standard": "{{ dep.standard|default:''|escapejs }}",
+      "school": "{{ dep.school|default:''|escapejs }}",
+      "existing_illness": "{{ dep.existing_illness|default:''|escapejs }}",
+      "description": "{{ dep.description|default:''|escapejs }}",
+      "existing_insurance": "{{ dep.existing_insurance|default:''|escapejs }}",
+      "insurance_no": "{{ dep.insurance_no|default:''|escapejs }}",
+      "physically_challenged": "{{ dep.physically_challenged|default:''|escapejs }}",
+      "remarks": "{{ dep.remarks|default:''|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "account": {% if employee.account_info %}{
+    "_id": "acc_0",
+    "bank_status": "{{ employee.account_info.bank_status|default:''|escapejs }}",
+    "salary_type": "{{ employee.account_info.salary_type|default:''|escapejs }}",
+    "accountant_name": "{{ employee.account_info.accountant_name|default:''|escapejs }}",
+    "account_no": "{{ employee.account_info.account_no|default:''|escapejs }}",
+    "bank_name": "{{ employee.account_info.bank_name|default:''|escapejs }}",
+    "ifsc_code": "{{ employee.account_info.ifsc_code|default:''|escapejs }}",
+    "bank_contact_no": "{{ employee.account_info.contact_no|default:''|escapejs }}",
+    "bank_address": "{{ employee.account_info.bank_address|default:''|escapejs }}"
+  }{% else %}null{% endif %},
+  "qualifications": [
+    {% for qual in qualifications %}
+    {
+      "_id": "qual_{{ forloop.counter0 }}",
+      "education_type": "{{ qual.education_type|default:''|escapejs }}",
+      "degree": "{{ qual.degree|default:''|escapejs }}",
+      "college_name": "{{ qual.college_name|default:''|escapejs }}",
+      "year_passing": "{% if qual.year_of_passing %}{{ qual.year_of_passing }}{% endif %}",
+      "percentage": "{{ qual.percentage|default:''|escapejs }}",
+      "university": "{{ qual.university|default:''|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "experiences": [
+    {% for exp in experiences %}
+    {
+      "_id": "exp_{{ forloop.counter0 }}",
+      "exp_company_name": "{{ exp.company_name|default:''|escapejs }}",
+      "designation_name": "{{ exp.designation|default:''|escapejs }}",
+      "salary_amt": "{{ exp.salary|default:''|escapejs }}",
+      "join_month": "{{ exp.joining_month|default:''|escapejs }}",
+      "relieve_month": "{{ exp.relieving_month|default:''|escapejs }}",
+      "exp": "{{ exp.experience_years|default:''|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "assets": [
+    {% for asset in assets %}
+    {
+      "_id": "asset_{{ forloop.counter0 }}",
+      "asset_name": "{{ asset.asset_name|default:''|escapejs }}",
+      "item_no": "{{ asset.serial_no|default:''|escapejs }}",
+      "qty": "{{ asset.quantity|default:1 }}",
+      "status": "{{ asset.status|default:''|escapejs }}",
+      "veh_reg_no": "{{ asset.vehicle_reg_no|default:''|escapejs }}",
+      "license_mode": "{{ asset.license_mode|default:''|escapejs }}",
+      "dri_license_no": "{{ asset.license_no|default:''|escapejs }}",
+      "valid_from": "{% if asset.license_valid_from %}{{ asset.license_valid_from|date:'Y-m-d' }}{% endif %}",
+      "valid_to": "{% if asset.license_valid_to %}{{ asset.license_valid_to|date:'Y-m-d' }}{% endif %}",
+      "vehicle_type": "{% if employee.vehicle_detail %}{{ employee.vehicle_detail.vehicle_type|default:''|escapejs }}{% endif %}",
+      "vehicle_company": "{% if employee.vehicle_detail %}{{ employee.vehicle_detail.vehicle_company|default:''|escapejs }}{% endif %}",
+      "vehicle_owner": "{% if employee.vehicle_detail %}{{ employee.vehicle_detail.vehicle_owner|default:''|escapejs }}{% endif %}",
+      "registration_year": "{% if employee.vehicle_detail and employee.vehicle_detail.registration_year %}{{ employee.vehicle_detail.registration_year|date:'Y-m-d' }}{% endif %}",
+      "rc_no": "{% if employee.vehicle_detail %}{{ employee.vehicle_detail.rc_no|default:''|escapejs }}{% endif %}",
+      "rc_validity_from": "{% if employee.vehicle_detail and employee.vehicle_detail.rc_validity_from %}{{ employee.vehicle_detail.rc_validity_from|date:'Y-m-d' }}{% endif %}",
+      "rc_validity_to": "{% if employee.vehicle_detail and employee.vehicle_detail.rc_validity_to %}{{ employee.vehicle_detail.rc_validity_to|date:'Y-m-d' }}{% endif %}",
+      "ins_no": "{% if employee.vehicle_detail %}{{ employee.vehicle_detail.insurance_no|default:''|escapejs }}{% endif %}",
+      "ins_validity_from": "{% if employee.vehicle_detail and employee.vehicle_detail.insurance_validity_from %}{{ employee.vehicle_detail.insurance_validity_from|date:'Y-m-d' }}{% endif %}",
+      "ins_validity_to": "{% if employee.vehicle_detail and employee.vehicle_detail.insurance_validity_to %}{{ employee.vehicle_detail.insurance_validity_to|date:'Y-m-d' }}{% endif %}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "vehicle_detail": {% if employee.vehicle_detail %}{
+    "vehicle_type": "{{ employee.vehicle_detail.vehicle_type|default:''|escapejs }}",
+    "vehicle_company": "{{ employee.vehicle_detail.vehicle_company|default:''|escapejs }}",
+    "vehicle_owner": "{{ employee.vehicle_detail.vehicle_owner|default:''|escapejs }}",
+    "registration_year": "{% if employee.vehicle_detail.registration_year %}{{ employee.vehicle_detail.registration_year|date:'Y-m-d' }}{% endif %}",
+    "rc_no": "{{ employee.vehicle_detail.rc_no|default:''|escapejs }}",
+    "rc_validity_from": "{% if employee.vehicle_detail.rc_validity_from %}{{ employee.vehicle_detail.rc_validity_from|date:'Y-m-d' }}{% endif %}",
+    "rc_validity_to": "{% if employee.vehicle_detail.rc_validity_to %}{{ employee.vehicle_detail.rc_validity_to|date:'Y-m-d' }}{% endif %}",
+    "insurance_no": "{{ employee.vehicle_detail.insurance_no|default:''|escapejs }}",
+    "insurance_validity_from": "{% if employee.vehicle_detail.insurance_validity_from %}{{ employee.vehicle_detail.insurance_validity_from|date:'Y-m-d' }}{% endif %}",
+    "insurance_validity_to": "{% if employee.vehicle_detail.insurance_validity_to %}{{ employee.vehicle_detail.insurance_validity_to|date:'Y-m-d' }}{% endif %}"
+  }{% else %}null{% endif %}
+}
+</script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     const sameAddressToggle = document.getElementById('sameAddressToggle');
@@ -1018,100 +1178,252 @@
     let currentEmployeeUniqueId = document.querySelector('#staff-create-form input[name="unique_id"]')?.value || '';
     let redirectTimeout = null;
 
+    // ========== CAMERA CAPTURE (PROFILE & DOCUMENTS) ==========
+    let cameraStream = null;
+    let cameraTargetInputId = null;
+    let cameraTargetPreviewId = null;
+
+    function ensureCameraOverlay() {
+      let overlay = document.getElementById('camera-capture-overlay');
+      if (overlay) return overlay;
+
+      overlay = document.createElement('div');
+      overlay.id = 'camera-capture-overlay';
+      overlay.style.position = 'fixed';
+      overlay.style.inset = '0';
+      overlay.style.background = 'rgba(0,0,0,0.7)';
+      overlay.style.zIndex = '1055';
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:8px;max-width:500px;width:100%;padding:16px;box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+          <h6 class="mb-2">Capture Image</h6>
+          <div class="ratio ratio-4x3 mb-2" style="background:#000;border-radius:4px;overflow:hidden;">
+            <video id="camera-capture-video" autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+          </div>
+          <canvas id="camera-capture-canvas" style="display:none;"></canvas>
+          <div class="d-flex justify-content-between mt-2">
+            <div>
+              <button type="button" class="btn btn-sm btn-secondary me-2" id="camera-capture-close-btn">Close</button>
+            </div>
+            <div>
+              <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="camera-capture-retake-btn" disabled>Retake</button>
+              <button type="button" class="btn btn-sm btn-primary" id="camera-capture-snap-btn">Capture</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const closeBtn = overlay.querySelector('#camera-capture-close-btn');
+      const snapBtn = overlay.querySelector('#camera-capture-snap-btn');
+      const retakeBtn = overlay.querySelector('#camera-capture-retake-btn');
+      const video = overlay.querySelector('#camera-capture-video');
+      const canvas = overlay.querySelector('#camera-capture-canvas');
+
+      function stopCameraStream() {
+        if (cameraStream) {
+          cameraStream.getTracks().forEach(t => t.stop());
+          cameraStream = null;
+        }
+        if (video) {
+          video.srcObject = null;
+        }
+      }
+
+      function hideOverlay() {
+        stopCameraStream();
+        overlay.style.display = 'none';
+        retakeBtn.disabled = true;
+        canvas.style.display = 'none';
+        video.style.display = 'block';
+      }
+
+      closeBtn.addEventListener('click', hideOverlay);
+
+      retakeBtn.addEventListener('click', async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert('Camera not supported on this device.');
+          return;
+        }
+        canvas.style.display = 'none';
+        video.style.display = 'block';
+        retakeBtn.disabled = true;
+        try {
+          cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = cameraStream;
+        } catch (err) {
+          console.error('Error accessing camera for retake:', err);
+          alert('Unable to access camera.');
+        }
+      });
+
+      snapBtn.addEventListener('click', async () => {
+        if (!cameraTargetInputId) return;
+        const input = document.getElementById(cameraTargetInputId);
+        if (!input) return;
+
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth || 1280;
+        canvas.height = video.videoHeight || 720;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const fileName = `capture_${Date.now()}.jpg`;
+          const file = new File([blob], fileName, { type: 'image/jpeg' });
+
+          const dataTransfer = new DataTransfer();
+          if (input.multiple) {
+            Array.from(input.files || []).forEach(f => dataTransfer.items.add(f));
+          }
+          dataTransfer.items.add(file);
+          input.files = dataTransfer.files;
+
+          if (cameraTargetPreviewId) {
+            const preview = document.getElementById(cameraTargetPreviewId);
+            if (preview) {
+              const url = URL.createObjectURL(file);
+              preview.innerHTML = `<img src="${url}" alt="Preview"
+                style="max-width:120px;max-height:120px;border-radius:4px;border:1px solid #dee2e6;cursor:pointer;">`;
+              const imgEl = preview.querySelector('img');
+              if (imgEl) {
+                imgEl.addEventListener('click', () => showImageLightbox(url));
+              }
+            }
+          }
+
+          // Auto-close overlay after successful capture
+          hideOverlay();
+        }, 'image/jpeg', 0.9);
+      });
+
+      overlay._stopCameraStream = stopCameraStream;
+
+      return overlay;
+    }
+
+    function openCameraForInput(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      if (!input) {
+        console.error('Camera target input not found:', inputId);
+        return;
+      }
+
+      cameraTargetInputId = inputId;
+      cameraTargetPreviewId = previewId;
+
+      const overlay = ensureCameraOverlay();
+      const video = overlay.querySelector('#camera-capture-video');
+      const retakeBtn = overlay.querySelector('#camera-capture-retake-btn');
+      const canvas = overlay.querySelector('#camera-capture-canvas');
+
+      overlay.style.display = 'flex';
+      canvas.style.display = 'none';
+      video.style.display = 'block';
+      retakeBtn.disabled = true;
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Camera not supported on this device/browser.');
+        return;
+      }
+
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          cameraStream = stream;
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          console.error('Error accessing camera:', err);
+          alert('Unable to access camera.');
+        });
+    }
+
+    function openFilePickerForInput(inputId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.click();
+    }
+
+    function showImageLightbox(url) {
+      const overlay = document.getElementById('image-lightbox-overlay');
+      const img = document.getElementById('image-lightbox-img');
+      if (!overlay || !img) return;
+      img.src = url;
+      overlay.style.display = 'flex';
+    }
+
+    function hideImageLightbox() {
+      const overlay = document.getElementById('image-lightbox-overlay');
+      const img = document.getElementById('image-lightbox-img');
+      if (!overlay || !img) return;
+      img.src = '';
+      overlay.style.display = 'none';
+    }
+
+    function attachPreviewOnChange(inputId, previewId) {
+      const input = document.getElementById(inputId);
+      const preview = document.getElementById(previewId);
+      if (!input || !preview) return;
+
+      input.addEventListener('change', () => {
+        if (!input.files || input.files.length === 0) {
+          preview.innerHTML = '';
+          return;
+        }
+        const file = input.files[input.files.length - 1];
+        if (!file || !file.type.startsWith('image/')) {
+          preview.innerHTML = '';
+          return;
+        }
+        const url = URL.createObjectURL(file);
+        preview.innerHTML = `<img src="${url}" alt="Preview"
+          style="max-width:120px;max-height:120px;border-radius:4px;border:1px solid #dee2e6;cursor:pointer;">`;
+        const imgEl = preview.querySelector('img');
+        if (imgEl) {
+          imgEl.addEventListener('click', () => showImageLightbox(url));
+        }
+      });
+    }
+
+    // Attach previews for camera/file inputs
+    attachPreviewOnChange('profile_image_input', 'profile_image_preview');
+    attachPreviewOnChange('qualification_docs_input', 'qualification_docs_preview');
+    attachPreviewOnChange('experience_docs_input', 'experience_docs_preview');
+
+    // Expose lightbox hide function for inline onclick
+    window.hideImageLightbox = hideImageLightbox;
+
     // ========== MULTIPLE RECORDS ARRAYS ==========
     // Pre-populate with existing data for edit mode
-    let dependentsList = [
-      {% for dep in dependents %}
-      {
-        _id: 'dep_{{ forloop.counter0 }}',
-        relationship: '{{ dep.relationship|default:'' }}',
-        rel_name: '{{ dep.name|default:'' }}',
-        rel_gender: '{{ dep.gender|default:'' }}',
-        rel_date_of_birth: '{% if dep.date_of_birth %}{{ dep.date_of_birth|date:"Y-m-d" }}{% endif %}',
-        rel_aadhar_no: '{{ dep.aadhar_no|default:'' }}',
-        occupation: '{{ dep.occupation|default:'' }}',
-        standard: '{{ dep.standard|default:'' }}',
-        school: '{{ dep.school|default:'' }}',
-        existing_illness: '{{ dep.existing_illness|default:'' }}',
-        description: '{{ dep.description|default:'' }}',
-        existing_insurance: '{{ dep.existing_insurance|default:'' }}',
-        insurance_no: '{{ dep.insurance_no|default:'' }}',
-        physically_challenged: '{{ dep.physically_challenged|default:'' }}',
-        remarks: '{{ dep.remarks|default:'' }}'
-      }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ];
+    const editDataElement = document.getElementById('employee-edit-data');
+    let editData = {};
     
-    let accountsList = [
-      {% if employee.account_info %}
-      {
-        _id: 'acc_0',
-        bank_status: '{{ employee.account_info.bank_status|default:'' }}',
-        salary_type: '{{ employee.account_info.salary_type|default:'' }}',
-        accountant_name: '{{ employee.account_info.accountant_name|default:'' }}',
-        account_no: '{{ employee.account_info.account_no|default:'' }}',
-        bank_name: '{{ employee.account_info.bank_name|default:'' }}',
-        ifsc_code: '{{ employee.account_info.ifsc_code|default:'' }}',
-        bank_contact_no: '{{ employee.account_info.contact_no|default:'' }}',
-        bank_address: '{{ employee.account_info.bank_address|default:'' }}'
+    if (editDataElement) {
+      try {
+        editData = JSON.parse(editDataElement.textContent);
+        console.log('Edit data loaded:', editData);
+      } catch (e) {
+        console.error('Error parsing edit data:', e);
       }
-      {% endif %}
-    ];
+    }
     
-    let qualificationsList = [
-      {% for qual in qualifications %}
-      {
-        _id: 'qual_{{ forloop.counter0 }}',
-        education_type: '{{ qual.education_type|default:'' }}',
-        degree: '{{ qual.degree|default:'' }}',
-        college_name: '{{ qual.college_name|default:'' }}',
-        year_passing: '{% if qual.year_of_passing %}{{ qual.year_of_passing }}{% endif %}',
-        percentage: '{{ qual.percentage|default:'' }}',
-        university: '{{ qual.university|default:'' }}'
-      }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ];
+    let dependentsList = editData.dependents || [];
+    let accountsList = editData.account ? [editData.account] : [];
+    let qualificationsList = editData.qualifications || [];
+    let experiencesList = editData.experiences || [];
+    let assetsList = editData.assets || [];
     
-    let experiencesList = [
-      {% for exp in experiences %}
-      {
-        _id: 'exp_{{ forloop.counter0 }}',
-        exp_company_name: '{{ exp.company_name|default:'' }}',
-        designation_name: '{{ exp.designation|default:'' }}',
-        salary_amt: '{{ exp.salary|default:'' }}',
-        join_month: '{{ exp.joining_month|default:'' }}',
-        relieve_month: '{{ exp.relieving_month|default:'' }}',
-        exp: '{{ exp.experience_years|default:'' }}'
-      }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ];
-    
-    let assetsList = [
-      {% for asset in assets %}
-      {
-        _id: 'asset_{{ forloop.counter0 }}',
-        asset_name: '{{ asset.asset_name|default:'' }}',
-        item_no: '{{ asset.serial_no|default:'' }}',
-        qty: '{{ asset.quantity|default:1 }}',
-        status: '{{ asset.status|default:'' }}',
-        veh_reg_no: '{{ asset.vehicle_reg_no|default:'' }}',
-        license_mode: '{{ asset.license_mode|default:'' }}',
-        dri_license_no: '{{ asset.license_no|default:'' }}',
-        valid_from: '{% if asset.license_valid_from %}{{ asset.license_valid_from|date:"Y-m-d" }}{% endif %}',
-        valid_to: '{% if asset.license_valid_to %}{{ asset.license_valid_to|date:"Y-m-d" }}{% endif %}',
-        vehicle_type: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.vehicle_type|default:'' }}{% endif %}',
-        vehicle_company: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.vehicle_company|default:'' }}{% endif %}',
-        vehicle_owner: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.vehicle_owner|default:'' }}{% endif %}',
-        registration_year: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.registration_year %}{{ asset.employee.vehicle_detail.registration_year|date:"Y-m-d" }}{% endif %}',
-        rc_no: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.rc_no|default:'' }}{% endif %}',
-        rc_validity_from: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.rc_validity_from %}{{ asset.employee.vehicle_detail.rc_validity_from|date:"Y-m-d" }}{% endif %}',
-        rc_validity_to: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.rc_validity_to %}{{ asset.employee.vehicle_detail.rc_validity_to|date:"Y-m-d" }}{% endif %}',
-        ins_no: '{% if asset.employee.vehicle_detail %}{{ asset.employee.vehicle_detail.insurance_no|default:'' }}{% endif %}',
-        ins_validity_from: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.insurance_validity_from %}{{ asset.employee.vehicle_detail.insurance_validity_from|date:"Y-m-d" }}{% endif %}',
-        ins_validity_to: '{% if asset.employee.vehicle_detail and asset.employee.vehicle_detail.insurance_validity_to %}{{ asset.employee.vehicle_detail.insurance_validity_to|date:"Y-m-d" }}{% endif %}'
-      }{% if not forloop.last %},{% endif %}
-      {% endfor %}
-    ];
+    console.log('Initialized arrays:', {
+      dependents: dependentsList.length,
+      accounts: accountsList.length,
+      qualifications: qualificationsList.length,
+      experiences: experiencesList.length,
+      assets: assetsList.length
+    });
 
     function getListCountForForm(formId) {
       switch (formId) {
@@ -1238,8 +1550,8 @@
         }
       }
       
-      // PAN number validation (5 letters + 4 digits + 1 letter)
-      if (fieldName?.includes('pan')) {
+      // PAN number validation (5 letters + 4 digits + 1 letter) - only for pan_no field
+      if (fieldName === 'pan_no' || fieldName?.startsWith('pan_')) {
         const panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
         const cleaned = value.replace(/\s/g, '').toUpperCase();
         if (!panPattern.test(cleaned)) {
@@ -1280,8 +1592,8 @@
         }
       }
       
-      // Year validation (1900 to current year)
-      if (fieldName?.includes('year') || fieldName?.includes('passing')) {
+      // Year validation (1900 to current year) - only for text fields with year, not date fields like registration_year
+      if ((fieldName?.includes('year') || fieldName?.includes('passing')) && !fieldName?.includes('registration_year') && fieldType !== 'date' && fieldType !== 'month') {
         const year = parseInt(value);
         const currentYear = new Date().getFullYear();
         if (isNaN(year) || year < 1900 || year > currentYear) {
@@ -1348,8 +1660,8 @@
         }
       }
       
-      // Vehicle registration number validation (Indian format)
-      if (fieldName?.includes('reg_no') || fieldName?.includes('registration')) {
+      // Vehicle registration number validation (Indian format) - only for veh_reg_no, not registration_year
+      if (fieldName?.includes('veh_reg_no') || (fieldName?.includes('reg_no') && !fieldName?.includes('registration_year'))) {
         const regPattern = /^[A-Z]{2}[-\s]?[0-9]{1,2}[-\s]?[A-Z]{1,2}[-\s]?[0-9]{4}$/i;
         if (!regPattern.test(value)) {
           return { isValid: false, message: `${labelText} must be in format: TN-09-AB-1234.` };
@@ -1615,8 +1927,8 @@
             });
           }
           
-          // Vehicle registration - format: TN-09-AB-1234
-          if (fieldName && (fieldName.includes('reg_no') || fieldName.includes('registration'))) {
+          // Vehicle registration - format: TN-09-AB-1234 (only for veh_reg_no, not registration_year)
+          if (fieldName && (fieldName.includes('veh_reg_no') || (fieldName.includes('reg_no') && !fieldName.includes('registration_year')))) {
             field.addEventListener('input', function(e) {
               let value = e.target.value.replace(/\s/g, '').toUpperCase();
               // Allow letters, digits, hyphens
@@ -2378,13 +2690,13 @@
           <td>${dep.remarks || '-'}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editDependent(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteDependent(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2461,13 +2773,13 @@
           <td>${acc.bank_address || '-'}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editAccount(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteAccount(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2568,13 +2880,13 @@
           <td>${qual.university || '-'}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editQualification(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteQualification(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2675,13 +2987,13 @@
           <td>${exp.exp || '-'}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editExperience(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteExperience(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2784,13 +3096,13 @@
           <td>${validity}</td>
           <td>
             <button type="button" class="table-action-btn edit" onclick="editAsset(${index})" title="Edit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20h9"></path>
                 <path d="M16.5 3.5l4 4L7 21H3v-4L16.5 3.5z"></path>
               </svg>
             </button>
             <button type="button" class="table-action-btn delete" onclick="deleteAsset(${index})" title="Delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
                 <path d="M10 11v6"></path>
@@ -2808,20 +3120,70 @@
     window.addDependentToList = addDependentToList;
     window.editDependent = editDependent;
     window.deleteDependent = deleteDependent;
+    window.refreshDependentsTable = refreshDependentsTable;
     window.addAccountToList = addAccountToList;
     window.editAccount = editAccount;
     window.deleteAccount = deleteAccount;
+    window.refreshAccountsTable = refreshAccountsTable;
     window.addQualificationToList = addQualificationToList;
     window.editQualification = editQualification;
     window.deleteQualification = deleteQualification;
+    window.refreshQualificationsTable = refreshQualificationsTable;
     window.addExperienceToList = addExperienceToList;
     window.editExperience = editExperience;
     window.deleteExperience = deleteExperience;
+    window.refreshExperiencesTable = refreshExperiencesTable;
     window.addAssetToList = addAssetToList;
     window.editAsset = editAsset;
     window.deleteAsset = deleteAsset;
+    window.refreshAssetsTable = refreshAssetsTable;
     window.clearFormValidation = clearFormValidation;
     window.showAddToListSuccess = showAddToListSuccess;
+    window.openCameraForInput = openCameraForInput;
+    window.openFilePickerForInput = openFilePickerForInput;
+    
+    // Pre-populate sublist tables with existing data after all functions are defined
+    console.log('Refreshing edit tables with existing data...');
+    console.log('Dependents:', dependentsList.length);
+    console.log('Accounts:', accountsList.length);
+    console.log('Qualifications:', qualificationsList.length);
+    console.log('Experiences:', experiencesList.length);
+    console.log('Assets:', assetsList.length);
+    
+    if (dependentsList.length > 0) {
+      dependentsList.forEach((dep, index) => {
+        if (!dep._id) dep._id = 'dep_' + Date.now() + '_' + index;
+      });
+      refreshDependentsTable();
+    }
+    
+    if (accountsList.length > 0) {
+      accountsList.forEach((acc, index) => {
+        if (!acc._id) acc._id = 'acc_' + Date.now() + '_' + index;
+      });
+      refreshAccountsTable();
+    }
+    
+    if (qualificationsList.length > 0) {
+      qualificationsList.forEach((qual, index) => {
+        if (!qual._id) qual._id = 'qual_' + Date.now() + '_' + index;
+      });
+      refreshQualificationsTable();
+    }
+    
+    if (experiencesList.length > 0) {
+      experiencesList.forEach((exp, index) => {
+        if (!exp._id) exp._id = 'exp_' + Date.now() + '_' + index;
+      });
+      refreshExperiencesTable();
+    }
+    
+    if (assetsList.length > 0) {
+      assetsList.forEach((asset, index) => {
+        if (!asset._id) asset._id = 'asset_' + Date.now() + '_' + index;
+      });
+      refreshAssetsTable();
+    }
   });
 
   // Country, State, City Dropdown Population
@@ -2949,83 +3311,55 @@
     loadCountries();
     
     // Pre-populate country/state/city dropdowns for edit mode
-    {% if employee.present_country %}
-    setTimeout(() => {
-      const preCountry = document.querySelector('.country-select[data-address-type="present"]');
-      if (preCountry) {
-        preCountry.value = '{{ employee.present_country }}';
-        loadStates(preCountry);
-        setTimeout(() => {
-          const preState = document.querySelector('.state-select[data-address-type="present"]');
-          if (preState) {
-            preState.value = '{{ employee.present_state }}';
-            loadCities(preState);
-            setTimeout(() => {
-              const preCity = document.querySelector('.city-select[data-address-type="present"]');
-              if (preCity) preCity.value = '{{ employee.present_city }}';
-            }, 500);
-          }
-        }, 500);
-      }
-    }, 1000);
-    {% endif %}
+    const presentCountry = '{{ employee.present_country|default:""|escapejs }}';
+    const presentState = '{{ employee.present_state|default:""|escapejs }}';
+    const presentCity = '{{ employee.present_city|default:""|escapejs }}';
+    const permanentCountry = '{{ employee.permanent_country|default:""|escapejs }}';
+    const permanentState = '{{ employee.permanent_state|default:""|escapejs }}';
+    const permanentCity = '{{ employee.permanent_city|default:""|escapejs }}';
     
-    {% if employee.permanent_country %}
-    setTimeout(() => {
-      const permCountry = document.querySelector('.country-select[data-address-type="permanent"]');
-      if (permCountry) {
-        permCountry.value = '{{ employee.permanent_country }}';
-        loadStates(permCountry);
-        setTimeout(() => {
-          const permState = document.querySelector('.state-select[data-address-type="permanent"]');
-          if (permState) {
-            permState.value = '{{ employee.permanent_state }}';
-            loadCities(permState);
-            setTimeout(() => {
-              const permCity = document.querySelector('.city-select[data-address-type="permanent"]');
-              if (permCity) permCity.value = '{{ employee.permanent_city }}';
-            }, 500);
-          }
-        }, 500);
-      }
-    }, 1500);
-    {% endif %}
-    
-    // Pre-populate sublist tables with existing data
-    if (dependentsList.length > 0) {
-      dependentsList.forEach((dep, index) => {
-        dep._id = 'dep_' + Date.now() + '_' + index;
-      });
-      refreshDependentsTable();
+    if (presentCountry) {
+      setTimeout(() => {
+        const preCountry = document.querySelector('.country-select[data-address-type="present"]');
+        if (preCountry) {
+          preCountry.value = presentCountry;
+          loadStates(preCountry);
+          setTimeout(() => {
+            const preState = document.querySelector('.state-select[data-address-type="present"]');
+            if (preState && presentState) {
+              preState.value = presentState;
+              loadCities(preState);
+              setTimeout(() => {
+                const preCity = document.querySelector('.city-select[data-address-type="present"]');
+                if (preCity && presentCity) preCity.value = presentCity;
+              }, 500);
+            }
+          }, 500);
+        }
+      }, 1000);
     }
     
-    if (accountsList.length > 0) {
-      accountsList.forEach((acc, index) => {
-        acc._id = 'acc_' + Date.now() + '_' + index;
-      });
-      refreshAccountsTable();
+    if (permanentCountry) {
+      setTimeout(() => {
+        const permCountry = document.querySelector('.country-select[data-address-type="permanent"]');
+        if (permCountry) {
+          permCountry.value = permanentCountry;
+          loadStates(permCountry);
+          setTimeout(() => {
+            const permState = document.querySelector('.state-select[data-address-type="permanent"]');
+            if (permState && permanentState) {
+              permState.value = permanentState;
+              loadCities(permState);
+              setTimeout(() => {
+                const permCity = document.querySelector('.city-select[data-address-type="permanent"]');
+                if (permCity && permanentCity) permCity.value = permanentCity;
+              }, 500);
+            }
+          }, 500);
+        }
+      }, 1500);
     }
     
-    if (qualificationsList.length > 0) {
-      qualificationsList.forEach((qual, index) => {
-        qual._id = 'qual_' + Date.now() + '_' + index;
-      });
-      refreshQualificationsTable();
-    }
-    
-    if (experiencesList.length > 0) {
-      experiencesList.forEach((exp, index) => {
-        exp._id = 'exp_' + Date.now() + '_' + index;
-      });
-      refreshExperiencesTable();
-    }
-    
-    if (assetsList.length > 0) {
-      assetsList.forEach((asset, index) => {
-        asset._id = 'asset_' + Date.now() + '_' + index;
-      });
-      refreshAssetsTable();
-    }
   });
 </script>
 {% endblock %}
