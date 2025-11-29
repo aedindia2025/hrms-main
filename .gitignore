@@ -64,3 +64,23 @@ coverage.xml
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Documentation files
+*.md
+*.mdx
+*.rst
+*.txt
+*.doc
+*.docx
+*.pdf
+*.odt
+*.rtf
+*.epub
+*.mobi
+*.html
+*.htm
+docs/
+documentation/
+*.draft
+*.temp
+*.backup
