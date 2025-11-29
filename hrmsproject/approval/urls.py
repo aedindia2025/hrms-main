@@ -7,6 +7,7 @@ app_name = 'approval'
 urlpatterns = [
     # ==================== HR Approval ====================
     path('hr/', views.hr_comp_off_approval, name='hr_comp_off_approval'),
+    path('hr/<int:pk>/update/', views.hr_comp_off_approval_update, name='hr_comp_off_approval_update'),
     
     # ==================== Daily Attendance ====================
     path('daily-attendance/print/', views.daily_attendance_print, name='daily_attendance_print'),

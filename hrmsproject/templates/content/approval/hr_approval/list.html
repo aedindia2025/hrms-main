@@ -9,58 +9,89 @@
 
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="mb-3 fw-bold text-secondary">Approval / <span class="text-dark"> HR comp.off approval</span></h6>
-        <!-- Link to Create Page -->
-       <!-- <a href="#" class="btn btn-success btn-create text-nowrap">Home<span data-feather="home" class="icon-sm"></span> </a> -->
+        <h6 class="mb-3 fw-bold text-secondary">
+            Approval / <span class="text-dark">HR Comp-Off Approval</span>
+        </h6>
     </div>
 
-
-   <div class="card shadow-sm">
+    <div class="card shadow-sm">
         <div class="card-body">
-    <!-- Copy dashboard HTML here -->
-      <div class="row g-3 mb-3">
-      <div class="col-md-2">
-        <label class="form-label">From Date</label>
-        <input type="date" class="form-control" value="2025-09-20">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">To Date</label>
-        <input type="date" class="form-control" value="2025-09-20">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Site Name</label>
-        <select class="form-select">
-          <option>select</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Employee Name</label>
-        <select class="form-select">
-            <option>Select</option>
-          <option>Manoj</option>
-          <option>Gowshi</option>
-          <option>Prabu</option>
-        </select>
-      </div>
-      
-      <div class="col-md-1 d-flex align-items-end">
-        <button class="btn btn-primary w-100">Go</button>
-      </div>
-    </div>
-     <div class="d-flex justify-content-between align-items-center mt-5 mb-10">
+
+            <!-- Filter Section -->
+            <form method="get" class="row g-3 mb-3">
+                <div class="col-md-2">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Site Name</label>
+                    <select name="site" class="form-select">
+                        <option value="">All</option>
+                        {% for site in sites %}
+                            <option value="{{ site.id }}" {% if filter_site_id == site.id|stringformat:"s" %}selected{% endif %}>
+                                {{ site.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Employee Name</label>
+                    <select name="employee" class="form-select">
+                        <option value="">All</option>
+                        {% for emp in employees %}
+                            <option value="{{ emp.id }}" {% if filter_employee_id == emp.id|stringformat:"s" %}selected{% endif %}>
+                                {{ emp.staff_name }} ({{ emp.staff_id }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        {% for value,label in approval_choices %}
+                            <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" type="submit">Go</button>
+                </div>
+            </form>
+
+            <!-- Show entries & Search -->
+            <div class="d-flex justify-content-between align-items-center mt-3 mb-10">
                 <div>
-                    Show 
-                    <select class="form-select d-inline-block w-auto mx-1">
-                        <option>10</option>
-                        <option>25</option>
-                        <option>50</option>
-                        <option>100</option>
+                    Show
+                    <select class="form-select d-inline-block w-auto mx-1"
+                            id="perPageSelect"
+                            onchange="updateHrCompPerPage(this.value)">
+                        <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+                        <option value="25" {% if per_page == '25' %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
                     </select>
                     entries
                 </div>
                 <div>
-                    <label class="me-2">Search:</label>
-                    <input type="text" class="form-control d-inline-block w-auto">
+                    <form method="get" class="d-inline-flex align-items-center">
+                        <input type="hidden" name="per_page" value="{{ per_page }}">
+                        {% if from_date %}<input type="hidden" name="from_date" value="{{ from_date }}">{% endif %}
+                        {% if to_date %}<input type="hidden" name="to_date" value="{{ to_date }}">{% endif %}
+                        {% if filter_site_id %}<input type="hidden" name="site" value="{{ filter_site_id }}">{% endif %}
+                        {% if filter_employee_id %}<input type="hidden" name="employee" value="{{ filter_employee_id }}">{% endif %}
+                        {% if filter_status %}<input type="hidden" name="status" value="{{ filter_status }}">{% endif %}
+                        <label class="me-2">Search:</label>
+                        <input type="text" name="q" class="form-control d-inline-block w-auto"
+                               value="{{ search_query }}" placeholder="Employee / Site / Approver">
+                        {% if search_query %}
+                            <a href="?per_page={{ per_page }}" class="btn btn-sm btn-secondary ms-2">Clear</a>
+                        {% endif %}
+                    </form>
                 </div>
             </div>
 
@@ -79,57 +110,120 @@
                             <th>Worked Hours</th>
                             <th>Day Status</th>
                             <th>Head Approval</th>
-                            <th>HR Approval</th>
+                            <th>HR Action</th>
                         </tr>
                     </thead>
                     <tbody>
+                        {% for entry in comp_off_entries %}
                         <tr>
-                            <td>1</td>
-                            <td>11-02-2025</td>
-                            <td>AST-2374899</td>
-                            <td>Sujal Choudary</td>
-                            <td>Guntur</td>
-                            <td>11:30 AM</td>
-                            <td>5:00 PM</td>
+                            <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                            <td>{{ entry.work_date|date:"d-m-Y" }}</td>
+                            <td>{{ entry.employee.staff_id }}</td>
+                            <td>{{ entry.employee.staff_name }}</td>
+                            <td>{{ entry.site.name }}</td>
+                            <td>{{ entry.in_time|time:"H:i" }}</td>
+                            <td>{{ entry.out_time|time:"H:i" }}</td>
+                            <td>{{ entry.worked_hours_display|default:"-" }}</td>
+                            <td>{{ entry.get_day_status_display }}</td>
                             <td>
-                             4:30 hours
+                                <span class="badge rounded-pill {{ entry.head_approval_badge_class }}">
+                                    {{ entry.get_head_approval_status_display }}
+                                    {% if entry.head_approval_by %}
+                                        by {{ entry.head_approval_by }}
+                                    {% endif %}
+                                </span>
+                                {% if entry.head_approval_note %}
+                                    <div class="small text-muted mt-1">
+                                        Note: {{ entry.head_approval_note }}
+                                    </div>
+                                {% endif %}
                             </td>
-                            <td>Half Day</td>
-                            <td>
-                                <span class="badge border border-success text-success bg-success bg-opacity-10 rounded-pill px-3 py-2">
-  Approved
-</span>
-
+                            <td class="text-nowrap">
+                                <form method="post"
+                                      action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
+                                      class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="approved">
+                                    <input type="hidden" name="note" value="">
+                                    <button type="submit" class="btn btn-sm btn-success me-1">
+                                        Approve
+                                    </button>
+                                </form>
+                                <form method="post"
+                                      action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
+                                      class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="rejected">
+                                    <input type="hidden" name="note" value="">
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        Reject
+                                    </button>
+                                </form>
                             </td>
-                            <td>
-                                <span class="badge border border-success text-success bg-success bg-opacity-10 rounded-pill px-3 py-2">
-  Approved
-</span>
-
-                            </td>
-
                         </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11" class="text-center">No Comp-Off entries found for approval.</td>
+                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
             <div class="d-flex justify-content-between align-items-center">
-                <div>Showing 1 to 1 of 1 entries</div>
+                <div>
+                    {% if total_entries %}
+                        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_entries }} entries
+                    {% else %}
+                        No entries to show
+                    {% endif %}
+                </div>
+                {% if page_obj.has_other_pages %}
                 <nav>
                     <ul class="pagination mb-0">
-                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                        <li class="page-item active"><a class="page-link">1</a></li>
-                        <li class="page-item disabled"><a class="page-link">Next</a></li>
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.previous_page_number }}{% if base_querystring %}&{{ base_querystring }}{% endif %}">
+                                    Previous
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><a class="page-link">{{ num }}</a></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link"
+                                       href="?page={{ num }}{% if base_querystring %}&{{ base_querystring }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                   href="?page={{ page_obj.next_page_number }}{% if base_querystring %}&{{ base_querystring }}{% endif %}">
+                                    Next
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link">Next</a></li>
+                        {% endif %}
                     </ul>
                 </nav>
+                {% endif %}
             </div>
 
         </div>
+    </div>
 </div>
-</div>
-</div>
-
 
 <style>
     body {
@@ -142,25 +236,16 @@
     .table th, .table td {
         font-size: 14px;
     }
-    .btn-create {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: 0.2s ease-in-out;
-}
-.icon-sm {
-    width: 16px;
-    height: 16px;
-  }
 </style>
 
 <script src="https://unpkg.com/feather-icons"></script>
 <script>
     feather.replace();
+    function updateHrCompPerPage(value) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('per_page', value);
+        url.searchParams.delete('page');
+        window.location.href = url.toString();
+    }
 </script>
 {% endblock %}
