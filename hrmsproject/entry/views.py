@@ -98,7 +98,7 @@ def comp_off_create(request):
         'errors': errors,
         'day_status_choices': CompOffEntry.DAY_STATUS_CHOICES,
     }
-    return render(request, 'content/entry/comp_entry/create.html', context)
+    return render(request, 'entry/comp_entry/create.html', context)
 
 
 @permission_required('entry.view_compoffentry', raise_exception=True)
@@ -140,7 +140,7 @@ def comp_off_list(request):
         'page_query_base': page_query_base,
         'total_entries': paginator.count,
     }
-    return render(request, 'content/entry/comp_entry/list.html', context)
+    return render(request, 'entry/comp_entry/list.html', context)
 
 
 @permission_required('entry.change_compoffentry', raise_exception=True)
@@ -229,7 +229,7 @@ def comp_off_edit(request, pk):
         'errors': errors,
         'day_status_choices': CompOffEntry.DAY_STATUS_CHOICES,
     }
-    return render(request, 'content/entry/comp_entry/edit.html', context)
+    return render(request, 'entry/comp_entry/edit.html', context)
 
 
 @permission_required('entry.delete_compoffentry', raise_exception=True)
@@ -243,7 +243,7 @@ def comp_off_delete(request, pk):
     context = {
         'comp_off_entry': comp_off_entry,
     }
-    return render(request, 'content/entry/comp_entry/confirm_delete.html', context)
+    return render(request, 'entry/comp_entry/confirm_delete.html', context)
 
 
 # ------------------------
@@ -251,15 +251,15 @@ def comp_off_delete(request, pk):
 # ------------------------
 @permission_required('entry.add_leaveentry', raise_exception=True)
 def leave_entry_create(request):
-    return render(request, 'content/entry/leave_entry/create.html')
+    return render(request, 'entry/leave_entry/create.html')
 
 @permission_required('entry.view_leaveentry', raise_exception=True)
 def leave_entry_list(request):
-    return render(request, 'content/entry/leave_entry/list.html')
+    return render(request, 'entry/leave_entry/list.html')
 
 @permission_required('entry.view_leaveentry', raise_exception=True)
 def leave_entry_print(request):
-    return render(request, 'content/entry/leave_entry/print.html')
+    return render(request, 'entry/leave_entry/print.html')
 
 
 # ------------------------
@@ -267,15 +267,15 @@ def leave_entry_print(request):
 # ------------------------
 @permission_required('entry.add_manualentry', raise_exception=True)
 def manual_entry_create(request):
-    return render(request, 'content/entry/manual_entry/create.html')
+    return render(request, 'entry/manual_entry/create.html')
 
 @permission_required('entry.view_manualentry', raise_exception=True)
 def manual_entry_list(request):
-    return render(request, 'content/entry/manual_entry/list.html')
+    return render(request, 'entry/manual_entry/list.html')
 
 @permission_required('entry.view_manualentry', raise_exception=True)
 def manual_entry_print(request):
-    return render(request, 'content/entry/manual_entry/print.html')
+    return render(request, 'entry/manual_entry/print.html')
 
 
 # ------------------------
@@ -283,15 +283,15 @@ def manual_entry_print(request):
 # ------------------------
 @permission_required('entry.add_permissionentry', raise_exception=True)
 def permission_entry_create(request):
-    return render(request, 'content/entry/permission_entry/create.html')
+    return render(request, 'entry/permission_entry/create.html')
 
 @permission_required('entry.view_permissionentry', raise_exception=True)
 def permission_entry_list(request):
-    return render(request, 'content/entry/permission_entry/list.html')
+    return render(request, 'entry/permission_entry/list.html')
 
 @permission_required('entry.view_permissionentry', raise_exception=True)
 def permission_entry_print(request):
-    return render(request, 'content/entry/permission_entry/print.html')
+    return render(request, 'entry/permission_entry/print.html')
 
 
 # ------------------------
@@ -336,7 +336,7 @@ def site_entry_list(request):
         'page_query_base': page_query_base,
         'total_entries': paginator.count,
     }
-    return render(request, 'content/entry/site_entry/list.html', context)
+    return render(request, 'entry/site_entry/list.html', context)
 
 
 @permission_required('entry.add_siteentry', raise_exception=True)
@@ -399,7 +399,7 @@ def site_entry_create(request):
         'errors': errors,
         'transfer_type_choices': SiteEntry.TRANSFER_TYPE_CHOICES,
     }
-    return render(request, 'content/entry/site_entry/create.html', context)
+    return render(request, 'entry/site_entry/create.html', context)
 
 
 @permission_required('entry.change_siteentry', raise_exception=True)
@@ -463,7 +463,7 @@ def site_entry_edit(request, pk):
         'errors': errors,
         'transfer_type_choices': SiteEntry.TRANSFER_TYPE_CHOICES,
     }
-    return render(request, 'content/entry/site_entry/edit.html', context)
+    return render(request, 'entry/site_entry/edit.html', context)
 
 
 @permission_required('entry.delete_siteentry', raise_exception=True)
@@ -477,7 +477,7 @@ def site_entry_delete(request, pk):
     context = {
         'site_entry': site_entry,
     }
-    return render(request, 'content/entry/site_entry/confirm_delete.html', context)
+    return render(request, 'entry/site_entry/confirm_delete.html', context)
 
 
 # ------------------------
@@ -485,11 +485,11 @@ def site_entry_delete(request, pk):
 # ------------------------
 @permission_required('entry.add_tadaentry', raise_exception=True)
 def tada_entry_create(request):
-    return render(request, 'content/entry/tada_entry/create.html')
+    return render(request, 'entry/tada_entry/create.html')
 
 @permission_required('entry.view_tadaentry', raise_exception=True)
 def tada_entry_list(request):
-    return render(request, 'content/entry/tada_entry/list.html')
+    return render(request, 'entry/tada_entry/list.html')
 
 
 # ------------------------
@@ -497,8 +497,8 @@ def tada_entry_list(request):
 # ------------------------
 @permission_required('entry.add_travelentry', raise_exception=True)
 def travel_entry_create(request):
-    return render(request, 'content/entry/travel_entry/create.html')
+    return render(request, 'entry/travel_entry/create.html')
 
 @permission_required('entry.view_travelentry', raise_exception=True)
 def travel_entry_list(request):
-    return render(request, 'content/entry/travel_entry/list.html')
+    return render(request, 'entry/travel_entry/list.html')

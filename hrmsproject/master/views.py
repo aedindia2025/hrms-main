@@ -170,7 +170,7 @@ def company_list(request):
         'query': query,
         'status_filter': status,
     }
-    return render(request, 'content/master/company_creation/list.html', context)
+    return render(request, 'master/company_creation/list.html', context)
 
 
 @permission_required('master.add_company', raise_exception=True)
@@ -237,14 +237,14 @@ def company_create1(request):
 
         return render(
             request,
-            'content/master/company_creation/create1.html',
+            'master/company_creation/create1.html',
             {
                 'errors': errors,
                 'submitted': submitted,
             },
         )
 
-    return render(request, 'content/master/company_creation/create1.html', {
+    return render(request, 'master/company_creation/create1.html', {
         'errors': {},
         'submitted': {},
     })
@@ -316,14 +316,14 @@ def company_add(request):
 
         return render(
             request,
-            'content/master/company_creation/create.html',
+            'master/company_creation/create.html',
             {
                 'errors': errors,
                 'submitted': submitted,
             },
         )
 
-    return render(request, 'content/master/company_creation/create.html', {
+    return render(request, 'master/company_creation/create.html', {
         'errors': {},
         'submitted': {},
     })
@@ -397,7 +397,7 @@ def company_edit(request, pk):
 
         return render(
             request,
-            'content/master/company_creation/editForm.html',
+            'master/company_creation/editForm.html',
             {
                 'errors': errors,
                 'submitted': submitted,
@@ -405,7 +405,7 @@ def company_edit(request, pk):
             },
         )
 
-    return render(request, 'content/master/company_creation/editForm.html', {
+    return render(request, 'master/company_creation/editForm.html', {
         'company': company,
         'errors': {},
         'submitted': {},
@@ -420,13 +420,13 @@ def company_delete(request, pk):
         messages.success(request, 'Company deleted successfully.')
         return redirect('master:company_list')
 
-    return render(request, 'content/master/company_creation/confirm_delete.html', {'company': company})
+    return render(request, 'master/company_creation/confirm_delete.html', {'company': company})
 
 
 @permission_required('master.view_company', raise_exception=True)
 def company_list1(request):
     companies = Company.objects.order_by('-created_at')
-    return render(request, 'content/master/company_creation/list1.html', {'companies': companies})
+    return render(request, 'master/company_creation/list1.html', {'companies': companies})
 
 
 # ==================== Legacy Master Templates ====================
@@ -468,7 +468,7 @@ def addition_list(request):
         'page_query_base': page_query_base,
         'total_additions': paginator.count,
     }
-    return render(request, 'content/master/addition_creation/list.html', context)
+    return render(request, 'master/addition_creation/list.html', context)
 
 
 @permission_required('master.add_additiondeduction', raise_exception=True)
@@ -513,7 +513,7 @@ def addition_create(request):
         'cancel_url': reverse('master:addition_list'),
         'type_choices': AdditionDeduction.TYPE_CHOICES,
     }
-    return render(request, 'content/master/addition_creation/create.html', context)
+    return render(request, 'master/addition_creation/create.html', context)
 
 
 @permission_required('master.change_additiondeduction', raise_exception=True)
@@ -559,7 +559,7 @@ def addition_edit(request, pk):
         'cancel_url': reverse('master:addition_list'),
         'type_choices': AdditionDeduction.TYPE_CHOICES,
     }
-    return render(request, 'content/master/addition_creation/edit.html', context)
+    return render(request, 'master/addition_creation/edit.html', context)
 
 
 @permission_required('master.delete_additiondeduction', raise_exception=True)
@@ -573,7 +573,7 @@ def addition_delete(request, pk):
     context = {
         'addition': addition,
     }
-    return render(request, 'content/master/addition_creation/confirm_delete.html', context)
+    return render(request, 'master/addition_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_assettype', raise_exception=True)
@@ -611,12 +611,12 @@ def asset_list(request):
         'page_query_base': page_query_base,
         'total_assets': paginator.count,
     }
-    return render(request, 'content/master/asset_creation/list.html', context)
+    return render(request, 'master/asset_creation/list.html', context)
 
 
 @permission_required('master.view_employeeassetassignment', raise_exception=True)
 def asset_create_list(request):
-    return render(request, 'content/master/assetCreate_creation/list.html')
+    return render(request, 'master/assetCreate_creation/list.html')
 
 
 @permission_required('master.add_employeeassetassignment', raise_exception=True)
@@ -651,7 +651,7 @@ def asset_create(request):
         'values': values,
         'errors': errors,
     }
-    return render(request, 'content/master/asset_creation/create.html', context)
+    return render(request, 'master/asset_creation/create.html', context)
 
 
 @permission_required('master.change_employeeassetassignment', raise_exception=True)
@@ -691,7 +691,7 @@ def asset_edit(request, pk):
         'values': values,
         'errors': errors,
     }
-    return render(request, 'content/master/asset_creation/edit.html', context)
+    return render(request, 'master/asset_creation/edit.html', context)
 
 
 @permission_required('master.delete_employeeassetassignment', raise_exception=True)
@@ -705,7 +705,7 @@ def asset_delete(request, pk):
     context = {
         'asset': asset,
     }
-    return render(request, 'content/master/asset_creation/confirm_delete.html', context)
+    return render(request, 'master/asset_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_department', raise_exception=True)
@@ -748,7 +748,7 @@ def department_list(request):
         'base_querystring': base_querystring,
         'page_query_base': page_query_base,
     }
-    return render(request, 'content/master/department_creation/list.html', context)
+    return render(request, 'master/department_creation/list.html', context)
 
 
 @permission_required('master.add_department', raise_exception=True)
@@ -787,7 +787,7 @@ def department_create(request):
         'errors': errors,
         'cancel_url': reverse('master:department_list'),
     }
-    return render(request, 'content/master/department_creation/create.html', context)
+    return render(request, 'master/department_creation/create.html', context)
 
 
 @permission_required('master.change_department', raise_exception=True)
@@ -832,7 +832,7 @@ def department_edit(request, pk):
         'errors': errors,
         'cancel_url': reverse('master:department_list'),
     }
-    return render(request, 'content/master/department_creation/edit.html', context)
+    return render(request, 'master/department_creation/edit.html', context)
 
 
 @permission_required('master.delete_department', raise_exception=True)
@@ -846,7 +846,7 @@ def department_delete(request, pk):
     context = {
         'department': department,
     }
-    return render(request, 'content/master/department_creation/confirm_delete.html', context)
+    return render(request, 'master/department_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_designation', raise_exception=True)
@@ -900,7 +900,7 @@ def designation_list(request):
         'base_querystring': base_querystring,
         'page_query_base': page_query_base,
     }
-    return render(request, 'content/master/designation_creation/list.html', context)
+    return render(request, 'master/designation_creation/list.html', context)
 
 
 @permission_required('master.add_designation', raise_exception=True)
@@ -956,7 +956,7 @@ def designation_create(request):
         'errors': errors,
         'cancel_url': reverse('master:designation_list'),
     }
-    return render(request, 'content/master/designation_creation/create.html', context)
+    return render(request, 'master/designation_creation/create.html', context)
 
 
 @permission_required('master.change_designation', raise_exception=True)
@@ -1013,7 +1013,7 @@ def designation_edit(request, pk):
         'errors': errors,
         'cancel_url': reverse('master:designation_list'),
     }
-    return render(request, 'content/master/designation_creation/edit.html', context)
+    return render(request, 'master/designation_creation/edit.html', context)
 
 
 @permission_required('master.delete_designation', raise_exception=True)
@@ -1027,7 +1027,7 @@ def designation_delete(request, pk):
     context = {
         'designation': designation,
     }
-    return render(request, 'content/master/designation_creation/confirm_delete.html', context)
+    return render(request, 'master/designation_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_degree', raise_exception=True)
@@ -1066,7 +1066,7 @@ def degree_list(request):
         'base_querystring': base_querystring,
         'page_query_base': page_query_base,
     }
-    return render(request, 'content/master/degree_creation/list.html', context)
+    return render(request, 'master/degree_creation/list.html', context)
 
 
 @permission_required('master.add_degree', raise_exception=True)
@@ -1103,7 +1103,7 @@ def degree_create(request):
         'cancel_url': reverse('master:degree_list'),
         'education_choices': Degree.EDUCATION_TYPE_CHOICES,
     }
-    return render(request, 'content/master/degree_creation/create.html', context)
+    return render(request, 'master/degree_creation/create.html', context)
 
 
 @permission_required('master.change_degree', raise_exception=True)
@@ -1141,7 +1141,7 @@ def degree_edit(request, pk):
         'cancel_url': reverse('master:degree_list'),
         'education_choices': Degree.EDUCATION_TYPE_CHOICES,
     }
-    return render(request, 'content/master/degree_creation/edit.html', context)
+    return render(request, 'master/degree_creation/edit.html', context)
 
 
 @permission_required('master.delete_degree', raise_exception=True)
@@ -1155,12 +1155,12 @@ def degree_delete(request, pk):
     context = {
         'degree': degree,
     }
-    return render(request, 'content/master/degree_creation/confirm_delete.html', context)
+    return render(request, 'master/degree_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_expensetype', raise_exception=True)
 def expense_list(request):
-    return render(request, 'content/master/expense_creation/list.html')
+    return render(request, 'master/expense_creation/list.html')
 
 
 @permission_required('master.view_subexpense', raise_exception=True)
@@ -1200,7 +1200,7 @@ def sub_expense_list(request):
         'page_query_base': page_query_base,
         'total_sub_expenses': paginator.count,
     }
-    return render(request, 'content/master/subExpense_creation/list.html', context)
+    return render(request, 'master/subExpense_creation/list.html', context)
 
 
 @permission_required('master.add_subexpense', raise_exception=True)
@@ -1282,7 +1282,7 @@ def sub_expense_create(request):
         'image_type_choices': SubExpense.IMAGE_TYPE_CHOICES,
         'meter_type_choices': SubExpense.METER_TYPE_CHOICES,
     }
-    return render(request, 'content/master/subExpense_creation/create.html', context)
+    return render(request, 'master/subExpense_creation/create.html', context)
 
 
 @permission_required('master.change_subexpense', raise_exception=True)
@@ -1365,7 +1365,7 @@ def sub_expense_edit(request, pk):
         'image_type_choices': SubExpense.IMAGE_TYPE_CHOICES,
         'meter_type_choices': SubExpense.METER_TYPE_CHOICES,
     }
-    return render(request, 'content/master/subExpense_creation/edit.html', context)
+    return render(request, 'master/subExpense_creation/edit.html', context)
 
 
 @permission_required('master.delete_subexpense', raise_exception=True)
@@ -1379,7 +1379,7 @@ def sub_expense_delete(request, pk):
     context = {
         'sub_expense': sub_expense,
     }
-    return render(request, 'content/master/subExpense_creation/confirm_delete.html', context)
+    return render(request, 'master/subExpense_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_site', raise_exception=True)
@@ -1420,7 +1420,7 @@ def site_list(request):
         'page_query_base': page_query_base,
         'total_sites': paginator.count,
     }
-    return render(request, 'content/master/site_creation/list.html', context)
+    return render(request, 'master/site_creation/list.html', context)
 
 
 @permission_required('master.add_site', raise_exception=True)
@@ -1477,7 +1477,7 @@ def site_create(request):
         'errors': errors,
         'cancel_url': reverse('master:site_list'),
     }
-    return render(request, 'content/master/site_creation/create.html', context)
+    return render(request, 'master/site_creation/create.html', context)
 
 
 @permission_required('master.change_site', raise_exception=True)
@@ -1535,7 +1535,7 @@ def site_edit(request, pk):
         'errors': errors,
         'cancel_url': reverse('master:site_list'),
     }
-    return render(request, 'content/master/site_creation/edit.html', context)
+    return render(request, 'master/site_creation/edit.html', context)
 
 
 @permission_required('master.delete_site', raise_exception=True)
@@ -1549,7 +1549,7 @@ def site_delete(request, pk):
     context = {
         'site': site,
     }
-    return render(request, 'content/master/site_creation/confirm_delete.html', context)
+    return render(request, 'master/site_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_plant', raise_exception=True)
@@ -1588,7 +1588,7 @@ def plant_list(request):
         'page_query_base': page_query_base,
         'total_plants': paginator.count,
     }
-    return render(request, 'content/master/plant_creation/list.html', context)
+    return render(request, 'master/plant_creation/list.html', context)
 
 
 @permission_required('master.add_plant', raise_exception=True)
@@ -1635,7 +1635,7 @@ def plant_create(request):
         'errors': errors,
         'cancel_url': reverse('master:plant_list'),
     }
-    return render(request, 'content/master/plant_creation/create.html', context)
+    return render(request, 'master/plant_creation/create.html', context)
 
 
 @permission_required('master.change_plant', raise_exception=True)
@@ -1683,7 +1683,7 @@ def plant_edit(request, pk):
         'errors': errors,
         'cancel_url': reverse('master:plant_list'),
     }
-    return render(request, 'content/master/plant_creation/edit.html', context)
+    return render(request, 'master/plant_creation/edit.html', context)
 
 
 @permission_required('master.delete_plant', raise_exception=True)
@@ -1697,7 +1697,7 @@ def plant_delete(request, pk):
     context = {
         'plant': plant,
     }
-    return render(request, 'content/master/plant_creation/confirm_delete.html', context)
+    return render(request, 'master/plant_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_holiday', raise_exception=True)
@@ -1736,7 +1736,7 @@ def holidays_list(request):
         'page_query_base': page_query_base,
         'total_holidays': paginator.count,
     }
-    return render(request, 'content/master/holidays_creation/list.html', context)
+    return render(request, 'master/holidays_creation/list.html', context)
 
 
 @permission_required('master.add_holiday', raise_exception=True)
@@ -1779,7 +1779,7 @@ def holidays_create(request):
         'site_options': HOLIDAY_SITE_OPTIONS,
         'holiday_type_options': HOLIDAY_TYPE_OPTIONS,
     }
-    return render(request, 'content/master/holidays_creation/create.html', context)
+    return render(request, 'master/holidays_creation/create.html', context)
 
 
 @permission_required('master.change_holiday', raise_exception=True)
@@ -1823,7 +1823,7 @@ def holidays_edit(request, pk):
         'site_options': HOLIDAY_SITE_OPTIONS,
         'holiday_type_options': HOLIDAY_TYPE_OPTIONS,
     }
-    return render(request, 'content/master/holidays_creation/edit.html', context)
+    return render(request, 'master/holidays_creation/edit.html', context)
 
 
 @permission_required('master.delete_holiday', raise_exception=True)
@@ -1872,7 +1872,7 @@ def leave_list(request):
         'page_query_base': page_query_base,
         'total_leave_types': paginator.count,
     }
-    return render(request, 'content/master/leave_creation/list.html', context)
+    return render(request, 'master/leave_creation/list.html', context)
 
 
 @permission_required('master.add_leavetype', raise_exception=True)
@@ -1913,7 +1913,7 @@ def leave_create(request):
         'errors': errors,
         'cancel_url': reverse('master:leave_list'),
     }
-    return render(request, 'content/master/leave_creation/create.html', context)
+    return render(request, 'master/leave_creation/create.html', context)
 
 
 @permission_required('master.change_leavetype', raise_exception=True)
@@ -1963,7 +1963,7 @@ def leave_edit(request, pk):
         'errors': errors,
         'cancel_url': reverse('master:leave_list'),
     }
-    return render(request, 'content/master/leave_creation/edit.html', context)
+    return render(request, 'master/leave_creation/edit.html', context)
 
 
 @permission_required('master.delete_leavetype', raise_exception=True)
@@ -1977,7 +1977,7 @@ def leave_delete(request, pk):
     context = {
         'leave_type': leave_type,
     }
-    return render(request, 'content/master/leave_creation/confirm_delete.html', context)
+    return render(request, 'master/leave_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_salarytype', raise_exception=True)
@@ -2012,7 +2012,7 @@ def salary_list(request):
         'page_query_base': page_query_base,
         'total_salaries': paginator.count,
     }
-    return render(request, 'content/master/salary_creation/list.html', context)
+    return render(request, 'master/salary_creation/list.html', context)
 
 
 @permission_required('master.add_salarytype', raise_exception=True)
@@ -2045,7 +2045,7 @@ def salary_create(request):
         'values': values,
         'errors': errors,
     }
-    return render(request, 'content/master/salary_creation/create.html', context)
+    return render(request, 'master/salary_creation/create.html', context)
 
 
 @permission_required('master.change_salarytype', raise_exception=True)
@@ -2084,7 +2084,7 @@ def salary_edit(request, pk):
         'values': values,
         'errors': errors,
     }
-    return render(request, 'content/master/salary_creation/edit.html', context)
+    return render(request, 'master/salary_creation/edit.html', context)
 
 
 @permission_required('master.delete_salarytype', raise_exception=True)
@@ -2098,7 +2098,7 @@ def salary_delete(request, pk):
     context = {
         'salary_type': salary_type,
     }
-    return render(request, 'content/master/salary_creation/confirm_delete.html', context)
+    return render(request, 'master/salary_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_shift', raise_exception=True)
@@ -2136,7 +2136,7 @@ def shift_list(request):
         'base_querystring': base_querystring,
         'page_query_base': page_query_base,
     }
-    return render(request, 'content/master/shift_creation/list.html', context)
+    return render(request, 'master/shift_creation/list.html', context)
 
 
 @permission_required('master.view_shift', raise_exception=True)
@@ -2170,7 +2170,7 @@ def shift_roster_list(request):
         'summary': summary,
         'quick_links': quick_links,
     }
-    return render(request, 'content/master/shift_roster/list.html', context)
+    return render(request, 'master/shift_roster/list.html', context)
 
 
 @permission_required('master.view_shift', raise_exception=True)
@@ -2179,7 +2179,7 @@ def shift_roster_main(request):
         'week_url': reverse('master:shift_roster_week'),
         'month_url': reverse('master:shift_roster_month'),
     }
-    return render(request, 'content/master/shift_roster/main.html', context)
+    return render(request, 'master/shift_roster/main.html', context)
 
 
 @permission_required('master.view_shift', raise_exception=True)
@@ -2212,7 +2212,7 @@ def shift_roster_week(request):
         'salary_types': ROSTER_SALARY_TYPES,
         'rosters': rosters,
     }
-    return render(request, 'content/master/shift_roster/week_roster.html', context)
+    return render(request, 'master/shift_roster/week_roster.html', context)
 
 
 @permission_required('master.add_shift', raise_exception=True)
@@ -2254,7 +2254,7 @@ def shift_roster_create(request):
         'week_days': ROSTER_WEEK_DAYS,
         'employees': ROSTER_EMPLOYEES,
     }
-    return render(request, 'content/master/shift_roster/create.html', context)
+    return render(request, 'master/shift_roster/create.html', context)
 
 
 @permission_required('master.view_shift', raise_exception=True)
@@ -2288,7 +2288,7 @@ def shift_roster_month(request):
         'salary_types': ROSTER_SALARY_TYPES,
         'rosters': rosters,
     }
-    return render(request, 'content/master/shift_roster/month_roster.html', context)
+    return render(request, 'master/shift_roster/month_roster.html', context)
 
 
 @permission_required('master.change_shift', raise_exception=True)
@@ -2335,7 +2335,7 @@ def shift_roster_month_update(request):
         'week_days': ROSTER_WEEK_DAYS,
         'employees': ROSTER_EMPLOYEES,
     }
-    return render(request, 'content/master/shift_roster/monthUpdate.html', context)
+    return render(request, 'master/shift_roster/monthUpdate.html', context)
 
 
 @permission_required('master.add_shift', raise_exception=True)
@@ -2392,7 +2392,7 @@ def shift_edit_form(request):
             'values': submitted,
             'shift': shift,
         }
-        return render(request, 'content/master/shift_creation/editForm.html', context)
+        return render(request, 'master/shift_creation/editForm.html', context)
 
     initial = {}
     if shift:
@@ -2408,7 +2408,7 @@ def shift_edit_form(request):
         'errors': {},
         'values': initial,
     }
-    return render(request, 'content/master/shift_creation/editForm.html', context)
+    return render(request, 'master/shift_creation/editForm.html', context)
 
 
 @permission_required('master.delete_shift', raise_exception=True)
@@ -2419,7 +2419,7 @@ def shift_delete(request, pk):
         messages.success(request, 'Shift deleted successfully.')
         return redirect('master:shift_list')
 
-    return render(request, 'content/master/shift_creation/confirm_delete.html', {'shift': shift})
+    return render(request, 'master/shift_creation/confirm_delete.html', {'shift': shift})
 
 
 @permission_required('master.view_employee', raise_exception=True)
@@ -2449,7 +2449,7 @@ def employee_list(request):
         'staff_status': staff_status,
         'company_name': company_name,
     }
-    return render(request, 'content/master/employee_creation/list.html', context)
+    return render(request, 'master/employee_creation/list.html', context)
 
 
 @permission_required('master.add_employee', raise_exception=True)
@@ -2462,7 +2462,7 @@ def employee_create(request):
         'staff': None,
         'last_staff_id': last_staff_id,
     }
-    return render(request, 'content/master/employee_creation/create.html', context)
+    return render(request, 'master/employee_creation/create.html', context)
 
 
 @permission_required('master.change_employee', raise_exception=True)
@@ -2489,7 +2489,7 @@ def employee_edit(request, pk):
         'assets': assets,
         'staff': employee,  # For template compatibility
     }
-    return render(request, 'content/master/employee_creation/edit.html', context)
+    return render(request, 'master/employee_creation/edit.html', context)
 
 
 @permission_required('master.delete_employee', raise_exception=True)

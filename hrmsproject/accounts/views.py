@@ -21,7 +21,7 @@ def home(request):
 @login_required
 def dashboard(request):
     """Dashboard for authenticated users."""
-    return render(request, 'content/dashboard.html')
+    return render(request, 'accounts/dashboard.html')
 
 
 def login_view(request):
@@ -99,32 +99,32 @@ def profile(request):
         'email_value': email_value,
         'email_error': email_error,
     }
-    return render(request, 'content/profile.html', context)
+    return render(request, 'accounts/profile.html', context)
 
 
 @login_required
 def inbox(request):
     """Placeholder inbox view."""
-    return render(request, 'content/inbox.html')
+    return render(request, 'accounts/inbox.html')
 
 
 @login_required
 def settings_view(request):
     """Placeholder settings view."""
-    return render(request, 'content/settings.html')
+    return render(request, 'accounts/settings.html')
 
 
 # ==================== Accounts ====================
 @login_required
 def cash_reports_list(request):
     """Accounts -> Cash Reports list."""
-    return render(request, 'content/accounts/cash_reports/list.html')
+    return render(request, 'accounts/cash_reports/list.html')
 
 
 # ==================== Demo ====================
 @login_required
 def demo_add(request):
-    return render(request, 'content/demo/add.html')
+    return render(request, 'accounts/demo/add.html')
 
 
 @login_required
@@ -137,7 +137,7 @@ def demo_store(request):
 
 @login_required
 def demo_list(request):
-    return render(request, 'content/demo/list.html')
+    return render(request, 'accounts/demo/list.html')
 
 
 
