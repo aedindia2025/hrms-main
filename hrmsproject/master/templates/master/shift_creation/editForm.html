@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shift Creation - Edit{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="mb-0 fw-bold text-secondary">Master / <span class="text-dark">Shift Creation {{ shift|yesno:'Edit,Create' }}</span></h6>
+    <a href="{% url 'master:shift_list' %}" class="btn btn-outline-secondary">
+      <i class="ri-arrow-go-back-line"></i> Back
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Shift Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" placeholder="Enter Shift Name" value="{{ values.name|default:'' }}">
+            {% if errors.name %}<div class="text-danger small">{{ errors.name }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Shift Time <span class="text-danger">*</span></label>
+            <div class="d-flex gap-2">
+              <input type="time" name="start_time" class="form-control" value="{{ values.start_time|default:'' }}">
+              <span class="align-self-center">to</span>
+              <input type="time" name="end_time" class="form-control" value="{{ values.end_time|default:'' }}">
+            </div>
+            {% if errors.start_time %}<div class="text-danger small">{{ errors.start_time }}</div>{% endif %}
+            {% if errors.end_time %}<div class="text-danger small">{{ errors.end_time }}</div>{% endif %}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="2" placeholder="Enter description">{{ values.description|default:'' }}</textarea>
+          </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end gap-2">
+          <a href="{% url 'master:shift_list' %}" class="btn btn-outline-secondary">Cancel</a>
+          <button type="submit" class="btn btn-success px-4">{% if shift %}Update{% else %}Create{% endif %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

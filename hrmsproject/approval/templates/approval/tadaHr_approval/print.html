@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Expense Summary{% endblock %}
+
+{% block content %}
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 800px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 2px solid #28a745;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+    .header img {
+      width: 80px;
+      margin-bottom: 10px;
+    }
+    .header h2 {
+      margin: 5px 0;
+    }
+    .header p {
+      margin: 2px 0;
+      font-size: 14px;
+    }
+    .company-info {
+      font-size: 13px;
+      color: #555;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section h3 {
+      margin: 10px 0;
+      font-size: 16px;
+      color: #28a745;
+    }
+    .details {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .details p {
+      margin: 2px 0;
+      font-size: 14px;
+    }
+    .expense-box {
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .expense-box h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 15px;
+      font-weight: bold;
+    }
+    .expense-box p {
+      margin: 3px 0;
+      font-size: 14px;
+    }
+    .status-pending {
+      color: red;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table td {
+      border: 1px solid #ddd;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+    table td:first-child {
+      font-weight: bold;
+    }
+    .btn-print {
+      display: block;
+      width: 100px;
+      margin: 20px auto 0;
+      padding: 8px;
+      background: #28a745;
+      color: #fff;
+      text-align: center;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .btn-print:hover {
+      background: #218838;
+    }
+  </style>
+  <div class="container">
+    <!-- Header -->
+    <!-- Header -->
+    <div class="header">
+      <img src="{% static 'assets/images/logo-svg.svg' %}" alt="Company Logo">
+      <h2>Ascent e-Digit Solutions (P) Ltd.,</h2>
+      <p>1st Floor, 119, Greenways Tower, St Marys Road,</p>
+      <p>Abhirampuram, Chennai - 600018</p>
+      <p>Email: <strong>info@aedindia.com</strong> / Mob: <strong>9790099027</strong></p>
+    </div>
+
+    <!-- Expense Summary -->
+    <div class="section">
+      <h3>Expense Summary</h3>
+      <div class="details">
+        <p><strong>DE-2509-11056</strong></p>
+      </div>
+      <div class="details">
+        <p><strong>Staff Name:</strong> Elavarasan S</p>
+        <p><strong>Site Name:</strong> Kodungaiyur - Package 3</p>
+      </div>
+      <div class="details">
+        <p><strong>Entry Date:</strong> 28-09-2025</p>
+        <p><strong>Expense Date:</strong> 28-09-2025</p>
+      </div>
+    </div>
+
+    <!-- Expense Type -->
+    <div class="expense-box">
+      <h4>Travelling Expenses</h4>
+      <p><strong>Amount:</strong> ₹60</p>
+      <p><strong>Head App:</strong> ₹60.00</p>
+      <p><strong>HR App:</strong> <span class="status-pending">Pending</span></p>
+      <p><strong>Description:</strong> local auto up and down</p>
+      <p><strong>Sub Type:</strong> Taxi / Auto</p>
+      <p><strong>Route:</strong> Guest House → KDG Site</p>
+      <p><strong>Total Km:</strong> 0</p>
+    </div>
+
+    <!-- Totals -->
+    <table>
+      <tr>
+        <td>Total Claimed</td>
+        <td>₹60.00</td>
+      </tr>
+      <tr>
+        <td>Total Head App</td>
+        <td>₹60.00</td>
+      </tr>
+      <tr>
+        <td>Total HR App</td>
+        <td class="status-pending">Pending</td>
+      </tr>
+    </table>
+
+    <!-- Print Button -->
+    <a href="javascript:window.print()" class="btn-print">Print</a>
+  </div>
+{% endblock %}

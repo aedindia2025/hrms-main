@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Company Master - List{% endblock %}
+
+{% block content %}
+<div class="dashboard-main-body">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="fw-bold">Master / <span class="text-muted">Company Creation</span></h6>
+    <a href="{% url 'master:company_create1' %}" class="btn btn-success">+ New Company</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end mb-3">
+        <div class="col-md-4 col-lg-3">
+          <label class="form-label">Search</label>
+          <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Company or billing name">
+        </div>
+        <div class="col-md-3 col-lg-2">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="">All</option>
+            <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+            <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+        <div class="col-md-3 col-lg-2">
+          <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+        {% if query or status_filter %}
+        <div class="col-md-3 col-lg-2">
+          <a href="{% url 'master:company_list' %}" class="btn btn-outline-secondary w-100">Clear</a>
+        </div>
+        {% endif %}
+      </form>
+
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>S.No</th>
+              <th>Company Group</th>
+              <th>Billing Name</th>
+              <th>GSTIN</th>
+              <th>Mobile</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for company in companies %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>
+                {{ company.company_group }}<br>
+                <small class="text-muted">{{ company.address|default:'--' }}</small>
+              </td>
+              <td>{{ company.billing_name }}</td>
+              <td>{{ company.gstin_no }}</td>
+              <td>{{ company.mobile_no }}</td>
+              <td>
+                {% if company.status == 'Active' %}
+                  <span class="badge bg-success">Active</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+              </td>
+              <td>{{ company.created_at|date:'d M Y' }}</td>
+              <td class="text-nowrap">
+                <a href="{% url 'master:company_edit' company.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <form action="{% url 'master:company_delete' company.pk %}" method="post" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this company?');">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted">No companies found.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

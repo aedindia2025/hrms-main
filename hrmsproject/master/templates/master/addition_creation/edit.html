@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Addition and Deduction - Edit{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Link to Create Page -->
+     <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark">Addition and Deduction Update</span></h6>
+
+     <a href="{% url 'master:addition_list' %}" class="btn-back">
+   <i data-feather="arrow-left"></i> Back
+</a>
+</div>
+
+
+ <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                   <div class="row g-3">
+                   <div class="col-md-6">
+                    <label class="form-label">Select Type<span class="text-danger">*</span></label>
+                    <select class="form-select" name="type" required>
+                        <option value="" disabled>-- Select an option --</option>
+                        {% for value, label in type_choices %}
+                        <option value="{{ value }}" {% if values.type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if errors.type %}<div class="text-danger small">{{ errors.type }}</div>{% endif %}
+                    </div>
+                    
+                   <div class="col-md-6">
+                    <label class="form-label">Name creation (Deductions / Addition)<span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="name" placeholder="Enter name" value="{{ values.name }}" required>
+                    {% if errors.name %}<div class="text-danger small">{{ errors.name }}</div>{% endif %}
+                    </div>
+
+                    <!-- Description -->
+                    <div class="col-md-6">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" name="description" rows="2" placeholder="Optional description">{{ values.description }}</textarea>
+                    </div>
+        
+                </div>
+
+                <!-- Buttons -->
+                <div class="mt-5 d-flex justify-content-end gap-2">
+                    <a href="{% url 'master:addition_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                    <button type="submit" class="btn btn-success px-4">Update</button>
+                </div>
+            </form>
+
+
+    </div>
+</div>
+</div>
+
+    <!-- Card -->
+<style>
+    .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #28a745; /* green shade */
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: 0.2s ease-in-out;
+}
+
+.btn-back:hover {
+  background-color: #218838; /* darker green */
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.btn-back i {
+  font-size: 14px;
+}
+.select2-container--default .select2-selection--multiple {
+    min-height: 38px;                /* same as Bootstrap input */
+    border: 1px solid #ced4da;       /* Bootstrap border */
+    border-radius: 0.375rem;         /* Bootstrap rounded */
+    padding: 4px 6px;
+    width: 100% !important;          /* full width inside col-md-6 */
+}
+
+/* Align the rendered text like form-control */
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* Style the selected badges */
+.select2-container--default .select2-selection__choice {
+    background-color: #0d6efd !important; /* Bootstrap primary */
+    border: none !important;
+    color: #fff !important;
+    padding: 2px 8px;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+}
+
+    </style>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+</script>
+{% endblock %}

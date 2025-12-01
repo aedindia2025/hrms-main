@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Comp-Off Entry{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper py-5" style="max-width: 640px; margin: 0 auto;">
+  <div class="card border-danger">
+    <div class="card-body">
+      <h5 class="card-title text-danger">Delete Comp-Off Entry</h5>
+      <p class="card-text">
+        Are you sure you want to delete the Comp-Off entry for 
+        <strong>{{ comp_off_entry.employee.staff_name }}</strong> 
+        ({{ comp_off_entry.employee.staff_id }}) 
+        on {{ comp_off_entry.work_date|date:"d-m-Y" }}?
+      </p>
+
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'entry:comp_off_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

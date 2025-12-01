@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Asset Create Creation - Create{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Link to Create Page -->
+    <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark"> Asset creation Create</span></h6>
+     <button  onclick="history.back()" class="btn-back">
+   <i data-feather="arrow-left"></i> Back
+</button>
+</div>
+
+
+ <div class="card shadow-sm">
+        <div class="card-body">
+            <form action="" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                   <div class="row g-3">
+        
+        <!-- Date -->
+        <div class="col-md-3">
+          <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
+          <input type="date" name="date" id="date" class="form-control" required>
+        </div>
+       
+          <div class="col-md-3">
+          <label for="site_name" class="form-label">Site name <span class="text-danger">*</span></label>
+          <select name="site_name" id="site_name" class="form-select" required>
+            <option value="">Select Site</option>
+            {% for site in sites %}
+              <option value="{{ site.pk }}">{{ site.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+          <div class="col-md-3">
+          <label for="staff_name" class="form-label">Staff name <span class="text-danger">*</span></label>
+          <select name="staff_name" id="staff_name" class="form-select" required>
+            <option value="">Select Employee</option>
+            {% for employee in employees %}
+              <option value="{{ employee.pk }}">{{ employee.staff_name }} ({{ employee.staff_id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <!-- Asset Type -->
+        <div class="col-md-3">
+          <label for="assetType" class="form-label">Asset Type <span class="text-danger">*</span></label>
+          <select name="asset_type" id="assetType" class="form-select" required>
+            <option value="">Select Asset Type</option>
+            {% for asset_type in asset_types %}
+              <option value="{{ asset_type.pk }}">{{ asset_type.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Serial No / Item No -->
+        <div class="col-md-3">
+          <label for="serialNo" class="form-label">Serial No / Item No <span class="text-danger">*</span></label>
+          <input type="text" name="serial_no" id="serialNo" class="form-control" placeholder="Enter Serial No" required>
+        </div>
+
+        <!-- Quantity -->
+        <div class="col-md-3">
+          <label for="qty" class="form-label">Qty <span class="text-danger">*</span></label>
+          <input type="number" name="quantity" id="qty" class="form-control" placeholder="Enter Quantity" min="1" value="1" required>
+        </div>
+
+        <!-- Status -->
+        <div class="col-md-3">
+          <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+          <select name="status" id="status" class="form-select" required>
+            <option value="">Select Status</option>
+            <option value="Issued">Issued</option>
+            <option value="Returned">Returned</option>
+            <option value="In Repair">In Repair</option>
+          </select>
+        </div>
+
+        <!-- Image Upload -->
+        <div class="col-md-3">
+          <label for="imageUpload" class="form-label">Image Upload</label>
+          <input name="image" class="form-control" type="file" id="imageUpload" accept="image/*">
+        </div>
+
+        <!-- Description -->
+        <div class="col-md-6">
+          <label for="description" class="form-label">Description</label>
+          <textarea name="description" id="description" class="form-control" rows="3" placeholder="Enter Description"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="col-md-12 text-end mt-2" >
+          <button type="button" class="btn btn-success" onclick="addToSubList()">ADD</button>
+        </div>
+
+      </div>
+           <p class="mb-3 fs-4 fw-bold">Sub List</p>
+      <div class="table-responsive  mt-3">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>S.No</th>
+                            <th>Entry Date</th>
+                            <th>Site Name</th>
+                            <th>Staff Name</th>
+                            <th>Asset type</th>
+                            <th>Serial No / Item No</th>
+                            <th>QTY</th>
+                            <th>Status</th>
+                            <th>Image</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>   
+                        <tr>
+                            <td colspan="10" class="text-center text-muted">No items added yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+                <!-- Buttons -->
+                <div class="mt-5 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-success px-4">Submit</button>
+                    <a href="{% url 'master:asset_create_list' %}" class="btn btn-danger px-4">Cancel</a>
+                </div>
+            </form>
+
+
+    </div>
+</div>
+</div>
+
+    <!-- Card -->
+<style>
+    .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #28a745; /* green shade */
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: 0.2s ease-in-out;
+}
+
+.btn-back:hover {
+  background-color: #218838; /* darker green */
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.btn-back i {
+  font-size: 14px;
+}
+.select2-container--default .select2-selection--multiple {
+    min-height: 38px;                /* same as Bootstrap input */
+    border: 1px solid #ced4da;       /* Bootstrap border */
+    border-radius: 0.375rem;         /* Bootstrap rounded */
+    padding: 4px 6px;
+    width: 100% !important;          /* full width inside col-md-6 */
+}
+
+/* Align the rendered text like form-control */
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* Style the selected badges */
+.select2-container--default .select2-selection__choice {
+    background-color: #0d6efd !important; /* Bootstrap primary */
+    border: none !important;
+    color: #fff !important;
+    padding: 2px 8px;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+}
+
+/* Remove default × icon background */
+.select2-container--default .select2-selection__choice__remove {
+    color: #fff !important;
+    margin-right: 4px;
+}
+    </style>
+     
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+    
+    // Sub-list data storage
+    let subListItems = [];
+    let itemCounter = 0;
+    
+    function addToSubList() {
+        // Get form values
+        const date = document.getElementById('date').value;
+        const siteName = document.getElementById('site_name');
+        const staffName = document.getElementById('staff_name');
+        const assetType = document.getElementById('assetType');
+        const serialNo = document.getElementById('serialNo').value;
+        const qty = document.getElementById('qty').value;
+        const status = document.getElementById('status').value;
+        const description = document.getElementById('description').value;
+        
+        // Validation
+        if (!date || !siteName.value || !staffName.value || !assetType.value || !serialNo || !qty || !status) {
+            alert('Please fill all required fields');
+            return;
+        }
+        
+        // Get selected text values
+        const siteNameText = siteName.options[siteName.selectedIndex].text;
+        const staffNameText = staffName.options[staffName.selectedIndex].text;
+        const assetTypeText = assetType.options[assetType.selectedIndex].text;
+        
+        // Create item object
+        const item = {
+            id: ++itemCounter,
+            date: date,
+            site_id: siteName.value,
+            site_name: siteNameText,
+            staff_id: staffName.value,
+            staff_name: staffNameText,
+            asset_type_id: assetType.value,
+            asset_type_name: assetTypeText,
+            serial_no: serialNo,
+            quantity: qty,
+            status: status,
+            description: description
+        };
+        
+        // Add to array
+        subListItems.push(item);
+        
+        // Refresh table
+        refreshSubListTable();
+        
+        // Clear form
+        clearForm();
+    }
+    
+    function refreshSubListTable() {
+        const tbody = document.getElementById('subListTbody');
+        const emptyRow = document.getElementById('emptyRow');
+        
+        // Clear existing rows except =====row
+        tbody.innerHTML = '';
+        
+        if (subListItems.length === 0) {
+            if (!emptyRow) {
+                const row = document.createElement('tr');
+                row.id = 'emptyRow';
+                row.className = 'd-none';
+                row.innerHTML = '<td colspan="10" class="text-center text-muted">No items added. Please add items to the list.</td>';
+                tbody.appendChild(row);
+            } else {
+                tbody.appendChild(emptyRow);
+            }
+            return;
+        }
+        
+        // Add items to table
+        subListItems.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${formatDate(item.date)}</td>
+                <td>${item.site_name}</td>
+                <td>${item.staff_name}</td>
+                <td>${item.asset_type_name}</td>
+                <td>${item.serial_no}</td>
+                <td>${item.quantity}</td>
+                <td>${item.status}</td>
+                <td>${item.description || '-'}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeFromSubList(${item.id})">
+                        <i data-feather="trash-2"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        // Reinitialize feather icons
+        feather.replace();
+        
+        // Add hidden inputs for form submission
+        addHiddenInputs();
+    }
+    
+    function removeFromSubList(itemId) {
+        if (confirm('Are you sure you want to remove this item?')) {
+            subListItems = subListItems.filter(item => item.id !== itemId);
+            refreshSubListTable();
+        }
+    }
+    
+    function clearForm() {
+        document.getElementById('date').value = '';
+        document.getElementById('site_name').value = '';
+        document.getElementById('staff_name').value = '';
+        document.getElementById('assetType').value = '';
+        document.getElementById('serialNo').value = '';
+        document.getElementById('qty').value = '1';
+        document.getElementById('status').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('imageUpload').value = '';
+    }
+    
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    }
+    
+    function addHiddenInputs() {
+        // Remove existing hidden inputs
+        const existingInputs = document.querySelectorAll('input[name^="items["]');
+        existingInputs.forEach(input => input.remove());
+        
+        // Add hidden inputs for each item
+        subListItems.forEach((item, index) => {
+            const form = document.querySelector('form');
+            
+            ['date', 'site_id', 'staff_id', 'asset_type_id', 'serial_no', 'quantity', 'status', 'description'].forEach(field => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = `items[${index}][${field}]`;
+                input.value = item[field] || '';
+                form.appendChild(input);
+            });
+        });
+    }
+    
+    // Form submit handler
+    document.querySelector('form').addEventListener('submit', function(e) {
+        if (subListItems.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one item to the sub-list before submitting.');
+            return false;
+        }
+        addHiddenInputs();
+    });
+    
+    // Set today's date as default
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date').value = today;
+    });
+</script>
+{% endblock %}

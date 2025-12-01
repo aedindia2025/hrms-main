@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shift Roster - Main{% endblock %}
+
+{% block content %}
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark">Shift roster</span></h6>
+        <!-- Link to Create Page -->
+       
+
+
+    </div>
+
+
+     <div class="card shadow-sm">
+        <div class="card-body">
+    <!-- Copy dashboard HTML here -->
+     <form>
+      <div class="mb-3 col-3">
+        <label for="shiftRosterType" class="form-label fw-bold">Choose Shift Roster Type</label>
+        <select id="shiftRosterType" class="form-select" onchange="navigateRoster(this.value)">
+          <option value="">Select</option>
+          <option value="week">Week Wise Shift Roster</option>
+          <option value="month">Month Wise Shift Roster</option>
+        </select>
+      </div>
+    </form>
+</div>
+</div>
+</div>
+
+<script>
+function navigateRoster(value) {
+  if (value === "week") {
+    window.location.href = "{{ week_url|default:'#' }}";  // Week Wise page
+  } else if (value === "month") {
+    window.location.href = "{{ month_url|default:'#' }}"; // Month Wise page
+  }
+}
+</script>
+
+{% endblock %}

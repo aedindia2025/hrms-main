@@ -8,10 +8,13 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
 
 from .models import (
     AdditionDeduction,
@@ -616,7 +619,132 @@ def asset_list(request):
 
 @permission_required('master.view_employeeassetassignment', raise_exception=True)
 def asset_create_list(request):
-    return render(request, 'master/assetCreate_creation/list.html')
+    """List all asset assignments with filters."""
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    site_id = request.GET.get('site_id', '').strip()
+    per_page = request.GET.get('per_page', '').strip() or '10'
+    search_query = request.GET.get('search', '').strip()
+    page_number = request.GET.get('page')
+    
+    # Get all asset assignments
+    asset_assignments = EmployeeAssetAssignment.objects.select_related(
+        'employee', 'employee__company'
+    ).all()
+    
+    # Filter by date range (using created_at)
+    if from_date:
+        try:
+            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+            asset_assignments = asset_assignments.filter(created_at__date__gte=from_date_obj)
+        except ValueError:
+            pass
+    
+    if to_date:
+        try:
+            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+            asset_assignments = asset_assignments.filter(created_at__date__lte=to_date_obj)
+        except ValueError:
+            pass
+    
+    # Filter by site (if employee has site relationship - for now skip, can be added later)
+    # if site_id:
+    #     try:
+    #         asset_assignments = asset_assignments.filter(employee__site_id=int(site_id))
+    #     except (ValueError, TypeError):
+    #         pass
+    
+    # Search filter
+    if search_query:
+        asset_assignments = asset_assignments.filter(
+            Q(asset_name__icontains=search_query) |
+            Q(serial_no__icontains=search_query) |
+            Q(employee__staff_name__icontains=search_query) |
+            Q(employee__staff_id__icontains=search_query)
+        )
+    
+    # Pagination
+    try:
+        per_page_value = max(int(per_page), 1)
+    except ValueError:
+        per_page_value = 10
+    
+    paginator = Paginator(asset_assignments.order_by('-created_at'), per_page_value)
+    page_obj = paginator.get_page(page_number)
+    
+    # Get sites and other data for filters
+    sites = Site.objects.all().order_by('name')
+    
+    # Calculate issued and returned quantities
+    for assignment in page_obj:
+        assignment.issued_qty = assignment.quantity if assignment.status == EmployeeAssetAssignment.STATUS_ISSUED else 0
+        assignment.returned_qty = assignment.quantity if assignment.status == EmployeeAssetAssignment.STATUS_RETURNED else 0
+        # Generate asset ID (AST-{id})
+        assignment.asset_id_display = f'AST-{assignment.id:07d}'
+    
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    base_querystring = query_params.urlencode()
+    page_query_base = f'{base_querystring}&' if base_querystring else ''
+    
+    context = {
+        'asset_assignments': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'sites': sites,
+        'from_date': from_date,
+        'to_date': to_date,
+        'site_id': site_id,
+        'search_query': search_query,
+        'per_page': per_page_value,
+        'base_querystring': base_querystring,
+        'page_query_base': page_query_base,
+    }
+    return render(request, 'master/assetCreate_creation/list.html', context)
+
+
+@permission_required('master.add_employeeassetassignment', raise_exception=True)
+def asset_create_create(request):
+    """Create new asset assignment."""
+    sites = Site.objects.all().order_by('name')
+    employees = Employee.objects.all().order_by('staff_name')
+    asset_types = AssetType.objects.filter(is_active=True).order_by('name')
+    
+    context = {
+        'sites': sites,
+        'employees': employees,
+        'asset_types': asset_types,
+    }
+    return render(request, 'master/assetCreate_creation/create.html', context)
+
+
+@permission_required('master.change_employeeassetassignment', raise_exception=True)
+def asset_create_edit(request, pk):
+    """Edit existing asset assignment."""
+    assignment = get_object_or_404(EmployeeAssetAssignment, pk=pk)
+    sites = Site.objects.all().order_by('name')
+    employees = Employee.objects.all().order_by('staff_name')
+    asset_types = AssetType.objects.filter(is_active=True).order_by('name')
+    
+    context = {
+        'assignment': assignment,
+        'sites': sites,
+        'employees': employees,
+        'asset_types': asset_types,
+    }
+    return render(request, 'master/assetCreate_creation/edit.html', context)
+
+
+@permission_required('master.delete_employeeassetassignment', raise_exception=True)
+@require_POST
+def asset_create_delete(request, pk):
+    """Delete asset assignment."""
+    assignment = get_object_or_404(EmployeeAssetAssignment, pk=pk)
+    employee_name = assignment.employee.staff_name
+    asset_name = assignment.asset_name
+    assignment.delete()
+    messages.success(request, f'Asset assignment for {employee_name} - {asset_name} deleted successfully.')
+    return redirect('master:asset_create_list')
 
 
 @permission_required('master.add_employeeassetassignment', raise_exception=True)
@@ -2501,6 +2629,101 @@ def employee_delete(request, pk):
     employee.delete()  # Cascade delete will handle related objects
     messages.success(request, f'Employee {employee_name} deleted successfully.')
     return redirect('master:employee_list')
+
+
+@permission_required('master.view_employee', raise_exception=True)
+def employee_export_excel(request):
+    """Export employee list to Excel with filters."""
+    staff_status = request.GET.get('staff_status', '').strip()
+    company_name = request.GET.get('company_name', '').strip()
+    
+    # Get all employees from Employee model
+    employees = Employee.objects.select_related('company').all()
+    
+    # Filter by company
+    if company_name:
+        try:
+            employees = employees.filter(company_id=int(company_name))
+        except (ValueError, TypeError):
+            pass
+    
+    # Filter by status (if implemented in future)
+    # if staff_status and staff_status != '0':
+    #     employees = employees.filter(...)
+    
+    # Create workbook and worksheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Employee List"
+    
+    # Header row styling
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    
+    # Define headers
+    headers = [
+        'S.No', 'Staff ID', 'Staff Name', 'DOB', 'Gender', 
+        'Designation', 'Department', 'Work Location', 
+        'Company', 'Date of Join', 'Contact', 'Email'
+    ]
+    
+    # Write headers
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+    
+    # Write data rows
+    for row_num, employee in enumerate(employees, 2):
+        ws.cell(row=row_num, column=1, value=row_num - 1)  # S.No
+        ws.cell(row=row_num, column=2, value=employee.staff_id or '')
+        ws.cell(row=row_num, column=3, value=employee.staff_name or '')
+        ws.cell(row=row_num, column=4, value=employee.date_of_birth.strftime('%d-%m-%Y') if employee.date_of_birth else '')
+        ws.cell(row=row_num, column=5, value=employee.gender or '')
+        ws.cell(row=row_num, column=6, value=employee.designation or '')
+        ws.cell(row=row_num, column=7, value=employee.department or '')
+        ws.cell(row=row_num, column=8, value=employee.work_location or '')
+        ws.cell(row=row_num, column=9, value=employee.company.billing_name if employee.company else '')
+        ws.cell(row=row_num, column=10, value=employee.date_of_join.strftime('%d-%m-%Y') if employee.date_of_join else '')
+        ws.cell(row=row_num, column=11, value=employee.personal_contact or employee.office_contact or '')
+        ws.cell(row=row_num, column=12, value=employee.personal_email or employee.office_email or '')
+    
+    # Auto-adjust column widths
+    for col_num, header in enumerate(headers, 1):
+        column_letter = get_column_letter(col_num)
+        max_length = 0
+        # Check header length
+        max_length = max(max_length, len(str(header)))
+        # Check data length
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=col_num, max_col=col_num):
+            for cell in row:
+                try:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                except:
+                    pass
+        # Set column width with some padding
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Set row height for header
+    ws.row_dimensions[1].height = 25
+    
+    # Create HTTP response with Excel content
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    # Generate filename with timestamp
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'employee_list_{timestamp}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # Save workbook to response
+    wb.save(response)
+    return response
 
 
 def _clean_required(data, field, label, errors):
