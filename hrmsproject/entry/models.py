@@ -96,6 +96,9 @@ class CompOffEntry(models.Model):
         return mapping.get(self.head_approval_status, 'text-secondary bg-secondary-subtle border border-secondary')
 
 
+
+
+
 class SiteEntry(models.Model):
     TRANSFER_TYPE_MONTH = 'Month'
     TRANSFER_TYPE_WEEK = 'Week'
@@ -124,3 +127,58 @@ class SiteEntry(models.Model):
 
     def __str__(self):
         return f'{self.employee_name} - {self.transfer_date}'
+
+
+class PermissionEntry(models.Model):
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_CANCELLED = 'cancelled'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_CANCELLED, 'Cancel'),
+    ]
+
+    entry_date = models.DateField(auto_now_add=True)
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name='permission_entries',
+    )
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.PROTECT,
+        related_name='permission_entries',
+    )
+    permission_date = models.DateField()
+    permission_start_time = models.TimeField(null=True, blank=True)
+    permission_end_time = models.TimeField(null=True, blank=True)
+    per_hr_count = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        default=0,
+        help_text='Permission hours counted (e.g. 1.50 = 1 hour 30 minutes)'
+    )
+    reason = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+    )
+    is_printed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-permission_date', 'employee__staff_name']
+        verbose_name = 'Permission Entry'
+        verbose_name_plural = 'Permission Entries'
+
+    def __str__(self):
+        return f'{self.employee} - {self.permission_date} ({self.status})'
+
+    @property
+    def permission_timings_display(self) -> str:
+        if self.permission_start_time and self.permission_end_time:
+            return f"{self.permission_start_time.strftime('%H:%M')} - {self.permission_end_time.strftime('%H:%M')}"
+        return ''

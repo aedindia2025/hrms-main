@@ -806,7 +806,15 @@ def asset_create_create(request):
                     )
                     saved_count += 1
                 except Exception as e:
-                    errors.append(f'Item {int(item_index) + 1}: Error saving - {str(e)}')
+                    error_msg = str(e)
+                    # Provide helpful error message if it's a database column error
+                    if 'asset_type_id' in error_msg or 'Unknown column' in error_msg:
+                        errors.append(
+                            f'Item {int(item_index) + 1}: Database migration not applied. '
+                            f'Please run migrations: python manage.py migrate master'
+                        )
+                    else:
+                        errors.append(f'Item {int(item_index) + 1}: Error saving - {error_msg}')
             
             # Show success or error messages
             if errors:
