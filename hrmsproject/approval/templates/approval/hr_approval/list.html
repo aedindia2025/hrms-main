@@ -139,26 +139,30 @@
                                 {% endif %}
                             </td>
                             <td class="text-nowrap">
-                                <form method="post"
-                                      action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
-                                      class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="status" value="approved">
-                                    <input type="hidden" name="note" value="">
-                                    <button type="submit" class="btn btn-sm btn-success me-1">
-                                        Approve
-                                    </button>
-                                </form>
-                                <form method="post"
-                                      action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
-                                      class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="status" value="rejected">
-                                    <input type="hidden" name="note" value="">
-                                    <button type="submit" class="btn btn-sm btn-danger">
-                                        Reject
-                                    </button>
-                                </form>
+                                {% if perms.approval.approve_hrcompoffapproval %}
+                                    <form method="post"
+                                          action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
+                                          class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="status" value="approved">
+                                        <input type="hidden" name="note" value="">
+                                        <button type="submit" class="btn btn-sm btn-success me-1">
+                                            Approve
+                                        </button>
+                                    </form>
+                                    <form method="post"
+                                          action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
+                                          class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="status" value="rejected">
+                                        <input type="hidden" name="note" value="">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            Reject
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted">No permission to approve/reject</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}

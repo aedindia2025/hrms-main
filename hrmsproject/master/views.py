@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
 from django.db.models import Q
+from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -805,7 +806,15 @@ def asset_create_create(request):
                     )
                     saved_count += 1
                 except Exception as e:
-                    errors.append(f'Item {int(item_index) + 1}: Error saving - {str(e)}')
+                    error_msg = str(e)
+                    # Provide helpful error message if it's a database column error
+                    if 'asset_type_id' in error_msg or 'Unknown column' in error_msg:
+                        errors.append(
+                            f'Item {int(item_index) + 1}: Database migration not applied. '
+                            f'Please run migrations: python manage.py migrate master'
+                        )
+                    else:
+                        errors.append(f'Item {int(item_index) + 1}: Error saving - {error_msg}')
             
             # Show success or error messages
             if errors:
@@ -2961,9 +2970,44 @@ def employee_delete(request, pk):
     """Delete employee and all related data."""
     employee = get_object_or_404(Employee, pk=pk)
     employee_name = employee.staff_name
-    employee.delete()  # Cascade delete will handle related objects
-    messages.success(request, f'Employee {employee_name} deleted successfully.')
-    return redirect('master:employee_list')
+    
+    try:
+        # Try to delete the employee
+        employee.delete()
+        messages.success(request, f'Employee {employee_name} deleted successfully.')
+        return redirect('master:employee_list')
+        
+    except ProtectedError as e:
+        # Handle protected relationships that prevent deletion
+        protected_objects = list(e.protected_objects)
+        
+        # Check if the protected objects are CompOffEntry records
+        if protected_objects and hasattr(protected_objects[0], 'work_date'):
+            # CompOffEntry records
+            entry_dates = [str(obj.work_date) for obj in protected_objects[:5]]  # Show first 5
+            entry_count = len(protected_objects)
+            
+            if entry_count > 5:
+                error_msg = (
+                    f'Cannot delete employee {employee_name} because they have {entry_count} '
+                    f'Comp-Off Entry record(s) associated. Please delete the Comp-Off entries first. '
+                    f'Entries include: {", ".join(entry_dates)}...'
+                )
+            else:
+                error_msg = (
+                    f'Cannot delete employee {employee_name} because they have {entry_count} '
+                    f'Comp-Off Entry record(s) associated: {", ".join(entry_dates)}. '
+                    f'Please delete the Comp-Off entries first.'
+                )
+        else:
+            # Other protected relationships
+            error_msg = (
+                f'Cannot delete employee {employee_name} because they are referenced by '
+                f'{len(protected_objects)} other record(s). Please remove the related records first.'
+            )
+        
+        messages.error(request, error_msg)
+        return redirect('master:employee_list')
 
 
 @permission_required('master.view_employee', raise_exception=True)

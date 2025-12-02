@@ -8,7 +8,21 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 
 from master.models import Employee, Site
-from .models import CompOffEntry, SiteEntry
+from .models import CompOffEntry, SiteEntry,PermissionEntry
+
+#permission entry
+@permission_required('entry.add_permissionentry', raise_exception=True)
+def permission_entry_create(request):
+    employees = Employee.objects.order_by('staff_name')
+    sites = Site.objects.order_by('name')
+
+    values = {
+        'work_date': '',
+        'site': '',
+        'employee': '',
+    }
+    errors = {}
+    return render(request, 'entry/permission_entry/create.html')
 
 # ------------------------
 # ENTRY -> COMP OFF
