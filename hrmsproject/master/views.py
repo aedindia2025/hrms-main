@@ -628,9 +628,9 @@ def asset_create_list(request):
     search_query = request.GET.get('search', '').strip()
     page_number = request.GET.get('page')
     
-    # Get all asset assignments
+    # Get all asset assignments with related objects
     asset_assignments = EmployeeAssetAssignment.objects.select_related(
-        'employee', 'employee__company'
+        'employee', 'employee__company', 'asset_type'
     ).all()
     
     # Filter by date range (using created_at)
@@ -659,6 +659,7 @@ def asset_create_list(request):
     if search_query:
         asset_assignments = asset_assignments.filter(
             Q(asset_name__icontains=search_query) |
+            Q(asset_type__name__icontains=search_query) |
             Q(serial_no__icontains=search_query) |
             Q(employee__staff_name__icontains=search_query) |
             Q(employee__staff_id__icontains=search_query)
@@ -711,6 +712,118 @@ def asset_create_create(request):
     employees = Employee.objects.all().order_by('staff_name')
     asset_types = AssetType.objects.filter(is_active=True).order_by('name')
     
+    if request.method == 'POST':
+        # Get all items from form data (items[0][field], items[1][field], etc.)
+        items_data = {}
+        for key, value in request.POST.items():
+            if key.startswith('items[') and ']' in key:
+                # Parse items[0][field] format
+                try:
+                    # Extract index and field name
+                    key_parts = key.replace('items[', '').split('][')
+                    if len(key_parts) == 2:
+                        item_index = key_parts[0]
+                        field_name = key_parts[1].replace(']', '')
+                        
+                        if item_index not in items_data:
+                            items_data[item_index] = {}
+                        items_data[item_index][field_name] = value
+                except Exception:
+                    continue
+        
+        # Validate and save each item
+        saved_count = 0
+        errors = []
+        
+        if not items_data:
+            messages.error(request, 'No items found to save. Please add at least one item to the sub-list.')
+        else:
+            # Sort by index to maintain order
+            sorted_indices = sorted(items_data.keys(), key=lambda x: int(x) if x.isdigit() else 0)
+            
+            for item_index in sorted_indices:
+                item = items_data[item_index]
+                
+                # Get required fields
+                staff_id = item.get('staff_id', '').strip()
+                asset_type_id = item.get('asset_type_id', '').strip()
+                serial_no = item.get('serial_no', '').strip()
+                quantity = item.get('quantity', '1').strip()
+                status = item.get('status', '').strip() or EmployeeAssetAssignment.STATUS_ISSUED
+                description = item.get('description', '').strip()
+                
+                # Validate required fields
+                if not staff_id:
+                    errors.append(f'Item {int(item_index) + 1}: Staff name is required.')
+                    continue
+                
+                if not asset_type_id:
+                    errors.append(f'Item {int(item_index) + 1}: Asset type is required.')
+                    continue
+                
+                if not serial_no:
+                    errors.append(f'Item {int(item_index) + 1}: Serial No is required.')
+                    continue
+                
+                # Get Employee object
+                try:
+                    employee = Employee.objects.get(pk=staff_id)
+                except Employee.DoesNotExist:
+                    errors.append(f'Item {int(item_index) + 1}: Invalid employee selected.')
+                    continue
+                
+                # Get AssetType object (ForeignKey reference)
+                try:
+                    asset_type = AssetType.objects.get(pk=asset_type_id)
+                except AssetType.DoesNotExist:
+                    errors.append(f'Item {int(item_index) + 1}: Invalid asset type selected.')
+                    continue
+                
+                # Parse quantity
+                try:
+                    quantity_int = max(int(quantity or '1'), 1)
+                except (ValueError, TypeError):
+                    quantity_int = 1
+                
+                # Validate status
+                valid_statuses = [choice[0] for choice in EmployeeAssetAssignment.STATUS_CHOICES]
+                if status not in valid_statuses:
+                    status = EmployeeAssetAssignment.STATUS_ISSUED
+                
+                # Get description if provided
+                description = item.get('description', '').strip()
+                
+                # Create EmployeeAssetAssignment record with AssetType ForeignKey
+                try:
+                    EmployeeAssetAssignment.objects.create(
+                        employee=employee,
+                        asset_type=asset_type,  # ForeignKey to AssetType
+                        asset_name=asset_type.name,  # Keep for backward compatibility
+                        serial_no=serial_no,
+                        quantity=quantity_int,
+                        status=status,
+                        description=description,
+                    )
+                    saved_count += 1
+                except Exception as e:
+                    errors.append(f'Item {int(item_index) + 1}: Error saving - {str(e)}')
+            
+            # Show success or error messages
+            if errors:
+                for error in errors:
+                    messages.error(request, error)
+                if saved_count > 0:
+                    messages.warning(request, f'{saved_count} item(s) saved successfully, but some items had errors.')
+            else:
+                if saved_count > 0:
+                    messages.success(request, f'{saved_count} asset assignment(s) created successfully.')
+                else:
+                    messages.error(request, 'No items were saved.')
+            
+            # Redirect to list page
+            return redirect('master:asset_create_list')
+    
+    # GET request - show form
     context = {
         'sites': sites,
         'employees': employees,
@@ -727,6 +840,73 @@ def asset_create_edit(request, pk):
     employees = Employee.objects.all().order_by('staff_name')
     asset_types = AssetType.objects.filter(is_active=True).order_by('name')
     
+    if request.method == 'POST':
+        # Get form data
+        staff_id = request.POST.get('staff_name', '').strip()
+        asset_type_id = request.POST.get('asset_type', '').strip()
+        serial_no = request.POST.get('serial_no', '').strip()
+        quantity = request.POST.get('quantity', '1').strip()
+        status = request.POST.get('status', '').strip() or EmployeeAssetAssignment.STATUS_ISSUED
+        
+        # Validate required fields
+        errors = []
+        
+        if not staff_id:
+            errors.append('Staff name is required.')
+        
+        if not asset_type_id:
+            errors.append('Asset type is required.')
+        
+        if not serial_no:
+            errors.append('Serial No is required.')
+        
+        # Get Employee object
+        try:
+            employee = Employee.objects.get(pk=staff_id)
+        except Employee.DoesNotExist:
+            errors.append('Invalid employee selected.')
+            employee = assignment.employee  # Keep existing if invalid
+        
+        # Get AssetType object (ForeignKey reference)
+        try:
+            asset_type = AssetType.objects.get(pk=asset_type_id)
+        except AssetType.DoesNotExist:
+            errors.append('Invalid asset type selected.')
+            asset_type = assignment.asset_type  # Keep existing if invalid
+        
+        # Parse quantity
+        try:
+            quantity_int = max(int(quantity or '1'), 1)
+        except (ValueError, TypeError):
+            quantity_int = assignment.quantity  # Keep existing if invalid
+        
+        # Validate status
+        valid_statuses = [choice[0] for choice in EmployeeAssetAssignment.STATUS_CHOICES]
+        if status not in valid_statuses:
+            status = assignment.status  # Keep existing if invalid
+        
+        # If no errors, update and save
+        if not errors:
+            assignment.employee = employee
+            assignment.asset_type = asset_type  # ForeignKey to AssetType
+            assignment.asset_name = asset_type.name if asset_type else assignment.asset_name  # Keep for backward compatibility
+            assignment.serial_no = serial_no
+            assignment.quantity = quantity_int
+            assignment.status = status
+            # Get description if provided
+            description = request.POST.get('description', '').strip()
+            if description:
+                assignment.description = description
+            assignment.save()
+            
+            messages.success(request, 'Asset assignment updated successfully.')
+            return redirect('master:asset_create_list')
+        else:
+            # Show errors
+            for error in errors:
+                messages.error(request, error)
+    
+    # GET request or errors - show form
     context = {
         'assignment': assignment,
         'sites': sites,
@@ -742,10 +922,29 @@ def asset_create_delete(request, pk):
     """Delete asset assignment."""
     assignment = get_object_or_404(EmployeeAssetAssignment, pk=pk)
     employee_name = assignment.employee.staff_name
-    asset_name = assignment.asset_name
+    asset_name = assignment.asset_name_display
     assignment.delete()
     messages.success(request, f'Asset assignment for {employee_name} - {asset_name} deleted successfully.')
     return redirect('master:asset_create_list')
+
+
+@permission_required('master.view_employeeassetassignment', raise_exception=True)
+def asset_create_print(request, pk):
+    """Print asset assignment."""
+    assignment = get_object_or_404(
+        EmployeeAssetAssignment.objects.select_related('employee', 'employee__company', 'asset_type'),
+        pk=pk
+    )
+    
+    # Generate asset ID
+    assignment.asset_id_display = f'AST-{assignment.id:07d}'
+    assignment.issued_qty = assignment.quantity if assignment.status == EmployeeAssetAssignment.STATUS_ISSUED else 0
+    assignment.returned_qty = assignment.quantity if assignment.status == EmployeeAssetAssignment.STATUS_RETURNED else 0
+    
+    context = {
+        'assignment': assignment,
+    }
+    return render(request, 'master/assetCreate_creation/print.html', context)
 
 
 @permission_required('master.add_employeeassetassignment', raise_exception=True)
@@ -2607,7 +2806,7 @@ def employee_edit(request, pk):
     dependents = employee.dependents.all()
     qualifications = employee.qualifications.all()
     experiences = employee.experiences.all()
-    assets = employee.assets.all()
+    assets = employee.asset_assignments.all()
     
     context = {
         'employee': employee,
