@@ -14,6 +14,8 @@ urlpatterns = [
     # Entry -> Leave
     path('leave/create/', views.leave_entry_create, name='leave_entry_create'),
     path('leave/list/', views.leave_entry_list, name='leave_entry_list'),
+    path('leave/edit/<int:pk>/', views.leave_entry_edit, name='leave_entry_edit'),
+    path('leave/delete/<int:pk>/', views.leave_entry_delete, name='leave_entry_delete'),
     path('leave/print/', views.leave_entry_print, name='leave_entry_print'),
 
     # Entry -> Manual
@@ -24,6 +26,8 @@ urlpatterns = [
     # Entry -> Permission
     path('permission/create/', views.permission_entry_create, name='permission_entry_create'),
     path('permission/list/', views.permission_entry_list, name='permission_entry_list'),
+    path('permission/edit/<int:pk>/', views.permission_entry_edit, name='permission_entry_edit'),
+    path('permission/delete/<int:pk>/', views.permission_entry_delete, name='permission_entry_delete'),
     path('permission/print/', views.permission_entry_print, name='permission_entry_print'),
 
     # Entry -> Site

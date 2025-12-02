@@ -14,6 +14,7 @@ urlpatterns = [
 
     # ==================== Leave ====================
     path('leave/', views.leave_approval_list, name='leave_approval_list'),
+    path('leave/<int:pk>/update/', views.leave_approval_update, name='leave_approval_update'),
 
     # ==================== Permission ====================
     path('permission/', views.permission_approval_list, name='permission_approval_list'),

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Permission Entry - Create{% endblock %}
+{% block title %}Permission Entry - Edit{% endblock %}
 
 {% block content %}
 
@@ -10,11 +10,11 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <!-- Link to Create Page -->
-     <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Permission Entry Create </span></h6>
+     <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Permission Entry Edit </span></h6>
 
-     <button  onclick="history.back()" class="btn-back">
+     <a href="{% url 'entry:permission_entry_list' %}" class="btn-back">
    <i data-feather="arrow-left"></i> Back
-</button>
+</a>
 </div>
 
 
@@ -133,7 +133,7 @@
 
         <!-- Buttons -->
                 <div class="mt-5 d-flex justify-content-end gap-2">
-                    <button type="submit" class="btn btn-success px-4">Submit</button>
+                    <button type="submit" class="btn btn-success px-4">Update</button>
                     <a href="{% url 'entry:permission_entry_list' %}" class="btn btn-danger px-4">Cancel</a>
                 </div>
             </form>
@@ -209,25 +209,13 @@
 
   document.getElementById("startTime").addEventListener("change", calculateDiffTime);
   document.getElementById("endTime").addEventListener("change", calculateDiffTime);
-
-  // Load employee details on selection
-  document.getElementById("employeeSelect").addEventListener("change", function() {
-    const employeeId = this.value;
-    if (employeeId) {
-      // Reload page with employee selected to show details
-      const form = this.closest('form');
-      const formData = new FormData(form);
-      formData.set('employee', employeeId);
-      // For now, just submit the form to reload with employee details
-      // In a real implementation, you might want to use AJAX
-    }
-  });
+  
+  // Calculate on page load if values exist
+  if (document.getElementById("startTime").value && document.getElementById("endTime").value) {
+    calculateDiffTime();
+  }
 
   feather.replace();
 </script>
 {% endblock %}
-
-
-
-
 
