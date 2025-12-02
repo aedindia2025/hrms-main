@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Leave Entry - Create{% endblock %}
+{% block title %}Leave Entry - Edit{% endblock %}
 
 {% block content %}
 
@@ -10,11 +10,11 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <!-- Link to Create Page -->
-     <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Leave Entry Create </span></h6>
+     <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Leave Entry Edit </span></h6>
 
-     <button  onclick="history.back()" class="btn-back">
+     <a href="{% url 'entry:leave_entry_list' %}" class="btn-back">
    <i data-feather="arrow-left"></i> Back
-</button>
+</a>
 </div>
 
 
@@ -73,7 +73,7 @@
           </div>
          <div class="col-md-3">
             <label class="form-label">Leave Days</label>
-            <input type="text" id="leaveDays" class="form-control" value="{% if calculated_days %}{{ calculated_days }}{% endif %}" readonly>
+            <input type="text" id="leaveDays" class="form-control" value="{% if calculated_days %}{{ calculated_days }}{% else %}{{ leave_entry.leave_days }}{% endif %}" readonly>
           </div>
           <!-- Leave Type -->
           <div class="col-md-3">
@@ -98,7 +98,7 @@
           </div>
          <div class="col-md-3">
             <label class="form-label">Entry Date</label>
-            <input type="text" value="{% now 'd-m-Y' %}" class="form-control" readonly>
+            <input type="text" value="{{ leave_entry.entry_date|date:'d-m-Y' }}" class="form-control" readonly>
           </div>
           <!-- Reason -->
           <div class="col-md-12">
@@ -143,7 +143,7 @@
 
         <!-- Buttons -->
                 <div class="mt-5 d-flex justify-content-end gap-2">
-                    <button type="submit" class="btn btn-success px-4">Submit</button>
+                    <button type="submit" class="btn btn-success px-4">Update</button>
                     <a href="{% url 'entry:leave_entry_list' %}" class="btn btn-danger px-4">Cancel</a>
                 </div>
             </form>
@@ -351,3 +351,4 @@ textarea {
     feather.replace();
 </script>
 {% endblock %}
+

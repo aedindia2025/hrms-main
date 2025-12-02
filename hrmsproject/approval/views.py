@@ -6,9 +6,9 @@ from django.db.models import Q
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from entry.models import CompOffEntry
+from entry.models import CompOffEntry, LeaveEntry
 from master.models import Employee, Site
-from .models import HRCompOffApproval
+from .models import HRCompOffApproval, LeaveApproval
 
 
 # ==================== HR Approval ====================
@@ -146,8 +146,125 @@ def daily_attendance_print(request):
 # ==================== Leave ====================
 @permission_required('approval.view_leaveapproval', raise_exception=True)
 def leave_approval_list(request):
-    """Approval -> Leave Approval list."""
-    return render(request, 'approval/leave_approval/list.html')
+    """Approval -> Leave Approval list with filters & pagination."""
+    per_page = request.GET.get('per_page', '').strip() or '10'
+    search_query = request.GET.get('q', '').strip()
+    page_number = request.GET.get('page')
+
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    site_id = request.GET.get('site', '').strip()
+    employee_id = request.GET.get('employee', '').strip()
+    status = request.GET.get('status', '').strip()
+
+    try:
+        per_page_value = max(int(per_page), 1)
+    except ValueError:
+        per_page_value = 10
+
+    leave_entries = LeaveEntry.objects.select_related('employee', 'site', 'leave_approval', 'leave_approval__approved_by')
+
+    if search_query:
+        leave_entries = leave_entries.filter(
+            Q(employee__staff_name__icontains=search_query)
+            | Q(employee__staff_id__icontains=search_query)
+            | Q(site__name__icontains=search_query)
+            | Q(reason__icontains=search_query)
+        )
+
+    if from_date:
+        leave_entries = leave_entries.filter(from_date__gte=from_date)
+    if to_date:
+        leave_entries = leave_entries.filter(to_date__lte=to_date)
+    if site_id:
+        leave_entries = leave_entries.filter(site_id=site_id)
+    if employee_id:
+        leave_entries = leave_entries.filter(employee_id=employee_id)
+    if status:
+        leave_entries = leave_entries.filter(approval_status=status)
+
+    leave_entries = leave_entries.order_by('-from_date', 'employee__staff_name')
+
+    paginator = Paginator(leave_entries, per_page_value)
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    base_querystring = query_params.urlencode()
+    page_query_base = f'{base_querystring}&' if base_querystring else ''
+
+    context = {
+        'leave_entries': page_obj,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'per_page': str(per_page_value),
+        'per_page_value': per_page_value,
+        'base_querystring': base_querystring,
+        'page_query_base': page_query_base,
+        'total_entries': paginator.count,
+        'from_date': from_date,
+        'to_date': to_date,
+        'filter_site_id': site_id,
+        'filter_employee_id': employee_id,
+        'filter_status': status,
+        'sites': Site.objects.order_by('name'),
+        'employees': Employee.objects.order_by('staff_name'),
+        'approval_choices': LeaveApproval.APPROVAL_CHOICES,
+        'leave_status_choices': LeaveEntry.APPROVAL_CHOICES,
+    }
+    return render(request, 'approval/leave_approval/list.html', context)
+
+
+@permission_required('approval.approve_leaveapproval', raise_exception=True)
+@require_POST
+def leave_approval_update(request, pk):
+    """
+    Update leave approval status using the LeaveApproval model.
+    Also updates the LeaveEntry for backward compatibility.
+    """
+    leave_entry = get_object_or_404(LeaveEntry, pk=pk)
+    
+    # Get or create leave approval record
+    leave_approval, created = LeaveApproval.objects.get_or_create(
+        leave_entry=leave_entry
+    )
+
+    new_status = request.POST.get('status', '').strip()
+    note = request.POST.get('note', '').strip()
+
+    valid_statuses = {choice[0] for choice in LeaveApproval.APPROVAL_CHOICES}
+    if new_status not in valid_statuses:
+        messages.error(request, 'Invalid approval status.')
+    else:
+        # Update leave approval model
+        leave_approval.approval_status = new_status
+        leave_approval.approved_by = request.user
+        leave_approval.approval_note = note
+        leave_approval.approval_date = timezone.now()
+        leave_approval.save()
+        
+        # Map approval status to LeaveEntry approval status
+        status_mapping = {
+            'approved': LeaveEntry.APPROVAL_HR_APPROVED,
+            'rejected': LeaveEntry.APPROVAL_REJECTED,
+            'pending': LeaveEntry.APPROVAL_PENDING,
+        }
+        
+        # Also update LeaveEntry for backward compatibility
+        leave_entry.approval_status = status_mapping.get(new_status, LeaveEntry.APPROVAL_PENDING)
+        leave_entry.approved_by = (
+            request.user.get_full_name() or request.user.get_username()
+        )
+        leave_entry.approval_note = note
+        leave_entry.save()
+        
+        messages.success(request, 'Leave approval status updated successfully.')
+
+    # Redirect back to the referring page if available, otherwise to the list view
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('approval:leave_approval_list')
 
 
 # ==================== Permission ====================
