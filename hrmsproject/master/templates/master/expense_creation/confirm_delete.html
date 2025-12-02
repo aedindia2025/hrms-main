@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Expense Type{% endblock %}
+
+{% block content %}
+<div class="dashboard-main-body" style="max-width: 640px; margin: 0 auto;">
+  <div class="card shadow-sm border-danger">
+    <div class="card-body">
+      <h5 class="card-title text-danger">Delete Expense Type</h5>
+      <p class="mb-4">Are you sure you want to delete <strong>{{ expense_type.name }}</strong>?</p>
+      <p class="text-warning small mb-4">Note: This will also delete all associated sub expenses.</p>
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'master:expense_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

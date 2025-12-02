@@ -1496,7 +1496,143 @@ def degree_delete(request, pk):
 
 @permission_required('master.view_expensetype', raise_exception=True)
 def expense_list(request):
-    return render(request, 'master/expense_creation/list.html')
+    """List all expense types with pagination and search."""
+    per_page = request.GET.get('per_page', '').strip() or '10'
+    search_query = request.GET.get('q', '').strip()
+    page_number = request.GET.get('page')
+
+    try:
+        per_page_value = max(int(per_page), 1)
+    except ValueError:
+        per_page_value = 10
+
+    expense_types = ExpenseType.objects.order_by('name')
+    if search_query:
+        expense_types = expense_types.filter(
+            Q(name__icontains=search_query) | Q(description__icontains=search_query)
+        )
+
+    paginator = Paginator(expense_types, per_page_value)
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    base_querystring = query_params.urlencode()
+    page_query_base = f'{base_querystring}&' if base_querystring else ''
+
+    context = {
+        'expense_types': page_obj,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'per_page': str(per_page_value),
+        'per_page_value': per_page_value,
+        'base_querystring': base_querystring,
+        'page_query_base': page_query_base,
+        'total_expense_types': paginator.count,
+    }
+    return render(request, 'master/expense_creation/list.html', context)
+
+
+@permission_required('master.add_expensetype', raise_exception=True)
+def expense_create(request):
+    """Create new expense type."""
+    values = {
+        'name': '',
+        'is_active': True,
+        'description': '',
+    }
+    errors = {}
+
+    if request.method == 'POST':
+        values['name'] = request.POST.get('name', '').strip()
+        values['is_active'] = request.POST.get('is_active') == 'on'
+        values['description'] = request.POST.get('description', '').strip()
+
+        if not values['name']:
+            errors['name'] = 'Expense type is required.'
+        elif ExpenseType.objects.filter(name__iexact=values['name']).exists():
+            errors['name'] = 'Expense type already exists.'
+
+        if not errors:
+            expense_type = ExpenseType.objects.create(
+                name=values['name'],
+                is_active=values['is_active'],
+                description=values['description'],
+            )
+            # Handle file upload
+            if 'document' in request.FILES:
+                expense_type.document = request.FILES['document']
+                expense_type.save()
+            messages.success(request, 'Expense type created successfully.')
+            return redirect('master:expense_list')
+
+    context = {
+        'values': values,
+        'errors': errors,
+        'cancel_url': reverse('master:expense_list'),
+    }
+    return render(request, 'master/expense_creation/create.html', context)
+
+
+@permission_required('master.change_expensetype', raise_exception=True)
+def expense_edit(request, pk):
+    """Edit existing expense type."""
+    expense_type = get_object_or_404(ExpenseType, pk=pk)
+    values = {
+        'name': expense_type.name,
+        'is_active': expense_type.is_active,
+        'description': expense_type.description or '',
+    }
+    errors = {}
+
+    if request.method == 'POST':
+        values['name'] = request.POST.get('name', '').strip()
+        values['is_active'] = request.POST.get('is_active') == 'on'
+        values['description'] = request.POST.get('description', '').strip()
+
+        if not values['name']:
+            errors['name'] = 'Expense type is required.'
+        elif (
+            ExpenseType.objects.filter(name__iexact=values['name'])
+            .exclude(pk=expense_type.pk)
+            .exists()
+        ):
+            errors['name'] = 'Expense type already exists.'
+
+        if not errors:
+            expense_type.name = values['name']
+            expense_type.is_active = values['is_active']
+            expense_type.description = values['description']
+            # Handle file upload - update only if new file is uploaded
+            if 'document' in request.FILES:
+                expense_type.document = request.FILES['document']
+            expense_type.save()
+            messages.success(request, 'Expense type updated successfully.')
+            return redirect('master:expense_list')
+
+    context = {
+        'expense_type': expense_type,
+        'values': values,
+        'errors': errors,
+        'cancel_url': reverse('master:expense_list'),
+        'existing_document': expense_type.document if expense_type.document else None,
+    }
+    return render(request, 'master/expense_creation/edit.html', context)
+
+
+@permission_required('master.delete_expensetype', raise_exception=True)
+def expense_delete(request, pk):
+    """Delete expense type."""
+    expense_type = get_object_or_404(ExpenseType, pk=pk)
+    if request.method == 'POST':
+        expense_type.delete()
+        messages.success(request, 'Expense type deleted successfully.')
+        return redirect('master:expense_list')
+
+    context = {
+        'expense_type': expense_type,
+    }
+    return render(request, 'master/expense_creation/confirm_delete.html', context)
 
 
 @permission_required('master.view_subexpense', raise_exception=True)
