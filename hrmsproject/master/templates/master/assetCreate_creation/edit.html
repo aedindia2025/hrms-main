@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Asset Create Creation - Edit{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark"> Asset creation Edit</span></h6>
+        <a href="{% url 'master:asset_create_list' %}" class="btn-back">
+            <i data-feather="arrow-left"></i> Back
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form action="" method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                <div class="row g-3">
+                    <!-- Staff name -->
+                    <div class="col-md-6">
+                        <label for="staff_name" class="form-label">Staff name <span class="text-danger">*</span></label>
+                        <select name="staff_name" id="staff_name" class="form-select" required>
+                            <option value="">Select Employee</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.pk }}" {% if assignment.employee.pk == employee.pk %}selected{% endif %}>
+                                    {{ employee.staff_name }} ({{ employee.staff_id }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Asset Type -->
+                    <div class="col-md-6">
+                        <label for="assetType" class="form-label">Asset Type <span class="text-danger">*</span></label>
+                        <select name="asset_type" id="assetType" class="form-select" required>
+                            <option value="">Select Asset Type</option>
+                            {% for asset_type in asset_types %}
+                                <option value="{{ asset_type.pk }}" {% if assignment.asset_type and assignment.asset_type.pk == asset_type.pk %}selected{% elif not assignment.asset_type and assignment.asset_name == asset_type.name %}selected{% endif %}>
+                                    {{ asset_type.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Serial No / Item No -->
+                    <div class="col-md-6">
+                        <label for="serialNo" class="form-label">Serial No / Item No <span class="text-danger">*</span></label>
+                        <input type="text" name="serial_no" id="serialNo" class="form-control" placeholder="Enter Serial No" value="{{ assignment.serial_no }}" required>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div class="col-md-6">
+                        <label for="qty" class="form-label">Qty <span class="text-danger">*</span></label>
+                        <input type="number" name="quantity" id="qty" class="form-control" placeholder="Enter Quantity" min="1" value="{{ assignment.quantity }}" required>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-6">
+                        <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                        <select name="status" id="status" class="form-select" required>
+                            <option value="">Select Status</option>
+                            <option value="Issued" {% if assignment.status == 'Issued' %}selected{% endif %}>Issued</option>
+                            <option value="Returned" {% if assignment.status == 'Returned' %}selected{% endif %}>Returned</option>
+                            <option value="In Repair" {% if assignment.status == 'In Repair' %}selected{% endif %}>In Repair</option>
+                        </select>
+                    </div>
+
+                    <!-- Created Date (Read-only) -->
+                    <div class="col-md-6">
+                        <label class="form-label">Entry Date</label>
+                        <input type="text" class="form-control" value="{{ assignment.created_at|date:'d-m-Y' }}" readonly>
+                        <small class="text-muted">This is the original creation date and cannot be changed.</small>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="mt-5 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-success px-4">Update</button>
+                    <a href="{% url 'master:asset_create_list' %}" class="btn btn-danger px-4">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+</script>
+{% endblock %}
+

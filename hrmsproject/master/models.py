@@ -508,23 +508,35 @@ class EmployeeAssetAssignment(models.Model):
         (LICENSE_MODE_HEAVY, 'Heavy Vehicle'),
     ]
 
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='assets')
-    asset_name = models.CharField(max_length=255, blank=True)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='asset_assignments')
+    asset_type = models.ForeignKey(AssetType, on_delete=models.PROTECT, related_name='assignments', null=True, blank=True)
+    asset_name = models.CharField(max_length=255, blank=True, help_text='Legacy field - use asset_type instead')
     serial_no = models.CharField(max_length=255, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ISSUED)
+    description = models.TextField(blank=True, help_text='Additional notes or description')
+    # Vehicle-specific fields (optional - only for vehicle assets)
     vehicle_reg_no = models.CharField(max_length=120, blank=True)
     license_mode = models.CharField(max_length=20, choices=LICENSE_MODE_CHOICES, blank=True)
     license_no = models.CharField(max_length=120, blank=True)
     license_valid_from = models.DateField(null=True, blank=True)
     license_valid_to = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['employee', 'asset_name']
+        ordering = ['employee', '-created_at']
+        verbose_name = 'Employee Asset Assignment'
+        verbose_name_plural = 'Employee Asset Assignments'
 
     def __str__(self) -> str:
-        return f'{self.employee.staff_name} - {self.asset_name}'
+        asset_display = self.asset_type.name if self.asset_type else self.asset_name
+        return f'{self.employee.staff_name} - {asset_display}'
+    
+    @property
+    def asset_name_display(self):
+        """Return asset name from asset_type if available, otherwise use asset_name field."""
+        return self.asset_type.name if self.asset_type else self.asset_name
 
 
 class EmployeeVehicleDetail(models.Model):

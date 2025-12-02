@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Asset Assignment - Print{% endblock %}
+
+{% block extra_head %}
+<style>
+    @media print {
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .no-print {
+            display: none !important;
+        }
+        .container {
+            margin: 0;
+            padding: 0;
+        }
+    }
+    
+    body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+        color: #333;
+    }
+    
+    .container {
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+        background: #fff;
+    }
+    
+    .header {
+        text-align: center;
+        border-bottom: 2px solid #000;
+        padding-bottom: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .header h2 {
+        margin: 5px 0;
+        font-size: 24px;
+    }
+    
+    .header p {
+        margin: 2px 0;
+        font-size: 14px;
+    }
+    
+    .title {
+        text-align: center;
+        background: #f5f5f5;
+        padding: 10px 20px;
+        border: 1px solid #ccc;
+        display: inline-block;
+        margin: 20px auto;
+        font-weight: bold;
+        font-size: 18px;
+        border-radius: 5px;
+    }
+    
+    .title-wrapper {
+        text-align: center;
+    }
+    
+    .details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px 50px;
+        margin-top: 30px;
+        margin-bottom: 30px;
+        font-size: 16px;
+    }
+    
+    .details p {
+        margin: 8px 0;
+    }
+    
+    .label {
+        font-weight: bold;
+        color: #555;
+    }
+    
+    .value {
+        color: #000;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        margin-bottom: 30px;
+    }
+    
+    table th,
+    table td {
+        border: 1px solid #000;
+        padding: 10px;
+        text-align: left;
+    }
+    
+    table th {
+        background-color: #f0f0f0;
+        font-weight: bold;
+    }
+    
+    .footer {
+        margin-top: 40px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+    }
+    
+    .print-button {
+        text-align: center;
+        margin: 20px 0;
+    }
+    
+    .btn-print {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 30px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    
+    .btn-print:hover {
+        background-color: #0056b3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="print-button no-print">
+        <button class="btn-print" onclick="window.print()">Print</button>
+        <button class="btn-print" onclick="window.close()" style="background-color: #6c757d; margin-left: 10px;">Close</button>
+    </div>
+    
+    <div class="header">
+        <h2>ASCENT</h2>
+        <p>Asset Assignment Details</p>
+    </div>
+    
+    <div class="title-wrapper">
+        <div class="title">Asset Assignment Receipt</div>
+    </div>
+    
+    <div class="details">
+        <div>
+            <p><span class="label">Asset ID:</span> <span class="value">{{ assignment.asset_id_display }}</span></p>
+            <p><span class="label">Entry Date:</span> <span class="value">{{ assignment.created_at|date:"d-m-Y" }}</span></p>
+            <p><span class="label">Employee Name:</span> <span class="value">{{ assignment.employee.staff_name|default:"-" }}</span></p>
+            <p><span class="label">Employee ID:</span> <span class="value">{{ assignment.employee.staff_id|default:"-" }}</span></p>
+        </div>
+        <div>
+            <p><span class="label">Asset Type:</span> <span class="value">{{ assignment.asset_name_display|default:"-" }}</span></p>
+            <p><span class="label">Serial No:</span> <span class="value">{{ assignment.serial_no|default:"-" }}</span></p>
+            <p><span class="label">Quantity:</span> <span class="value">{{ assignment.quantity|default:"-" }}</span></p>
+            <p><span class="label">Status:</span> <span class="value">{{ assignment.status|default:"-" }}</span></p>
+        </div>
+    </div>
+    
+    {% if assignment.description %}
+    <div style="margin-top: 20px; margin-bottom: 20px;">
+        <p><span class="label">Description:</span></p>
+        <p style="margin-left: 20px;">{{ assignment.description }}</p>
+    </div>
+    {% endif %}
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Field</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Issued Quantity</strong></td>
+                <td>{{ assignment.issued_qty|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td><strong>Returned Quantity</strong></td>
+                <td>{{ assignment.returned_qty|default:"-" }}</td>
+            </tr>
+            <tr>
+                <td><strong>Assignment Date</strong></td>
+                <td>{{ assignment.created_at|date:"d-m-Y H:i" }}</td>
+            </tr>
+            {% if assignment.employee.company %}
+            <tr>
+                <td><strong>Company</strong></td>
+                <td>{{ assignment.employee.company.company_group|default:"-" }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>This is a system generated document.</p>
+        <p>Generated on: {% now "d-m-Y H:i" %}</p>
+    </div>
+</div>
+{% endblock %}
+

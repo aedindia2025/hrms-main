@@ -94,7 +94,7 @@
                                     <td>{{ assignment.issued_qty|default:"-" }}</td>
                                     <td>{{ assignment.returned_qty|default:"-" }}</td>
                                     <td>
-                                        <a href="#" class="text-primary" title="Print">
+                                        <a href="{% url 'master:asset_create_print' assignment.pk %}" target="_blank" class="text-primary" title="Print">
                                             <i data-feather="printer"></i>
                                         </a>
                                     </td>

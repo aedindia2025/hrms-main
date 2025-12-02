@@ -1,4 +1,3 @@
 # Virtual Environment
 venv/
 .env
-env_template
