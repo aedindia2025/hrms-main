@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.models import Permission
 
 from .models import CompOffEntry, SiteEntry
 
@@ -34,3 +35,61 @@ class SiteEntryAdmin(admin.ModelAdmin):
     search_fields = ('employee_name', 'from_site', 'to_site')
     list_filter = ('transfer_type', 'transfer_date')
     date_hierarchy = 'transfer_date'
+
+
+# ==================== Permission Management Admin ====================
+# This admin class helps manage permissions for models that may not be fully registered
+# It allows you to see and manage permissions through Django admin
+
+class PermissionAdmin(admin.ModelAdmin):
+    """
+    Enhanced Permission admin for better permission management.
+    This makes it easier to find and assign permissions for approval pages.
+    """
+    list_display = ('name', 'content_type', 'codename')
+    list_filter = ('content_type__app_label', 'content_type__model')
+    search_fields = ('name', 'codename', 'content_type__app_label', 'content_type__model')
+    readonly_fields = ('name', 'content_type', 'codename')
+
+    def has_add_permission(self, request):
+        """Permissions are auto-created by Django, so we disable manual creation."""
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """Don't allow deletion of permissions."""
+        return False
+
+
+# Unregister default Permission admin and register our enhanced version
+# Only unregister if it's already registered
+if admin.site.is_registered(Permission):
+    admin.site.unregister(Permission)
+admin.site.register(Permission, PermissionAdmin)
+
+
+# ==================== Helper: Register models for permission management ====================
+# If you have other Entry models (LeaveEntry, PermissionEntry, TADAEntry, TravelEntry, ManualEntry)
+# that are not yet created, you can register them here when they are created.
+# For now, Django will automatically create permissions for any models that exist.
+
+# Example for when you create other models:
+# @admin.register(LeaveEntry)
+# class LeaveEntryAdmin(admin.ModelAdmin):
+#     list_display = ('id', '__str__')
+#     # Minimal admin just for permission visibility
+#
+# @admin.register(PermissionEntry)
+# class PermissionEntryAdmin(admin.ModelAdmin):
+#     list_display = ('id', '__str__')
+#
+# @admin.register(TADAEntry)
+# class TADAEntryAdmin(admin.ModelAdmin):
+#     list_display = ('id', '__str__')
+#
+# @admin.register(TravelEntry)
+# class TravelEntryAdmin(admin.ModelAdmin):
+#     list_display = ('id', '__str__')
+#
+# @admin.register(ManualEntry)
+# class ManualEntryAdmin(admin.ModelAdmin):
+#     list_display = ('id', '__str__')

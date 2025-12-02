@@ -29,8 +29,19 @@ def login_view(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
-            auth_login(request, form.get_user())
+            user = form.get_user()
+            auth_login(request, user)
             messages.success(request, 'Login successful!')
+            
+            # Check if user must change password
+            try:
+                from .models import Profile
+                profile = user.profile
+                if profile.must_change_password:
+                    return redirect('accounts:change_password_required')
+            except:
+                pass
+            
             return redirect('accounts:dashboard')
         messages.error(request, 'Invalid credentials. Please try again.')
     else:
