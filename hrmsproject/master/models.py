@@ -76,9 +76,9 @@ class AssetType(models.Model):
 class ExpenseType(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=150, unique=True)
-    image_required = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     description = models.TextField(blank=True)
+    document = models.FileField(upload_to='expense_type/documents/', blank=True, null=True, help_text='Upload document related to this expense type')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

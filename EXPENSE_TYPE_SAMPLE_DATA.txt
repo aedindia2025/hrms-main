@@ -1,0 +1,131 @@
+========================================
+EXPENSE TYPE CREATION - SAMPLE DATA
+========================================
+
+You can manually enter these data in the Expense Type Creation form.
+Document upload is optional - you can skip it or upload later.
+
+========================================
+
+1. EXPENSE TYPE: Food Expenses
+   Description: Daily meal and food related expenses
+   Active: Yes
+   Document: (Optional)
+
+2. EXPENSE TYPE: Travel Expenses
+   Description: Transportation and travel related costs
+   Active: Yes
+   Document: (Optional)
+
+3. EXPENSE TYPE: Accommodation
+   Description: Hotel and lodging expenses
+   Active: Yes
+   Document: (Optional)
+
+4. EXPENSE TYPE: Fuel Expenses
+   Description: Vehicle fuel and petrol costs
+   Active: Yes
+   Document: (Optional)
+
+5. EXPENSE TYPE: Vehicle Maintenance
+   Description: Car/bike repair and maintenance costs
+   Active: Yes
+   Document: (Optional)
+
+6. EXPENSE TYPE: Medical Expenses
+   Description: Medical bills and health related expenses
+   Active: Yes
+   Document: (Optional)
+
+7. EXPENSE TYPE: Office Supplies
+   Description: Stationery and office materials
+   Active: Yes
+   Document: (Optional)
+
+8. EXPENSE TYPE: Internet & Phone
+   Description: Internet bills and mobile phone expenses
+   Active: Yes
+   Document: (Optional)
+
+9. EXPENSE TYPE: Entertainment
+   Description: Client entertainment and team outings
+   Active: Yes
+   Document: (Optional)
+
+10. EXPENSE TYPE: Training & Development
+    Description: Training courses and skill development
+    Active: Yes
+    Document: (Optional)
+
+11. EXPENSE TYPE: Rent
+    Description: Office or workspace rent
+    Active: Yes
+    Document: (Optional)
+
+12. EXPENSE TYPE: Utilities
+    Description: Electricity, water, and utility bills
+    Active: Yes
+    Document: (Optional)
+
+13. EXPENSE TYPE: Professional Services
+    Description: Legal, accounting, and consultancy fees
+    Active: Yes
+    Document: (Optional)
+
+14. EXPENSE TYPE: Marketing & Advertising
+    Description: Marketing campaigns and promotional expenses
+    Active: Yes
+    Document: (Optional)
+
+15. EXPENSE TYPE: Miscellaneous Expenses
+    Description: Other unclassified expenses
+    Active: Yes
+    Document: (Optional)
+
+========================================
+QUICK ENTRY FORMAT:
+========================================
+
+Copy and paste format:
+
+Food Expenses | Daily meal and food related expenses
+Travel Expenses | Transportation and travel related costs
+Accommodation | Hotel and lodging expenses
+Fuel Expenses | Vehicle fuel and petrol costs
+Vehicle Maintenance | Car/bike repair and maintenance costs
+Medical Expenses | Medical bills and health related expenses
+Office Supplies | Stationery and office materials
+Internet & Phone | Internet bills and mobile phone expenses
+Entertainment | Client entertainment and team outings
+Training & Development | Training courses and skill development
+Rent | Office or workspace rent
+Utilities | Electricity, water, and utility bills
+Professional Services | Legal, accounting, and consultancy fees
+Marketing & Advertising | Marketing campaigns and promotional expenses
+Miscellaneous Expenses | Other unclassified expenses
+
+========================================
+INSTRUCTIONS:
+========================================
+
+1. Go to: Master / Expense type creation
+2. Click: + Create button
+3. Enter data:
+   - Expense Type: (Type the name from above)
+   - Description: (Type the description from above)
+   - Active: Check the checkbox (default checked)
+   - Document Upload: (Skip or upload if needed)
+4. Click: Submit
+5. Repeat for each expense type
+
+========================================
+NOTE:
+========================================
+
+- All fields except "Expense Type" are optional
+- Description helps users understand the expense category
+- Active status should be checked for all active expense types
+- Document upload is optional - you can add it later via Edit
+
+========================================
+
