@@ -28,7 +28,10 @@ def create_employee_account(request, employee_id):
     employee = get_object_or_404(Employee, pk=employee_id)
     
     # Check if employee already has an account
-    if employee.user:
+    # Find user through Profile using employee_code
+    from .models import Profile
+    user_exists = Profile.objects.filter(employee_code=employee.staff_id).exists()
+    if user_exists:
         messages.warning(request, f'Employee {employee.staff_name} already has a user account.')
         return redirect('master:employee_list')
     
@@ -53,10 +56,6 @@ def create_employee_account(request, employee_id):
             is_active=False,  # Account inactive until verified
         )
         
-        # Link user to employee
-        employee.user = user
-        employee.save()
-        
         # Create or update profile
         profile, created = Profile.objects.get_or_create(user=user)
         profile.employee_code = employee.staff_id
@@ -65,15 +64,34 @@ def create_employee_account(request, employee_id):
         verification_token = profile.generate_verification_token()
         profile.save()
         
+        # Note: Employee model doesn't have a direct user field
+        # The relationship is maintained through Profile.employee_code = Employee.staff_id
+        
         # Send verification email (optional - you can implement email sending)
         # send_verification_email(user, verification_token, temp_password, employee)
         
+        # SECURITY: Do not display sensitive credentials in messages
+        # Store them temporarily in session for display on next page only, or send via email
+        # For now, just show success without sensitive data
         messages.success(
             request,
-            f'Account created for {employee.staff_name}. '
-            f'Username: {username}, Temporary Password: {temp_password}. '
-            f'Verification token: {verification_token}'
+            f'Account created successfully for {employee.staff_name}. '
+            f'Username: {username}. '
+            f'Please provide the temporary password and verification token to the employee securely (via email or in person).'
         )
+        
+        # Store sensitive data in session temporarily (will be cleared after first access)
+        # This allows showing it once on a secure page if needed
+        request.session['new_account_credentials'] = {
+            'employee_id': employee.id,
+            'username': username,
+            'temp_password': temp_password,
+            'verification_token': verification_token,
+            'verification_url': request.build_absolute_uri(
+                reverse('accounts:verify_employee_account', args=[verification_token])
+            ),
+        }
+        request.session['new_account_credentials_shown'] = False
         
         return redirect('master:employee_list')
     
@@ -110,9 +128,17 @@ def verify_employee_account(request, token):
         messages.success(request, 'Account verified successfully! Please login with your credentials.')
         return redirect('accounts:login')
     
+    # Find employee through Profile.employee_code matching Employee.staff_id
+    employee = None
+    if profile.employee_code:
+        try:
+            employee = Employee.objects.get(staff_id=profile.employee_code)
+        except Employee.DoesNotExist:
+            pass
+    
     context = {
         'profile': profile,
-        'employee': getattr(profile.user, 'employee_profile', None),
+        'employee': employee,
     }
     return render(request, 'accounts/verify_employee_account.html', context)
 
@@ -125,7 +151,8 @@ def change_password_required(request):
     """
     try:
         profile = request.user.profile
-    except Profile.DoesNotExist:
+    except AttributeError:
+        # Django OneToOneField raises AttributeError when related object doesn't exist
         # If no profile, redirect to dashboard
         return redirect('accounts:dashboard')
     
@@ -167,24 +194,39 @@ def resend_verification(request, employee_id):
     """
     employee = get_object_or_404(Employee, pk=employee_id)
     
-    if not employee.user:
+    # Find user through Profile using employee_code
+    try:
+        profile = Profile.objects.get(employee_code=employee.staff_id)
+    except Profile.DoesNotExist:
         messages.error(request, 'Employee does not have a user account yet.')
         return redirect('master:employee_list')
     
+    # Generate verification token
     try:
-        profile = employee.user.profile
         verification_token = profile.generate_verification_token()
         
         # Send verification email (optional)
         # send_verification_email(employee.user, verification_token, None, employee)
         
+        # SECURITY: Do not display sensitive verification token in messages
+        # Store in session temporarily for secure display
+        request.session['resend_verification_token'] = {
+            'employee_id': employee.id,
+            'verification_token': verification_token,
+            'verification_url': request.build_absolute_uri(
+                reverse('accounts:verify_employee_account', args=[verification_token])
+            ),
+        }
+        request.session['resend_verification_token_shown'] = False
+        
         messages.success(
             request,
             f'Verification token regenerated for {employee.staff_name}. '
-            f'Token: {verification_token}'
+            f'Please provide the verification token to the employee securely.'
         )
-    except Profile.DoesNotExist:
-        messages.error(request, 'Profile not found for this employee.')
+    except Exception as e:
+        # Handle any errors during token generation (e.g., database errors)
+        messages.error(request, f'Failed to regenerate verification token: {str(e)}')
     
     return redirect('master:employee_list')
 
