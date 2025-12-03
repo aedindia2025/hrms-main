@@ -6,9 +6,9 @@ from django.db.models import Q
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from entry.models import CompOffEntry, LeaveEntry
+from entry.models import CompOffEntry, LeaveEntry, PermissionEntry
 from master.models import Employee, Site
-from .models import HRCompOffApproval, LeaveApproval
+from .models import HRCompOffApproval, LeaveApproval, PermissionApproval
 
 
 # ==================== HR Approval ====================
@@ -270,8 +270,130 @@ def leave_approval_update(request, pk):
 # ==================== Permission ====================
 @permission_required('approval.view_permissionapproval', raise_exception=True)
 def permission_approval_list(request):
-    """Approval -> Permission Approval list."""
-    return render(request, 'approval/permission_approval/list.html')
+    """Approval -> Permission Approval list with filters & pagination."""
+    per_page = request.GET.get('per_page', '').strip() or '10'
+    search_query = request.GET.get('q', '').strip()
+    page_number = request.GET.get('page')
+
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    site_id = request.GET.get('site', '').strip()
+    employee_id = request.GET.get('employee', '').strip()
+    status = request.GET.get('status', '').strip()
+
+    try:
+        per_page_value = max(int(per_page), 1)
+    except ValueError:
+        per_page_value = 10
+
+    permission_entries = PermissionEntry.objects.select_related('employee', 'site')
+
+    if search_query:
+        permission_entries = permission_entries.filter(
+            Q(employee__staff_name__icontains=search_query)
+            | Q(employee__staff_id__icontains=search_query)
+            | Q(site__name__icontains=search_query)
+            | Q(reason__icontains=search_query)
+        )
+
+    if from_date:
+        permission_entries = permission_entries.filter(permission_date__gte=from_date)
+    if to_date:
+        permission_entries = permission_entries.filter(permission_date__lte=to_date)
+    if site_id:
+        permission_entries = permission_entries.filter(site_id=site_id)
+    if employee_id:
+        permission_entries = permission_entries.filter(employee_id=employee_id)
+    if status:
+        # Map PermissionApproval status to PermissionEntry status
+        status_mapping = {
+            'pending': PermissionEntry.STATUS_PENDING,
+            'approved': PermissionEntry.STATUS_APPROVED,
+            'rejected': PermissionEntry.STATUS_CANCELLED,
+        }
+        mapped_status = status_mapping.get(status)
+        if mapped_status:
+            permission_entries = permission_entries.filter(status=mapped_status)
+
+    permission_entries = permission_entries.order_by('-permission_date', 'employee__staff_name')
+
+    paginator = Paginator(permission_entries, per_page_value)
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    base_querystring = query_params.urlencode()
+    page_query_base = f'{base_querystring}&' if base_querystring else ''
+
+
+    context = {
+        'permission_entries': page_obj,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'per_page': str(per_page_value),
+        'per_page_value': per_page_value,
+        'base_querystring': base_querystring,
+        'page_query_base': page_query_base,
+        'total_entries': paginator.count,
+        'from_date': from_date,
+        'to_date': to_date,
+        'filter_site_id': site_id,
+        'filter_employee_id': employee_id,
+        'filter_status': status,
+        'sites': Site.objects.order_by('name'),
+        'employees': Employee.objects.order_by('staff_name'),
+        'approval_choices': PermissionApproval.APPROVAL_CHOICES,
+        'permission_status_choices': PermissionEntry.STATUS_CHOICES,
+    }
+    return render(request, 'approval/permission_approval/list.html', context)
+
+
+@permission_required('approval.approve_permissionapproval', raise_exception=True)
+@require_POST
+def permission_approval_update(request, pk):
+    """
+    Update permission approval status.
+    Since PermissionApproval doesn't have permission_entry field yet,
+    we update PermissionEntry status directly for now.
+    """
+    permission_entry = get_object_or_404(PermissionEntry, pk=pk)
+    
+    new_status = request.POST.get('status', '').strip()
+    note = request.POST.get('note', '').strip()
+
+    valid_statuses = {choice[0] for choice in PermissionApproval.APPROVAL_CHOICES}
+    if new_status not in valid_statuses:
+        messages.error(request, 'Invalid approval status.')
+    else:
+        # Map approval status to PermissionEntry status
+        status_mapping = {
+            'approved': PermissionEntry.STATUS_APPROVED,
+            'rejected': PermissionEntry.STATUS_CANCELLED,
+            'pending': PermissionEntry.STATUS_PENDING,
+        }
+        
+        # Update PermissionEntry status
+        permission_entry.status = status_mapping.get(new_status, PermissionEntry.STATUS_PENDING)
+        permission_entry.save()
+        
+        # Create PermissionApproval record for tracking
+        # TODO: Add permission_entry OneToOneField to PermissionApproval model
+        permission_approval = PermissionApproval.objects.create()
+        permission_approval.approval_status = new_status
+        permission_approval.approved_by = request.user
+        permission_approval.approval_note = note
+        permission_approval.approval_date = timezone.now()
+        # Store permission_entry_id in approval_note or use a workaround
+        # For now, we'll match by timestamp in the model method
+        permission_approval.save()
+        
+        messages.success(request, 'Permission approval status updated successfully.')
+
+    # Redirect back to the referring page if available, otherwise to the list view
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('approval:permission_approval_list')
 
 
 # ==================== TADA ====================

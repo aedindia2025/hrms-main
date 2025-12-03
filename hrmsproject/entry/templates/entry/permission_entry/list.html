@@ -146,7 +146,13 @@
                                     {% if entry.status == 'approved' %}text-success bg-success-subtle border border-success
                                     {% elif entry.status == 'cancelled' %}text-danger bg-danger-subtle border border-danger
                                     {% else %}text-info bg-info-subtle border border-info{% endif %}">
-                                    {{ entry.get_status_display }}
+                                    {% if entry.status == 'approved' %}
+                                        approved by {{ entry.get_approver_name|default:"-" }}
+                                    {% elif entry.status == 'cancelled' %}
+                                        rejected by {{ entry.get_approver_name|default:"-" }}
+                                    {% else %}
+                                        {{ entry.get_status_display }}
+                                    {% endif %}
                                 </span>
                             </td>
                             <td class="text-nowrap">

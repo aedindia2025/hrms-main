@@ -135,14 +135,21 @@
                             </td>
                             <td>
                                 {% if entry.leave_approval %}
-                                    <span class="badge rounded-pill d-inline-flex align-items-center px-3 py-2" style="{{ entry.leave_approval.approval_badge_class }}">
-                                        <i data-feather="check-circle" class="me-1" style="width:16px; height:16px; color:{{ entry.leave_approval.approval_icon_color }};"></i>
-                                        {{ entry.leave_approval.get_approval_status_display }}
-                                    </span>
+                                    {% with approval=entry.leave_approval %}
+                                        <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1" style="{{ approval.approval_badge_class }}">
+                                            <i data-feather="check-circle" class="me-1 approval-icon" data-color="{{ approval.approval_icon_color }}"></i>
+                                            <span style="font-size: 0.75rem; color: inherit;">
+                                                {{ approval.get_approval_status_display }}
+                                                {% if approval.approved_by %}
+                                                    by {{ approval.approved_by.get_full_name|default:approval.approved_by.username }}
+                                                {% endif %}
+                                            </span>
+                                        </span>
+                                    {% endwith %}
                                 {% else %}
-                                    <span class="badge rounded-pill d-inline-flex align-items-center px-3 py-2" style="background-color:#d1ecf1; color:#0c5460;">
-                                        <i data-feather="clock" class="me-1" style="width:16px; height:16px; color:#17a2b8;"></i>
-                                        {{ entry.get_approval_status_display }}
+                                    <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1" style="background-color:#d1ecf1; color:#0c5460;">
+                                        <i data-feather="clock" class="me-1" style="width:14px; height:14px; color:#17a2b8;"></i>
+                                        <span style="font-size: 0.75rem;">{{ entry.get_approval_status_display }}</span>
                                     </span>
                                 {% endif %}
                             </td>
@@ -152,61 +159,23 @@
                                         {% csrf_token %}
                                         <input type="hidden" name="status" value="approved">
                                         <input type="hidden" name="note" value="">
-                                        <button type="submit" class="btn btn-sm btn-success" title="Approve" onclick="return confirm('Are you sure you want to approve this leave entry?');">
-                                            <i data-feather="check"></i> Approve
+                                        <button type="submit" class="btn btn-xs btn-success" title="Approve" onclick="return confirm('Are you sure you want to approve this leave entry?');">
+                                            Approve
                                         </button>
                                     </form>
                                     <form method="post" action="{% url 'approval:leave_approval_update' entry.pk %}" class="d-inline me-1">
                                         {% csrf_token %}
                                         <input type="hidden" name="status" value="rejected">
                                         <input type="hidden" name="note" value="">
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Reject" onclick="return confirm('Are you sure you want to reject this leave entry?');">
-                                            <i data-feather="x"></i> Reject
+                                        <button type="submit" class="btn btn-xs btn-danger" title="Reject" onclick="return confirm('Are you sure you want to reject this leave entry?');">
+                                            Reject
                                         </button>
                                     </form>
-                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#approvalModal{{ entry.id }}" title="Update with Note">
-                                        <i data-feather="edit"></i> Note
-                                    </button>
                                 {% else %}
                                     <span class="text-muted">No permission</span>
                                 {% endif %}
                             </td>
                         </tr>
-                        
-                        <!-- Approval Modal -->
-                        <div class="modal fade" id="approvalModal{{ entry.id }}" tabindex="-1" aria-labelledby="approvalModalLabel{{ entry.id }}" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="approvalModalLabel{{ entry.id }}">Update Leave Approval</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <form method="post" action="{% url 'approval:leave_approval_update' entry.pk %}">
-                                        {% csrf_token %}
-                                        <div class="modal-body">
-                                            <div class="mb-3">
-                                                <label class="form-label">Approval Status</label>
-                                                <select name="status" class="form-select" required>
-                                                    {% for key, label in approval_choices %}
-                                                        <option value="{{ key }}" {% if entry.leave_approval and entry.leave_approval.approval_status == key %}selected{% elif not entry.leave_approval and key == 'pending' %}selected{% endif %}>
-                                                            {{ label }}
-                                                        </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label class="form-label">Note</label>
-                                                <textarea name="note" class="form-control" rows="3">{% if entry.leave_approval %}{{ entry.leave_approval.approval_note|default:"" }}{% endif %}</textarea>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <button type="submit" class="btn btn-primary">Update</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
                         {% empty %}
                         <tr>
                             <td colspan="11" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No leave entries found.</td>
@@ -290,11 +259,35 @@
     width: 16px;
     height: 16px;
   }
+  .btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    border-radius: 0.2rem;
+    font-weight: 500;
+  }
 </style>
 
 <script src="https://unpkg.com/feather-icons"></script>
 <script>
     feather.replace();
+
+    // apply approval icon colors and sizes from data-color attributes (feather copies attributes to the generated SVG)
+    (function applyApprovalIconStyles() {
+        // run after a brief delay to ensure feather.replace() has swapped icons
+        setTimeout(function() {
+            document.querySelectorAll('.approval-icon').forEach(function(el) {
+                var color = el.getAttribute('data-color');
+                if (color) {
+                    el.style.color = color;
+                }
+                // ensure consistent icon size
+                el.style.width = '14px';
+                el.style.height = '14px';
+            });
+        }, 0);
+    })();
+
     function updatePerPage(value) {
         const url = new URL(window.location.href);
         url.searchParams.set('per_page', value);

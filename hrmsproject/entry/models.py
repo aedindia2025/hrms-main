@@ -182,6 +182,46 @@ class PermissionEntry(models.Model):
         if self.permission_start_time and self.permission_end_time:
             return f"{self.permission_start_time.strftime('%H:%M')} - {self.permission_end_time.strftime('%H:%M')}"
         return ''
+    
+    def get_approver_name(self):
+        """Get the name of the person who approved/rejected this entry."""
+        try:
+            from approval.models import PermissionApproval
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            # Map PermissionEntry status to PermissionApproval status
+            status_mapping = {
+                'approved': 'approved',
+                'cancelled': 'rejected',
+            }
+            approval_status = status_mapping.get(self.status)
+            
+            if approval_status:
+                # Try to match by timestamp - get approvals created around the time this entry was updated
+                # Look for approvals created within 5 minutes of the entry's last update
+                time_window_start = self.updated_at - timedelta(minutes=5)
+                time_window_end = self.updated_at + timedelta(minutes=5)
+                
+                approval = PermissionApproval.objects.filter(
+                    approval_status=approval_status,
+                    approved_by__isnull=False,
+                    created_at__gte=time_window_start,
+                    created_at__lte=time_window_end
+                ).select_related('approved_by').order_by('-created_at').first()
+                
+                # If no match found in time window, get the most recent one with matching status
+                if not approval:
+                    approval = PermissionApproval.objects.filter(
+                        approval_status=approval_status,
+                        approved_by__isnull=False
+                    ).select_related('approved_by').order_by('-created_at').first()
+                
+                if approval and approval.approved_by:
+                    return approval.approved_by.get_full_name() or approval.approved_by.username
+        except Exception:
+            pass
+        return None
 
 
 class LeaveEntry(models.Model):
