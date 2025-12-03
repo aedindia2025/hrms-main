@@ -80,6 +80,13 @@ urlpatterns = [
     path('employee/delete/<int:pk>/', views.employee_delete, name='employee_delete'),
     path('employee/export-excel/', views.employee_export_excel, name='employee_export_excel'),
     path('employee/staff-save/', views.employee_staff_save, name='employee_staff_save'),
+    # Separate form save endpoints (individual save workflow)
+    path('employee/staff-details-save/', views.employee_staff_details_save, name='employee_staff_details_save'),
+    path('employee/dependent-add-update/', views.employee_dependent_add_update, name='employee_dependent_add_update'),
+    path('employee/account-add-update/', views.employee_account_add_update, name='employee_account_add_update'),
+    path('employee/qualification-add-update/', views.employee_qualification_add_update, name='employee_qualification_add_update'),
+    path('employee/experience-add-update/', views.employee_experience_add_update, name='employee_experience_add_update'),
+    path('employee/asset-add-update/', views.employee_asset_add_update, name='employee_asset_add_update'),
     path('api/countries/', views.get_countries, name='get_countries'),
     path('api/states/', views.get_states, name='get_states'),
     path('api/cities/', views.get_cities, name='get_cities'),
