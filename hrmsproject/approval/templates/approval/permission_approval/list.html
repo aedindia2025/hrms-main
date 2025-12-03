@@ -18,57 +18,84 @@
    <div class="card shadow-sm">
         <div class="card-body">
     <!-- Copy dashboard HTML here -->
-      <div class="row g-3 mb-3">
-      <div class="col-md-2">
-        <label class="form-label">From Date</label>
-        <input type="date" class="form-control" value="2025-09-20">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">To Date</label>
-        <input type="date" class="form-control" value="2025-09-20">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Site Name</label>
-        <select class="form-select">
-          <option>select</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Employee Name</label>
-        <select class="form-select">
-        <option>Select</option>
-          <option>Manoj</option>
-          <option>Gowshi</option>
-          <option>Prabu</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Status</label>
-        <select class="form-select">
-          <option>select</option>
-          <option>Approved</option>
-          <option>Pending</option>
-          <option>Cancel</option>
-        </select>
-      </div>
-      <div class="col-md-1 d-flex align-items-end">
-        <button class="btn btn-primary w-100">Go</button>
-      </div>
-    </div>
+      <form method="get" class="row g-3 mb-3">
+                <input type="hidden" name="per_page" value="{{ per_page }}">
+                {% if search_query %}
+                    <input type="hidden" name="q" value="{{ search_query }}">
+                {% endif %}
+                <div class="col-md-2">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Site Name</label>
+                    <select name="site" class="form-select">
+                        <option value="">All Sites</option>
+                        {% for site in sites %}
+                            <option value="{{ site.id }}" {% if filter_site_id|stringformat:"s" == site.id|stringformat:"s" %}selected{% endif %}>
+                                {{ site.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Employee Name</label>
+                    <select name="employee" class="form-select">
+                        <option value="">All Employees</option>
+                        {% for employee in employees %}
+                            <option value="{{ employee.id }}" {% if filter_employee_id|stringformat:"s" == employee.id|stringformat:"s" %}selected{% endif %}>
+                                {{ employee.staff_name }} - {{ employee.staff_id }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        {% for key, label in approval_choices %}
+                            <option value="{{ key }}" {% if filter_status == key %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Go</button>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <a href="?per_page={{ per_page }}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-secondary w-100">Clear</a>
+                </div>
+            </form>
      <div class="d-flex justify-content-between align-items-center mt-5 mb-10">
                 <div>
                     Show 
-                    <select class="form-select d-inline-block w-auto mx-1">
-                        <option>10</option>
-                        <option>25</option>
-                        <option>50</option>
-                        <option>100</option>
+                    <select class="form-select d-inline-block w-auto mx-1" id="perPageSelect" onchange="updatePerPage(this.value)">
+                        <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+                        <option value="25" {% if per_page == '25' %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
                     </select>
                     entries
                 </div>
                 <div>
-                    <label class="me-2">Search:</label>
-                    <input type="text" class="form-control d-inline-block w-auto">
+                    <form method="get" class="d-inline-flex align-items-center">
+                        <input type="hidden" name="per_page" value="{{ per_page }}">
+                        {% if from_date %}<input type="hidden" name="from_date" value="{{ from_date }}">{% endif %}
+                        {% if to_date %}<input type="hidden" name="to_date" value="{{ to_date }}">{% endif %}
+                        {% if filter_site_id %}<input type="hidden" name="site" value="{{ filter_site_id }}">{% endif %}
+                        {% if filter_employee_id %}<input type="hidden" name="employee" value="{{ filter_employee_id }}">{% endif %}
+                        {% if filter_status %}<input type="hidden" name="status" value="{{ filter_status }}">{% endif %}
+                        <label class="me-2">Search:</label>
+                        <input type="text" name="q" class="form-control d-inline-block w-auto" value="{{ search_query }}" placeholder="Employee / Site / Reason">
+                        {% if search_query %}
+                            <a href="?per_page={{ per_page }}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}{% if filter_site_id %}&site={{ filter_site_id }}{% endif %}{% if filter_employee_id %}&employee={{ filter_employee_id }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary ms-2">Clear</a>
+                        {% endif %}
+                    </form>
                 </div>
             </div>
 
@@ -90,46 +117,114 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% for entry in permission_entries %}
                         <tr>
-                           <td colspan="12" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No data available in table</td>
-                        </tr>
-                        <tr class="d-none">
-                            <td>1</td>
-                            <td>11-02-2025</td>
-                            <td>Aravindh</td>
-                            <td>Guntur</td>
-                            <td>11:20 AM to 12:30 PM</td>
-                            <td>1</td>
-                            <td></td>
-                             <td><a href="#" style="color:#146c43;"><i data-feather="printer"></i></a></td>
-                            <td></td>
+                            <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                            <td>{{ entry.entry_date|date:"d-m-Y" }}</td>
+                            <td>{{ entry.employee.staff_name }}</td>
+                            <td>{{ entry.site.name }}</td>
+                            <td>{{ entry.permission_timings_display }}</td>
+                            <td>{{ entry.per_hr_count|floatformat:2 }}</td>
+                            <td>{{ entry.reason|truncatewords:10|default:"-" }}</td>
                             <td>
-                                 <a href="" class="text-primary me-2">
-                                        <i data-feather="edit"></i>
-                                    </a>
-                                    <form action="#" method="post" class="d-inline">
+                                <a href="#" class="text-primary">
+                                    <i data-feather="printer" style="color:#4b49ac;"></i>
+                                </a>
+                            </td>
+                            <td>
+                                {% if entry.status == 'approved' %}
+                                    <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1" style="background-color:#d4edda; color:#155724;">
+                                        <i data-feather="check-circle" class="me-1 status-icon" data-color="#28a745" style="width:14px; height:14px;"></i>
+                                        <span style="font-size: 0.75rem; color: inherit;">
+                                            approved by {{ entry.get_approver_name|default:"-" }}
+                                        </span>
+                                    </span>
+                                {% elif entry.status == 'cancelled' %}
+                                    <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1" style="background-color:#f8d7da; color:#721c24;">
+                                        <i data-feather="x-circle" class="me-1 status-icon" data-color="#dc3545" style="width:14px; height:14px;"></i>
+                                        <span style="font-size: 0.75rem; color: inherit;">
+                                            rejected by {{ entry.get_approver_name|default:"-" }}
+                                        </span>
+                                    </span>
+                                {% else %}
+                                    <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1" style="background-color:#d1ecf1; color:#0c5460;">
+                                        <i data-feather="clock" class="me-1 status-icon" data-color="#17a2b8" style="width:14px; height:14px;"></i>
+                                        <span style="font-size: 0.75rem; color: inherit;">{{ entry.get_status_display }}</span>
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-nowrap">
+                                {% if perms.approval.approve_permissionapproval %}
+                                    <form method="post" action="{% url 'approval:permission_approval_update' entry.pk %}" class="d-inline me-1">
                                         {% csrf_token %}
-                                        <button type="submit" class="text-danger">
-                                            <i data-feather="trash-2"></i>
+                                        <input type="hidden" name="status" value="approved">
+                                        <input type="hidden" name="note" value="">
+                                        <button type="submit" class="btn btn-xs btn-success" title="Approve" onclick="return confirm('Are you sure you want to approve this permission entry?');">
+                                            Approve
                                         </button>
                                     </form>
+                                    <form method="post" action="{% url 'approval:permission_approval_update' entry.pk %}" class="d-inline me-1">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="status" value="rejected">
+                                        <input type="hidden" name="note" value="">
+                                        <button type="submit" class="btn btn-xs btn-danger" title="Reject" onclick="return confirm('Are you sure you want to reject this permission entry?');">
+                                            Reject
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted">No permission</span>
+                                {% endif %}
                             </td>
-
                         </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No permission entries found.</td>
+                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
             <div class="d-flex justify-content-between align-items-center">
-                <div>Showing 1 to 1 of 1 entries</div>
+                <div>
+                    {% if total_entries %}
+                        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_entries }} entries
+                    {% else %}
+                        No entries to show
+                    {% endif %}
+                </div>
+                {% if page_obj.has_other_pages %}
                 <nav>
                     <ul class="pagination mb-0">
-                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                        <li class="page-item active"><a class="page-link">1</a></li>
-                        <li class="page-item disabled"><a class="page-link">Next</a></li>
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}{% if filter_site_id %}&site={{ filter_site_id }}{% endif %}{% if filter_employee_id %}&employee={{ filter_employee_id }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}{% if per_page != '10' %}&per_page={{ per_page }}{% endif %}">Previous</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><a class="page-link">{{ num }}</a></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}{% if filter_site_id %}&site={{ filter_site_id }}{% endif %}{% if filter_employee_id %}&employee={{ filter_employee_id }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}{% if per_page != '10' %}&per_page={{ per_page }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}{% if filter_site_id %}&site={{ filter_site_id }}{% endif %}{% if filter_employee_id %}&employee={{ filter_employee_id }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}{% if per_page != '10' %}&per_page={{ per_page }}{% endif %}">Next</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link">Next</a></li>
+                        {% endif %}
                     </ul>
                 </nav>
+                {% endif %}
             </div>
 
         </div>
@@ -164,10 +259,38 @@
     width: 16px;
     height: 16px;
   }
+  .btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    border-radius: 0.2rem;
+    font-weight: 500;
+  }
 </style>
 
 <script src="https://unpkg.com/feather-icons"></script>
 <script>
     feather.replace();
+    
+    // Apply icon colors from data-color attributes
+    (function applyStatusIconStyles() {
+        setTimeout(function() {
+            document.querySelectorAll('.status-icon').forEach(function(el) {
+                var color = el.getAttribute('data-color');
+                if (color) {
+                    el.style.color = color;
+                }
+                el.style.width = '14px';
+                el.style.height = '14px';
+            });
+        }, 0);
+    })();
+
+    function updatePerPage(value) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('per_page', value);
+        url.searchParams.delete('page');
+        window.location.href = url.toString();
+    }
 </script>
 {% endblock %}

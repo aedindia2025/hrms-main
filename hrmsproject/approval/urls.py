@@ -18,6 +18,7 @@ urlpatterns = [
 
     # ==================== Permission ====================
     path('permission/', views.permission_approval_list, name='permission_approval_list'),
+    path('permission/<int:pk>/update/', views.permission_approval_update, name='permission_approval_update'),
 
     # ==================== TADA ====================
     path('tada/', views.tada_approval_list, name='tada_approval_list'),

@@ -123,9 +123,22 @@
             <td>{{ entry.get_leave_type_display }}</td>
             <td>{{ entry.reason|truncatewords:10|default:"-" }}</td>
             <td>
-                <span class="badge rounded-pill d-inline-flex align-items-center px-3 py-2" style="{{ entry.approval_badge_class }}">
-                  <i data-feather="check-circle" class="me-1" style="width:16px; height:16px; color:{{ entry.approval_icon_color }};"></i>
-                  {{ entry.get_approval_status_display }}
+                <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1" style="{{ entry.approval_badge_class }}">
+                  <i data-feather="check-circle" class="me-1 status-icon" data-color="{{ entry.approval_icon_color }}" style="width:14px; height:14px;"></i>
+                  <span style="font-size: 0.75rem; color: inherit !important;">
+                    {% if entry.approval_status == 'hr_approved' %}
+                        Approved
+                    {% elif entry.approval_status == 'staff_approved' %}
+                        Approved
+                    {% else %}
+                        {{ entry.get_approval_status_display }}
+                    {% endif %}
+                    {% if entry.leave_approval and entry.leave_approval.approved_by %}
+                        by {{ entry.leave_approval.approved_by.get_full_name|default:entry.leave_approval.approved_by.username }}
+                    {% elif entry.approved_by %}
+                        by {{ entry.approved_by }}
+                    {% endif %}
+                  </span>
                 </span>
             </td>
             <td>
@@ -249,6 +262,22 @@
 <script src="https://unpkg.com/feather-icons"></script>
 <script>
     feather.replace();
+    
+    // Apply icon colors from data-color attributes
+    (function applyStatusIconStyles() {
+        setTimeout(function() {
+            document.querySelectorAll('.status-icon').forEach(function(el) {
+                var color = el.getAttribute('data-color');
+                if (color) {
+                    el.style.color = color;
+                }
+                el.style.width = '14px';
+                el.style.height = '14px';
+            });
+        }, 0);
+    })();
+
+    
     function updatePerPage(value) {
         const url = new URL(window.location.href);
         url.searchParams.set('per_page', value);
