@@ -33,12 +33,12 @@
         <!-- Date -->
         <div class="col-md-3">
           <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
-          <input type="date" name="date" id="date" class="form-control">
+          <input type="date" name="date" id="date" class="form-control" required>
         </div>
        
           <div class="col-md-3">
           <label for="site_name" class="form-label">Site name <span class="text-danger">*</span></label>
-          <select name="site_name" id="site_name" class="form-select">
+          <select name="site_name" id="site_name" class="form-select" required>
             <option value="">Select Site</option>
             {% for site in sites %}
               <option value="{{ site.pk }}">{{ site.name }}</option>
@@ -48,7 +48,7 @@
 
           <div class="col-md-3">
           <label for="staff_name" class="form-label">Staff name <span class="text-danger">*</span></label>
-          <select name="staff_name" id="staff_name" class="form-select">
+          <select name="staff_name" id="staff_name" class="form-select" required>
             <option value="">Select Employee</option>
             {% for employee in employees %}
               <option value="{{ employee.pk }}">{{ employee.staff_name }} ({{ employee.staff_id }})</option>
@@ -58,7 +58,7 @@
         <!-- Asset Type -->
         <div class="col-md-3">
           <label for="assetType" class="form-label">Asset Type <span class="text-danger">*</span></label>
-          <select name="asset_type" id="assetType" class="form-select">
+          <select name="asset_type" id="assetType" class="form-select" required>
             <option value="">Select Asset Type</option>
             {% for asset_type in asset_types %}
               <option value="{{ asset_type.pk }}">{{ asset_type.name }}</option>
@@ -69,19 +69,19 @@
         <!-- Serial No / Item No -->
         <div class="col-md-3">
           <label for="serialNo" class="form-label">Serial No / Item No <span class="text-danger">*</span></label>
-          <input type="text" name="serial_no" id="serialNo" class="form-control" placeholder="Enter Serial No">
+          <input type="text" name="serial_no" id="serialNo" class="form-control" placeholder="Enter Serial No" required>
         </div>
 
         <!-- Quantity -->
         <div class="col-md-3">
           <label for="qty" class="form-label">Qty <span class="text-danger">*</span></label>
-          <input type="number" name="quantity" id="qty" class="form-control" placeholder="Enter Quantity" min="1" value="1">
+          <input type="number" name="quantity" id="qty" class="form-control" placeholder="Enter Quantity" min="1" value="1" required>
         </div>
 
         <!-- Status -->
         <div class="col-md-3">
           <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-          <select name="status" id="status" class="form-select">
+          <select name="status" id="status" class="form-select" required>
             <option value="">Select Status</option>
             <option value="Issued">Issued</option>
             <option value="Returned">Returned</option>
@@ -290,9 +290,16 @@
                 if (index !== -1) {
                     assetCreationSubListItems[index] = item;
                     console.log('Item updated. ID:', assetCreationEditingItemId);
+                    assetCreationEditingItemId = null; // Reset editing state
+                    document.getElementById('addBtn').textContent = 'ADD';
+                } else {
+                    // Item not found in list - add as new item instead
+                    console.warn('Item with ID ' + assetCreationEditingItemId + ' not found. Adding as new item.');
+                    alert('The item being edited was not found. It will be added as a new item.');
+                    assetCreationSubListItems.push(item);
+                    assetCreationEditingItemId = null; // Reset editing state
+                    document.getElementById('addBtn').textContent = 'ADD';
                 }
-                assetCreationEditingItemId = null; // Reset editing state
-                document.getElementById('addBtn').textContent = 'ADD';
             } else {
                 assetCreationSubListItems.push(item);
                 console.log('Item added. Total:', assetCreationSubListItems.length);

@@ -17,12 +17,87 @@ def permission_entry_create(request):
     sites = Site.objects.order_by('name')
 
     values = {
-        'work_date': '',
+        'permission_date': '',
         'site': '',
         'employee': '',
+        'permission_start_time': '',
+        'permission_end_time': '',
+        'per_hr_count': '',
+        'reason': '',
     }
     errors = {}
-    return render(request, 'entry/permission_entry/create.html')
+
+    if request.method == 'POST':
+        values['permission_date'] = request.POST.get('permission_date', '').strip()
+        values['site'] = request.POST.get('site', '').strip()
+        values['employee'] = request.POST.get('employee', '').strip()
+        values['permission_start_time'] = request.POST.get('permission_start_time', '').strip()
+        values['permission_end_time'] = request.POST.get('permission_end_time', '').strip()
+        values['per_hr_count'] = request.POST.get('per_hr_count', '').strip()
+        values['reason'] = request.POST.get('reason', '').strip()
+
+        permission_date_obj = None
+        permission_start_time_obj = None
+        permission_end_time_obj = None
+
+        if not values['permission_date']:
+            errors['permission_date'] = 'Permission date is required.'
+        else:
+            try:
+                permission_date_obj = datetime.strptime(values['permission_date'], '%Y-%m-%d').date()
+            except ValueError:
+                errors['permission_date'] = 'Invalid date format.'
+
+        if not values['employee']:
+            errors['employee'] = 'Employee selection is required.'
+        elif not Employee.objects.filter(pk=values['employee']).exists():
+            errors['employee'] = 'Selected employee does not exist.'
+
+        if not values['site']:
+            errors['site'] = 'Site selection is required.'
+        elif not Site.objects.filter(pk=values['site']).exists():
+            errors['site'] = 'Selected site does not exist.'
+
+        if values['permission_start_time']:
+            try:
+                permission_start_time_obj = datetime.strptime(values['permission_start_time'], '%H:%M').time()
+            except ValueError:
+                errors['permission_start_time'] = 'Invalid time format.'
+
+        if values['permission_end_time']:
+            try:
+                permission_end_time_obj = datetime.strptime(values['permission_end_time'], '%H:%M').time()
+            except ValueError:
+                errors['permission_end_time'] = 'Invalid time format.'
+
+        if values['per_hr_count']:
+            try:
+                per_hr_count = float(values['per_hr_count'])
+                if per_hr_count < 0:
+                    errors['per_hr_count'] = 'Permission hours cannot be negative.'
+            except ValueError:
+                errors['per_hr_count'] = 'Invalid number format.'
+
+        if not errors:
+            PermissionEntry.objects.create(
+                permission_date=permission_date_obj,
+                employee_id=values['employee'],
+                site_id=values['site'],
+                permission_start_time=permission_start_time_obj,
+                permission_end_time=permission_end_time_obj,
+                per_hr_count=float(values['per_hr_count']) if values['per_hr_count'] else 0,
+                reason=values['reason'],
+            )
+            messages.success(request, 'Permission entry created successfully.')
+            return redirect('entry:permission_entry_list')
+
+    context = {
+        'employees': employees,
+        'sites': sites,
+        'values': values,
+        'errors': errors,
+    }
+    return render(request, 'entry/permission_entry/create.html', context)
 
 # ------------------------
 # ENTRY -> COMP OFF
@@ -295,9 +370,7 @@ def manual_entry_print(request):
 # ------------------------
 # ENTRY -> PERMISSION
 # ------------------------
-@permission_required('entry.add_permissionentry', raise_exception=True)
-def permission_entry_create(request):
-    return render(request, 'entry/permission_entry/create.html')
+# Note: permission_entry_create is defined above (lines 14-25)
 
 @permission_required('entry.view_permissionentry', raise_exception=True)
 def permission_entry_list(request):

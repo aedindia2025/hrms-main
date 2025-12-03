@@ -20,31 +20,67 @@
 
  <div class="card shadow-sm">
         <div class="card-body">
-           <form>
+           <form method="post">
+        {% csrf_token %}
         <div class="row g-3">
 
           <!-- Employee Name -->
           <div class="col-md-6">
-            <label class="form-label">Employee Name<span class="text-danger">*</label>
-            <input type="text" class="form-control" >
+            <label class="form-label">Employee Name<span class="text-danger">*</span></label>
+            <select name="employee" class="form-select {% if errors.employee %}is-invalid{% endif %}" required>
+              <option value="">-- Select Employee --</option>
+              {% for emp in employees %}
+                <option value="{{ emp.id }}" {% if values.employee == emp.id|stringformat:"s" %}selected{% endif %}>
+                  {{ emp.staff_name }} - {{ emp.staff_id }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.employee %}
+              <div class="invalid-feedback">{{ errors.employee }}</div>
+            {% endif %}
           </div>
 
           <!-- Permission Date -->
           <div class="col-md-3">
             <label class="form-label">Permission Date <span class="text-danger">*</span></label>
-            <input type="date" class="form-control" required>
+            <input type="date" name="permission_date" class="form-control {% if errors.permission_date %}is-invalid{% endif %}" value="{{ values.permission_date }}" required>
+            {% if errors.permission_date %}
+              <div class="invalid-feedback">{{ errors.permission_date }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Site -->
+          <div class="col-md-3">
+            <label class="form-label">Site<span class="text-danger">*</span></label>
+            <select name="site" class="form-select {% if errors.site %}is-invalid{% endif %}" required>
+              <option value="">-- Select Site --</option>
+              {% for site in sites %}
+                <option value="{{ site.id }}" {% if values.site == site.id|stringformat:"s" %}selected{% endif %}>
+                  {{ site.name }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.site %}
+              <div class="invalid-feedback">{{ errors.site }}</div>
+            {% endif %}
           </div>
 
           <!-- Start Time -->
           <div class="col-md-3">
             <label class="form-label">Start Time</label>
-            <input type="time" id="startTime" class="form-control">
+            <input type="time" name="permission_start_time" id="startTime" class="form-control {% if errors.permission_start_time %}is-invalid{% endif %}" value="{{ values.permission_start_time }}">
+            {% if errors.permission_start_time %}
+              <div class="invalid-feedback">{{ errors.permission_start_time }}</div>
+            {% endif %}
           </div>
 
           <!-- End Time -->
           <div class="col-md-3">
             <label class="form-label">End Time</label>
-            <input type="time" id="endTime" class="form-control">
+            <input type="time" name="permission_end_time" id="endTime" class="form-control {% if errors.permission_end_time %}is-invalid{% endif %}" value="{{ values.permission_end_time }}">
+            {% if errors.permission_end_time %}
+              <div class="invalid-feedback">{{ errors.permission_end_time }}</div>
+            {% endif %}
           </div>
 
           <!-- Difference Time -->
@@ -53,10 +89,22 @@
             <input type="text" id="diffTime" class="form-control" readonly>
           </div>
 
+          <!-- Permission Hours -->
+          <div class="col-md-3">
+            <label class="form-label">Permission Hours</label>
+            <input type="number" name="per_hr_count" step="0.01" min="0" class="form-control {% if errors.per_hr_count %}is-invalid{% endif %}" value="{{ values.per_hr_count }}" placeholder="e.g., 1.50">
+            {% if errors.per_hr_count %}
+              <div class="invalid-feedback">{{ errors.per_hr_count }}</div>
+            {% endif %}
+          </div>
+
           <!-- Reason -->
-          <div class="col-md-4">
-            <label class="form-label">Reason <span class="text-danger">*</span></label>
-            <textarea class="form-control" rows="3" required></textarea>
+          <div class="col-md-6">
+            <label class="form-label">Reason</label>
+            <textarea name="reason" class="form-control {% if errors.reason %}is-invalid{% endif %}" rows="3">{{ values.reason }}</textarea>
+            {% if errors.reason %}
+              <div class="invalid-feedback">{{ errors.reason }}</div>
+            {% endif %}
           </div>
 
         </div>
@@ -82,17 +130,11 @@
         </div>
 
         <!-- Buttons -->
+        <div class="mt-5 d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-success px-4">Submit</button>
+            <a href="{% url 'entry:permission_entry_list' %}" class="btn btn-danger px-4">Cancel</a>
+        </div>
       </form>
-    <!-- Buttons -->
-
-
-
-                <!-- Buttons -->
-                <div class="mt-5 d-flex justify-content-end gap-2">
-                    <button type="submit" class="btn btn-success px-4">Submit</button>
-                    <a href="#" class="btn btn-danger px-4">Cancel</a>
-                </div>
-            </form>
 
 
     </div>

@@ -80,8 +80,12 @@ def dashboard(request):
         })
     
     # Add empty cells to complete last week (show next month dates)
-    last_day_weekday = (last_day.weekday() + 1) % 7
-    cells_to_add = 6 - last_day_weekday
+    # Fix: When month ends on Sunday (weekday=6), last_day_weekday becomes 0
+    # We need to calculate cells needed to complete the week properly
+    last_day_weekday = last_day.weekday()  # 0=Monday, 6=Sunday
+    # Calculate cells needed: (7 - (weekday + 1)) % 7
+    # This ensures: Sunday (6) -> 0 cells, Saturday (5) -> 1 cell, etc.
+    cells_to_add = (7 - (last_day_weekday + 1)) % 7
     next_day = 1
     for _ in range(cells_to_add):
         calendar_days.append({
@@ -107,7 +111,9 @@ def dashboard(request):
             # if employee:
             #     # Fetch attendance records, leaves, week offs, etc.
             pass
-    except:
+    except (AttributeError, Exception) as e:
+        # Handle cases where profile doesn't exist or other errors
+        # Silently continue with default dashboard values
         pass
     
     # Initialize default values for dashboard statistics
@@ -191,7 +197,8 @@ def login_view(request):
                 profile = user.profile
                 if profile.must_change_password:
                     return redirect('accounts:change_password_required')
-            except:
+            except AttributeError:
+                # User doesn't have a profile, continue to dashboard
                 pass
             
             return redirect('accounts:dashboard')

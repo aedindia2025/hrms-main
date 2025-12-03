@@ -12,7 +12,7 @@ from .models import HRCompOffApproval
 
 
 # ==================== HR Approval ====================
-@permission_required('approval.view_hrcompoffapproval', raise_exception=True)
+@permission_required('approval.view_hr_compoff_approval', raise_exception=True)
 def hr_comp_off_approval(request):
     """Approval -> HR Comp-Off Approval list with filters & pagination."""
     per_page = request.GET.get('per_page', '').strip() or '10'
@@ -91,7 +91,7 @@ def hr_comp_off_approval(request):
     }
     return render(request, 'approval/hr_approval/list.html', context)
 
-@permission_required('approval.approve_hrcompoffapproval', raise_exception=True)
+@permission_required('approval.approve_hr_compoff_approval', raise_exception=True)
 @require_POST
 def hr_comp_off_approval_update(request, pk):
     """
@@ -144,43 +144,43 @@ def daily_attendance_print(request):
 
 
 # ==================== Leave ====================
-@permission_required('approval.view_leaveapproval', raise_exception=True)
+@permission_required('approval.view_leave_approval', raise_exception=True)
 def leave_approval_list(request):
     """Approval -> Leave Approval list."""
     return render(request, 'approval/leave_approval/list.html')
 
 
 # ==================== Permission ====================
-@permission_required('approval.view_permissionapproval', raise_exception=True)
+@permission_required('approval.view_permission_approval', raise_exception=True)
 def permission_approval_list(request):
     """Approval -> Permission Approval list."""
     return render(request, 'approval/permission_approval/list.html')
 
 
 # ==================== TADA ====================
-@permission_required('approval.view_tadaapproval', raise_exception=True)
+@permission_required('approval.view_tada_approval', raise_exception=True)
 def tada_approval_list(request):
     """Approval -> TADA Approval list."""
     return render(request, 'approval/tada_approval/list.html')
 
-@permission_required('approval.view_tadaapproval', raise_exception=True)
+@permission_required('approval.view_tada_approval', raise_exception=True)
 def tada_head_approval_list(request):
     """Approval -> TADA Head Approval list."""
     return render(request, 'approval/tadaHead_approval/list.html')
 
-@permission_required('approval.view_tadaapproval', raise_exception=True)
+@permission_required('approval.view_tada_approval', raise_exception=True)
 def tada_hr_approval_list(request):
     """Approval -> TADA HR Approval list."""
     return render(request, 'approval/tadaHr_approval/list.html')
 
-@permission_required('approval.view_tadaapproval', raise_exception=True)
+@permission_required('approval.view_tada_approval', raise_exception=True)
 def tada_hr_print(request):
     """Approval -> TADA HR Print page."""
     return render(request, 'approval/tadaHr_approval/print.html')
 
 
 # ==================== Travel HR ====================
-@permission_required('approval.view_travelapproval', raise_exception=True)
+@permission_required('approval.view_travel_approval', raise_exception=True)
 def travel_hr_approval_list(request):
     """Approval -> Travel HR Approval list."""
     return render(request, 'approval/travelHr_approval/list.html')

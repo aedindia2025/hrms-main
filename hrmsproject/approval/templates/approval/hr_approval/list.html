@@ -139,7 +139,7 @@
                                 {% endif %}
                             </td>
                             <td class="text-nowrap">
-                                {% if perms.approval.approve_hrcompoffapproval %}
+                                {% if perms.approval.approve_hr_compoff_approval %}
                                     <form method="post"
                                           action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
                                           class="d-inline">
