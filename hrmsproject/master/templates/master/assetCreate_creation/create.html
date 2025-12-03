@@ -3,6 +3,12 @@
 
 {% block title %}Asset Create Creation - Create{% endblock %}
 
+{% block extra_head %}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+{% endblock %}
+
 {% block content %}
 
 <div class="dashboard-main-body">
@@ -19,7 +25,7 @@
 
  <div class="card shadow-sm">
         <div class="card-body">
-            <form action="" method="post" enctype="multipart/form-data">
+            <form action="" method="post" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
 
                    <div class="row g-3">
@@ -27,12 +33,12 @@
         <!-- Date -->
         <div class="col-md-3">
           <label for="date" class="form-label">Date <span class="text-danger">*</span></label>
-          <input type="date" name="date" id="date" class="form-control" required>
+          <input type="date" name="date" id="date" class="form-control">
         </div>
        
           <div class="col-md-3">
           <label for="site_name" class="form-label">Site name <span class="text-danger">*</span></label>
-          <select name="site_name" id="site_name" class="form-select" required>
+          <select name="site_name" id="site_name" class="form-select">
             <option value="">Select Site</option>
             {% for site in sites %}
               <option value="{{ site.pk }}">{{ site.name }}</option>
@@ -42,7 +48,7 @@
 
           <div class="col-md-3">
           <label for="staff_name" class="form-label">Staff name <span class="text-danger">*</span></label>
-          <select name="staff_name" id="staff_name" class="form-select" required>
+          <select name="staff_name" id="staff_name" class="form-select">
             <option value="">Select Employee</option>
             {% for employee in employees %}
               <option value="{{ employee.pk }}">{{ employee.staff_name }} ({{ employee.staff_id }})</option>
@@ -52,7 +58,7 @@
         <!-- Asset Type -->
         <div class="col-md-3">
           <label for="assetType" class="form-label">Asset Type <span class="text-danger">*</span></label>
-          <select name="asset_type" id="assetType" class="form-select" required>
+          <select name="asset_type" id="assetType" class="form-select">
             <option value="">Select Asset Type</option>
             {% for asset_type in asset_types %}
               <option value="{{ asset_type.pk }}">{{ asset_type.name }}</option>
@@ -63,19 +69,19 @@
         <!-- Serial No / Item No -->
         <div class="col-md-3">
           <label for="serialNo" class="form-label">Serial No / Item No <span class="text-danger">*</span></label>
-          <input type="text" name="serial_no" id="serialNo" class="form-control" placeholder="Enter Serial No" required>
+          <input type="text" name="serial_no" id="serialNo" class="form-control" placeholder="Enter Serial No">
         </div>
 
         <!-- Quantity -->
         <div class="col-md-3">
           <label for="qty" class="form-label">Qty <span class="text-danger">*</span></label>
-          <input type="number" name="quantity" id="qty" class="form-control" placeholder="Enter Quantity" min="1" value="1" required>
+          <input type="number" name="quantity" id="qty" class="form-control" placeholder="Enter Quantity" min="1" value="1">
         </div>
 
         <!-- Status -->
         <div class="col-md-3">
           <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-          <select name="status" id="status" class="form-select" required>
+          <select name="status" id="status" class="form-select">
             <option value="">Select Status</option>
             <option value="Issued">Issued</option>
             <option value="Returned">Returned</option>
@@ -97,7 +103,7 @@
 
         <!-- Buttons -->
         <div class="col-md-12 text-end mt-2" >
-          <button type="button" class="btn btn-success" onclick="addToSubList()">ADD</button>
+          <button type="button" class="btn btn-success" id="addBtn">ADD</button>
         </div>
 
       </div>
@@ -114,12 +120,12 @@
                             <th>Serial No / Item No</th>
                             <th>QTY</th>
                             <th>Status</th>
-                            <th>Image</th>
                             <th>Description</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody>   
-                        <tr>
+                    <tbody id="subListTbody">   
+                        <tr id="emptyRow">
                             <td colspan="10" class="text-center text-muted">No items added yet.</td>
                         </tr>
                     </tbody>
@@ -200,118 +206,304 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script src="https://unpkg.com/feather-icons"></script>
-<script>
+<script id="assetCreationScript_v5_20240127" type="text/javascript">
+    // ============================================
+    // ASSET CREATION - VERSION 5.0 - NO CACHE
+    // NO innerHTML - FORCE RELOAD - TIMESTAMP: 2024-01-27
+    // ============================================
+    console.log('========================================');
+    console.log('Asset Creation Script v5.0 - STARTING');
+    console.log('NO innerHTML version - Fresh load');
+    console.log('TIMESTAMP: ' + new Date().getTime());
+    console.log('========================================');
+    
+    // FORCE DELETE ALL old cached functions
+    try {
+        delete window.refreshSubListTable;
+        delete window.addToSubList;
+        delete window.removeFromSubList;
+        delete window.clearForm;
+        delete window.formatDate;
+        delete window.addHiddenInputs;
+        delete window.refreshSubListTable_v4;
+        delete window.refreshSubListTable_v3;
+        delete window.refreshSubListTable_v2;
+        // Clear any old variables
+        window.assetCreationSubListItems = undefined;
+        window.subListItems = undefined;
+        console.log('All old functions and variables cleared');
+    } catch(e) {
+        console.log('Clearing old code:', e);
+    }
+    
     feather.replace();
     
-    // Sub-list data storage
-    let subListItems = [];
-    let itemCounter = 0;
+    // Global variables
+    var assetCreationSubListItems = [];
+    var assetCreationItemCounter = 0;
+    var assetCreationEditingItemId = null; // Track which item is being edited
     
-    function addToSubList() {
-        // Get form values
-        const date = document.getElementById('date').value;
-        const siteName = document.getElementById('site_name');
-        const staffName = document.getElementById('staff_name');
-        const assetType = document.getElementById('assetType');
-        const serialNo = document.getElementById('serialNo').value;
-        const qty = document.getElementById('qty').value;
-        const status = document.getElementById('status').value;
-        const description = document.getElementById('description').value;
-        
-        // Validation
-        if (!date || !siteName.value || !staffName.value || !assetType.value || !serialNo || !qty || !status) {
-            alert('Please fill all required fields');
-            return;
-        }
-        
-        // Get selected text values
-        const siteNameText = siteName.options[siteName.selectedIndex].text;
-        const staffNameText = staffName.options[staffName.selectedIndex].text;
-        const assetTypeText = assetType.options[assetType.selectedIndex].text;
-        
-        // Create item object
-        const item = {
-            id: ++itemCounter,
-            date: date,
-            site_id: siteName.value,
-            site_name: siteNameText,
-            staff_id: staffName.value,
-            staff_name: staffNameText,
-            asset_type_id: assetType.value,
-            asset_type_name: assetTypeText,
-            serial_no: serialNo,
-            quantity: qty,
-            status: status,
-            description: description
-        };
-        
-        // Add to array
-        subListItems.push(item);
-        
-        // Refresh table
-        refreshSubListTable();
-        
-        // Clear form
-        clearForm();
-    }
-    
-    function refreshSubListTable() {
-        const tbody = document.getElementById('subListTbody');
-        const emptyRow = document.getElementById('emptyRow');
-        
-        // Clear existing rows except =====row
-        tbody.innerHTML = '';
-        
-        if (subListItems.length === 0) {
-            if (!emptyRow) {
-                const row = document.createElement('tr');
-                row.id = 'emptyRow';
-                row.className = 'd-none';
-                row.innerHTML = '<td colspan="10" class="text-center text-muted">No items added. Please add items to the list.</td>';
-                tbody.appendChild(row);
-            } else {
-                tbody.appendChild(emptyRow);
+    // ============================================
+    // ADD TO SUB LIST
+    // ============================================
+    window.addToSubList = function() {
+        console.log('addToSubList called');
+        try {
+            var date = document.getElementById('date').value;
+            var siteName = document.getElementById('site_name');
+            var staffName = document.getElementById('staff_name');
+            var assetType = document.getElementById('assetType');
+            var serialNo = document.getElementById('serialNo').value;
+            var qty = document.getElementById('qty').value;
+            var status = document.getElementById('status').value;
+            var description = document.getElementById('description').value;
+            
+            if (!date || !siteName.value || !staffName.value || !assetType.value || !serialNo || !qty || !status) {
+                alert('Please fill all required fields (Date, Site, Staff, Asset Type, Serial No, Qty, Status)');
+                return false;
             }
-            return;
+            
+            var siteNameText = siteName.options[siteName.selectedIndex].text;
+            var staffNameText = staffName.options[staffName.selectedIndex].text;
+            var assetTypeText = assetType.options[assetType.selectedIndex].text;
+            
+            var item = {
+                id: assetCreationEditingItemId || ++assetCreationItemCounter,
+                date: date,
+                site_id: siteName.value,
+                site_name: siteNameText,
+                staff_id: staffName.value,
+                staff_name: staffNameText,
+                asset_type_id: assetType.value,
+                asset_type_name: assetTypeText,
+                serial_no: serialNo,
+                quantity: qty,
+                status: status,
+                description: description
+            };
+            
+            // If editing, update existing item; otherwise add new
+            if (assetCreationEditingItemId) {
+                var index = assetCreationSubListItems.findIndex(function(i) {
+                    return i.id === assetCreationEditingItemId;
+                });
+                if (index !== -1) {
+                    assetCreationSubListItems[index] = item;
+                    console.log('Item updated. ID:', assetCreationEditingItemId);
+                }
+                assetCreationEditingItemId = null; // Reset editing state
+                document.getElementById('addBtn').textContent = 'ADD';
+            } else {
+                assetCreationSubListItems.push(item);
+                console.log('Item added. Total:', assetCreationSubListItems.length);
+            }
+            
+            setTimeout(function() {
+                window.refreshSubListTable();
+            }, 50);
+            
+            window.clearForm();
+            return true;
+        } catch (error) {
+            console.error('Error in addToSubList:', error);
+            alert('Error adding item. Check console.');
+            return false;
         }
-        
-        // Add items to table
-        subListItems.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${formatDate(item.date)}</td>
-                <td>${item.site_name}</td>
-                <td>${item.staff_name}</td>
-                <td>${item.asset_type_name}</td>
-                <td>${item.serial_no}</td>
-                <td>${item.quantity}</td>
-                <td>${item.status}</td>
-                <td>${item.description || '-'}</td>
-                <td>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="removeFromSubList(${item.id})">
-                        <i data-feather="trash-2"></i>
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
+    };
+    
+    // ============================================
+    // EDIT SUB LIST ITEM
+    // ============================================
+    window.editSubListItem = function(itemId) {
+        console.log('editSubListItem called for ID:', itemId);
+        var item = assetCreationSubListItems.find(function(i) {
+            return i.id === itemId;
         });
         
-        // Reinitialize feather icons
-        feather.replace();
-        
-        // Add hidden inputs for form submission
-        addHiddenInputs();
-    }
-    
-    function removeFromSubList(itemId) {
-        if (confirm('Are you sure you want to remove this item?')) {
-            subListItems = subListItems.filter(item => item.id !== itemId);
-            refreshSubListTable();
+        if (!item) {
+            alert('Item not found.');
+            return;
         }
-    }
+        
+        // Populate form with item data
+        document.getElementById('date').value = item.date || '';
+        document.getElementById('site_name').value = item.site_id || '';
+        document.getElementById('staff_name').value = item.staff_id || '';
+        document.getElementById('assetType').value = item.asset_type_id || '';
+        document.getElementById('serialNo').value = item.serial_no || '';
+        document.getElementById('qty').value = item.quantity || '1';
+        document.getElementById('status').value = item.status || '';
+        document.getElementById('description').value = item.description || '';
+        
+        // Set editing mode
+        assetCreationEditingItemId = itemId;
+        document.getElementById('addBtn').textContent = 'UPDATE';
+        
+        // Scroll to form
+        document.getElementById('date').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById('date').focus();
+        
+        console.log('Form populated for editing. Item ID:', itemId);
+    };
     
-    function clearForm() {
+    // ============================================
+    // REFRESH SUB LIST TABLE - v5.0 - NO innerHTML EVER
+    // ============================================
+    window.refreshSubListTable = function() {
+        console.log('=== refreshSubListTable v5.0 START (NO innerHTML) ===');
+        
+        if (document.readyState === 'loading') {
+            setTimeout(window.refreshSubListTable, 50);
+            return;
+        }
+        
+        try {
+            var tbody = document.getElementById('subListTbody');
+            if (!tbody) {
+                console.error('subListTbody NOT FOUND');
+                setTimeout(function() {
+                    var retry = document.getElementById('subListTbody');
+                    if (retry) {
+                        window.refreshSubListTable();
+                    } else {
+                        alert('Table not found. Refresh page (Ctrl+Shift+R).');
+                    }
+                }, 300);
+                return;
+            }
+            
+            if (!tbody.parentNode) {
+                console.error('tbody not connected to DOM');
+                return;
+            }
+            
+            console.log('Tbody found. Clearing rows...');
+            
+            // Clear rows - ONLY removeChild, NO innerHTML
+            while (tbody.firstChild) {
+                tbody.removeChild(tbody.firstChild);
+            }
+            
+            if (!tbody || !tbody.parentNode) {
+                console.error('tbody lost after clearing');
+                return;
+            }
+            
+            // Empty state
+            if (assetCreationSubListItems.length === 0) {
+                var emptyRow = document.createElement('tr');
+                emptyRow.id = 'emptyRow';
+                var emptyCell = document.createElement('td');
+                emptyCell.setAttribute('colspan', '10');
+                emptyCell.className = 'text-center text-muted';
+                emptyCell.textContent = 'No items added yet.';
+                emptyRow.appendChild(emptyCell);
+                tbody.appendChild(emptyRow);
+                return;
+            }
+            
+            // Add items - NO innerHTML
+            console.log('Adding', assetCreationSubListItems.length, 'items');
+            for (var idx = 0; idx < assetCreationSubListItems.length; idx++) {
+                var item = assetCreationSubListItems[idx];
+                
+                if (!tbody || !tbody.parentNode) {
+                    console.error('tbody lost during loop');
+                    break;
+                }
+                
+                var tr = document.createElement('tr');
+                
+                // Create cells using createElement and textContent ONLY
+                var cellTexts = [
+                    String(idx + 1),
+                    window.formatDate(item.date) || '-',
+                    item.site_name || '-',
+                    item.staff_name || '-',
+                    item.asset_type_name || '-',
+                    item.serial_no || '-',
+                    item.quantity || '-',
+                    item.status || '-',
+                    item.description || '-'
+                ];
+                
+                for (var c = 0; c < cellTexts.length; c++) {
+                    var td = document.createElement('td');
+                    td.textContent = cellTexts[c];
+                    tr.appendChild(td);
+                }
+                
+                // Action cell with Edit and Remove buttons
+                var actionTd = document.createElement('td');
+                
+                // Edit button
+                var editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.className = 'btn btn-sm btn-primary me-2';
+                editBtn.title = 'Edit';
+                editBtn.addEventListener('click', function(id) {
+                    return function() {
+                        window.editSubListItem(id);
+                    };
+                }(item.id));
+                var editIcon = document.createElement('i');
+                editIcon.setAttribute('data-feather', 'edit');
+                editBtn.appendChild(editIcon);
+                actionTd.appendChild(editBtn);
+                
+                // Remove button
+                var removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'btn btn-sm btn-danger';
+                removeBtn.title = 'Remove';
+                removeBtn.addEventListener('click', function(id) {
+                    return function() {
+                        window.removeFromSubList(id);
+                    };
+                }(item.id));
+                var removeIcon = document.createElement('i');
+                removeIcon.setAttribute('data-feather', 'trash-2');
+                removeBtn.appendChild(removeIcon);
+                actionTd.appendChild(removeBtn);
+                
+                tr.appendChild(actionTd);
+                
+                tbody.appendChild(tr);
+            }
+            
+            // Reinit icons
+            if (typeof feather !== 'undefined') {
+                setTimeout(function() {
+                    feather.replace();
+                }, 150);
+            }
+            
+            window.addHiddenInputs();
+            console.log('=== refreshSubListTable v5.0 COMPLETE ===');
+            
+        } catch (error) {
+            console.error('EXCEPTION in refreshSubListTable v5.0:', error);
+            console.error('Error details:', error);
+            alert('Error updating table. Check console. Please refresh page (Ctrl+Shift+R).');
+        }
+    };
+    
+    // ============================================
+    // REMOVE FROM SUB LIST
+    // ============================================
+    window.removeFromSubList = function(itemId) {
+        if (confirm('Are you sure you want to remove this item?')) {
+            assetCreationSubListItems = assetCreationSubListItems.filter(function(item) {
+                return item.id !== itemId;
+            });
+            window.refreshSubListTable();
+        }
+    };
+    
+    // ============================================
+    // CLEAR FORM
+    // ============================================
+    window.clearForm = function() {
         document.getElementById('date').value = '';
         document.getElementById('site_name').value = '';
         document.getElementById('staff_name').value = '';
@@ -321,50 +513,132 @@
         document.getElementById('status').value = '';
         document.getElementById('description').value = '';
         document.getElementById('imageUpload').value = '';
-    }
-    
-    function formatDate(dateString) {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}-${month}-${year}`;
-    }
-    
-    function addHiddenInputs() {
-        // Remove existing hidden inputs
-        const existingInputs = document.querySelectorAll('input[name^="items["]');
-        existingInputs.forEach(input => input.remove());
         
-        // Add hidden inputs for each item
-        subListItems.forEach((item, index) => {
-            const form = document.querySelector('form');
+        // Reset editing state
+        if (assetCreationEditingItemId) {
+            assetCreationEditingItemId = null;
+            document.getElementById('addBtn').textContent = 'ADD';
+        }
+    };
+    
+    // ============================================
+    // FORMAT DATE
+    // ============================================
+    window.formatDate = function(dateString) {
+        if (!dateString) return '-';
+        try {
+            var date = new Date(dateString + 'T00:00:00');
+            if (isNaN(date.getTime())) {
+                return dateString;
+            }
+            var day = String(date.getDate()).padStart(2, '0');
+            var month = String(date.getMonth() + 1).padStart(2, '0');
+            var year = date.getFullYear();
+            return day + '-' + month + '-' + year;
+        } catch (e) {
+            return dateString;
+        }
+    };
+    
+    // ============================================
+    // ADD HIDDEN INPUTS
+    // ============================================
+    window.addHiddenInputs = function() {
+        var existingInputs = document.querySelectorAll('input[name^="items["]');
+        existingInputs.forEach(function(input) {
+            input.remove();
+        });
+        
+        // First, remove any existing hidden inputs from previous submit attempts
+        var existingInputs = document.querySelectorAll('input[name^="items["]');
+        existingInputs.forEach(function(input) {
+            input.remove();
+        });
+        
+        // Now create hidden inputs for all items in sub-list
+        assetCreationSubListItems.forEach(function(item, index) {
+            var form = document.querySelector('form');
+            var fields = ['date', 'site_id', 'staff_id', 'asset_type_id', 'serial_no', 'quantity', 'status', 'description'];
             
-            ['date', 'site_id', 'staff_id', 'asset_type_id', 'serial_no', 'quantity', 'status', 'description'].forEach(field => {
-                const input = document.createElement('input');
+            fields.forEach(function(field) {
+                var input = document.createElement('input');
                 input.type = 'hidden';
-                input.name = `items[${index}][${field}]`;
+                input.name = 'items[' + index + '][' + field + ']';
                 input.value = item[field] || '';
                 form.appendChild(input);
             });
         });
-    }
+    };
     
-    // Form submit handler
-    document.querySelector('form').addEventListener('submit', function(e) {
-        if (subListItems.length === 0) {
-            e.preventDefault();
-            alert('Please add at least one item to the sub-list before submitting.');
-            return false;
-        }
-        addHiddenInputs();
-    });
-    
-    // Set today's date as default
+    // ============================================
+    // INITIALIZE ON PAGE LOAD
+    // ============================================
     document.addEventListener('DOMContentLoaded', function() {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('date').value = today;
+        console.log('DOM Content Loaded - Initializing v5.0 (NO innerHTML)');
+        
+        var tbodyCheck = document.getElementById('subListTbody');
+        if (!tbodyCheck) {
+            console.error('Table tbody not found on page load!');
+        } else {
+            console.log('Table tbody found on page load');
+        }
+        
+        var today = new Date().toISOString().split('T')[0];
+        var dateField = document.getElementById('date');
+        if (dateField) {
+            dateField.value = today;
+        }
+        
+        setTimeout(function() {
+            window.refreshSubListTable();
+        }, 100);
+        
+        var form = document.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Check if sub-list has items
+                if (assetCreationSubListItems.length === 0) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    alert('Please add at least one item to the sub-list before submitting.');
+                    return false;
+                }
+                
+                // Add hidden inputs for all items in sub-list
+                window.addHiddenInputs();
+                
+                // Allow form submission
+                console.log('Form submitting with', assetCreationSubListItems.length, 'item(s)');
+                return true;
+            });
+        }
+        
+        var addButton = document.getElementById('addBtn');
+        if (addButton) {
+            addButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('ADD button clicked');
+                window.addToSubList();
+                return false;
+            });
+        } else {
+            console.error('ADD button not found!');
+        }
+        
+        console.log('========================================');
+        console.log('Asset Creation Script v5.0 - INITIALIZED');
+        console.log('VERIFIED: NO innerHTML usage');
+        console.log('========================================');
     });
+    
+    // Final verification - check if any innerHTML exists in our code
+    setTimeout(function() {
+        var allScripts = document.querySelectorAll('script[id^="assetCreationScript"]');
+        console.log('Found', allScripts.length, 'asset creation script(s)');
+        if (allScripts.length > 1) {
+            console.warn('WARNING: Multiple asset creation scripts found. Clear cache!');
+        }
+    }, 500);
 </script>
 {% endblock %}

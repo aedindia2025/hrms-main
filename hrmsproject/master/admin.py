@@ -95,10 +95,11 @@ class EmployeeExperienceAdmin(admin.ModelAdmin):
 
 @admin.register(EmployeeAssetAssignment)
 class EmployeeAssetAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('employee', 'asset_name', 'serial_no', 'status')
-    list_filter = ('status',)
-    search_fields = ('employee__staff_name', 'asset_name', 'serial_no')
-    raw_id_fields = ('employee',)
+    list_display = ('employee', 'asset_type', 'asset_name', 'serial_no', 'quantity', 'status', 'created_at')
+    list_filter = ('status', 'asset_type', 'created_at')
+    search_fields = ('employee__staff_name', 'employee__staff_id', 'asset_type__name', 'asset_name', 'serial_no')
+    raw_id_fields = ('employee', 'asset_type')
+    readonly_fields = ('created_at', 'updated_at')
 
 
 @admin.register(EmployeeVehicleDetail)

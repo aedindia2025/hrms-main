@@ -76,9 +76,9 @@ class AssetType(models.Model):
 class ExpenseType(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=150, unique=True)
-    image_required = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     description = models.TextField(blank=True)
+    document = models.FileField(upload_to='expense_type/documents/', blank=True, null=True, help_text='Upload document related to this expense type')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -508,23 +508,35 @@ class EmployeeAssetAssignment(models.Model):
         (LICENSE_MODE_HEAVY, 'Heavy Vehicle'),
     ]
 
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='assets')
-    asset_name = models.CharField(max_length=255, blank=True)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='asset_assignments')
+    asset_type = models.ForeignKey(AssetType, on_delete=models.PROTECT, related_name='assignments', null=True, blank=True)
+    asset_name = models.CharField(max_length=255, blank=True, help_text='Legacy field - use asset_type instead')
     serial_no = models.CharField(max_length=255, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ISSUED)
+    description = models.TextField(blank=True, help_text='Additional notes or description')
+    # Vehicle-specific fields (optional - only for vehicle assets)
     vehicle_reg_no = models.CharField(max_length=120, blank=True)
     license_mode = models.CharField(max_length=20, choices=LICENSE_MODE_CHOICES, blank=True)
     license_no = models.CharField(max_length=120, blank=True)
     license_valid_from = models.DateField(null=True, blank=True)
     license_valid_to = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['employee', 'asset_name']
+        ordering = ['employee', '-created_at']
+        verbose_name = 'Employee Asset Assignment'
+        verbose_name_plural = 'Employee Asset Assignments'
 
     def __str__(self) -> str:
-        return f'{self.employee.staff_name} - {self.asset_name}'
+        asset_display = self.asset_type.name if self.asset_type else self.asset_name
+        return f'{self.employee.staff_name} - {asset_display}'
+    
+    @property
+    def asset_name_display(self):
+        """Return asset name from asset_type if available, otherwise use asset_name field."""
+        return self.asset_type.name if self.asset_type else self.asset_name
 
 
 class EmployeeVehicleDetail(models.Model):
@@ -544,3 +556,67 @@ class EmployeeVehicleDetail(models.Model):
 
     def __str__(self) -> str:
         return f'{self.employee.staff_name} - Vehicle'
+
+
+class ShiftRoster(models.Model):
+    ROSTER_TYPE_WEEK = 'WEEK'
+    ROSTER_TYPE_MONTH = 'MONTH'
+    ROSTER_TYPE_CHOICES = [
+        (ROSTER_TYPE_WEEK, 'Week Wise'),
+        (ROSTER_TYPE_MONTH, 'Month Wise'),
+    ]
+
+    STATUS_DRAFT = 'Draft'
+    STATUS_PUBLISHED = 'Published'
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_PUBLISHED, 'Published'),
+    ]
+
+    SALARY_TYPE_SALARY = 'SALARY'
+    SALARY_TYPE_WAGES = 'WAGES'
+    SALARY_TYPE_OTHERS = 'OTHERS'
+    SALARY_TYPE_CHOICES = [
+        (SALARY_TYPE_SALARY, 'Salary'),
+        (SALARY_TYPE_WAGES, 'Wages'),
+        (SALARY_TYPE_OTHERS, 'Others'),
+    ]
+
+    site = models.ForeignKey(Site, on_delete=models.PROTECT, related_name='shift_rosters')
+    salary_type = models.CharField(max_length=20, choices=SALARY_TYPE_CHOICES)
+    from_date = models.DateField()
+    to_date = models.DateField(blank=True, null=True, help_text='Optional end date for month rosters')
+    roster_type = models.CharField(max_length=10, choices=ROSTER_TYPE_CHOICES, default=ROSTER_TYPE_WEEK)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-from_date', 'site__name']
+        verbose_name = 'Shift Roster'
+        verbose_name_plural = 'Shift Rosters'
+
+    def __str__(self) -> str:
+        return f'{self.site.name} - {self.get_roster_type_display()} - {self.from_date}'
+
+
+class ShiftRosterAssignment(models.Model):
+    roster = models.ForeignKey(ShiftRoster, on_delete=models.CASCADE, related_name='assignments')
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='roster_assignments')
+    date = models.DateField()
+    shift = models.ForeignKey(Shift, on_delete=models.PROTECT, blank=True, null=True, help_text='Optional: Link to Shift model')
+    shift_name = models.CharField(max_length=100, blank=True, help_text='Shift name (e.g., DAY SHIFT, NIGHT SHIFT)')
+    site = models.ForeignKey(Site, on_delete=models.PROTECT, related_name='roster_site_assignments')
+    is_day_off = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date', 'employee__staff_name']
+        unique_together = [('roster', 'employee', 'date')]
+        verbose_name = 'Shift Roster Assignment'
+        verbose_name_plural = 'Shift Roster Assignments'
+
+    def __str__(self) -> str:
+        return f'{self.employee.staff_name} - {self.date} - {self.shift_name or "OFF"}'

@@ -446,14 +446,20 @@
                   <label class="form-label">Profile Image <span class="text-danger">*</span></label>
                   <div class="d-flex gap-2 align-items-center">
                     <input type="file" class="form-control d-none" id="profile_image_input" name="profile_image" accept="image/*" required>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openFilePickerForInput('profile_image_input')">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openFilePickerForInput('profile_image_input', event); return false;">
                       Upload
                     </button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="openCameraForInput('profile_image_input', 'profile_image_preview')">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="openCameraForInput('profile_image_input', 'profile_image_preview', event); return false;">
                       Snap
                     </button>
                   </div>
-                  <div id="profile_image_preview" class="mt-2 file-preview"></div>
+                  <div id="profile_image_preview" class="mt-2 file-preview">
+                    {% if employee.profile_image %}
+                      <img src="{{ employee.profile_image.url }}" alt="Current Profile Image"
+                           style="max-width:120px;max-height:120px;border-radius:4px;border:1px solid #dee2e6;cursor:pointer;"
+                           onclick="showImageLightbox('{{ employee.profile_image.url }}')">
+                    {% endif %}
+                  </div>
                 </div>
               </div>
             </div>
@@ -888,7 +894,12 @@
             <div class="row g-3">
               <div class="col-md-6 form-field">
                 <label class="form-label">Asset Name <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="asset_name" required>
+                <select class="form-select" name="asset_type" id="asset_type" required>
+                  <option value="">Select Asset Type</option>
+                  {% for asset_type in asset_types %}
+                    <option value="{{ asset_type.pk }}">{{ asset_type.name }}</option>
+                  {% endfor %}
+                </select>
               </div>
               <div class="col-md-6 form-field">
                 <label class="form-label">Serial / Item No <span class="text-danger">*</span></label>
@@ -1116,7 +1127,9 @@
     {% for asset in assets %}
     {
       "_id": "asset_{{ forloop.counter0 }}",
-      "asset_name": "{{ asset.asset_name|default:''|escapejs }}",
+      "asset_id": "{{ asset.id|default:'' }}",
+      "asset_type": "{% if asset.asset_type %}{{ asset.asset_type.pk }}{% endif %}",
+      "asset_name": "{{ asset.asset_type.name|default:asset.asset_name|default:''|escapejs }}",
       "item_no": "{{ asset.serial_no|default:''|escapejs }}",
       "qty": "{{ asset.quantity|default:1 }}",
       "status": "{{ asset.status|default:''|escapejs }}",
@@ -1173,9 +1186,16 @@
     }
 
     const staffSaveUrl = "{% url 'master:employee_staff_save' %}";
+    const staffDetailsSaveUrl = "{% url 'master:employee_staff_details_save' %}";
+    const dependentSaveUrl = "{% url 'master:employee_dependent_add_update' %}";
+    const accountSaveUrl = "{% url 'master:employee_account_add_update' %}";
+    const qualificationSaveUrl = "{% url 'master:employee_qualification_add_update' %}";
+    const experienceSaveUrl = "{% url 'master:employee_experience_add_update' %}";
+    const assetSaveUrl = "{% url 'master:employee_asset_add_update' %}";
     const csrfTokenInput = document.querySelector('#staff-create-form input[name="csrfmiddlewaretoken"]');
     const staffFormMessage = document.getElementById('staffFormMessage');
     let currentEmployeeUniqueId = document.querySelector('#staff-create-form input[name="unique_id"]')?.value || '';
+    let currentEmployeeId = '{{ employee.id|default:"" }}';
     let redirectTimeout = null;
 
     // ========== CAMERA CAPTURE (PROFILE & DOCUMENTS) ==========
@@ -1306,11 +1326,17 @@
       return overlay;
     }
 
-    function openCameraForInput(inputId, previewId) {
+    function openCameraForInput(inputId, previewId, event) {
+      // ✅ Prevent form submission/reset if event is provided
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      
       const input = document.getElementById(inputId);
       if (!input) {
         console.error('Camera target input not found:', inputId);
-        return;
+        return false;
       }
 
       cameraTargetInputId = inputId;
@@ -1342,10 +1368,17 @@
         });
     }
 
-    function openFilePickerForInput(inputId) {
+    function openFilePickerForInput(inputId, event) {
+      // ✅ Prevent form submission/reset if event is provided
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      
       const input = document.getElementById(inputId);
-      if (!input) return;
+      if (!input) return false;
       input.click();
+      return false;
     }
 
     function showImageLightbox(url) {
@@ -1602,7 +1635,11 @@
       }
       
       // Salary/Amount validation (positive number)
-      if (fieldName?.includes('salary') || fieldName?.includes('amt')) {
+      // Exclude salary_category and other dropdown/select fields as they are not number fields
+      if ((fieldName?.includes('salary') || fieldName?.includes('amt')) && 
+          !fieldName?.includes('salary_category') && 
+          fieldType !== 'select-one' && 
+          field.tagName !== 'SELECT') {
         const num = parseFloat(value.replace(/,/g, ''));
         if (isNaN(num) || num < 0) {
           return { isValid: false, message: `${labelText} must be a positive number.` };
@@ -2236,6 +2273,117 @@
       
       clearFormMessage();
       
+      // ✅ PHP PATTERN: Save Staff Details separately first
+      // If saving Staff Details form specifically, use separate save endpoint
+      const isStaffDetailsSave = (currentFormId === 'staff-create-form' || !currentFormId);
+      
+      if (isStaffDetailsSave && !shouldRedirect) {
+        // ✅ SEPARATE SAVE: Only Staff Details, no arrays
+        const form = document.getElementById('staff-create-form');
+        if (!form) return false;
+        
+        const formData = new FormData(form);
+        
+        // Add CSRF token
+        if (csrfTokenInput) {
+          formData.append('csrfmiddlewaretoken', csrfTokenInput.value);
+        }
+        
+        try {
+          // ✅ Use separate save endpoint (PHP pattern)
+          const response = await fetch(staffDetailsSaveUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-CSRFToken': csrfTokenInput?.value || ''
+            }
+          });
+          
+          let result;
+          try {
+            result = await response.json();
+          } catch (jsonError) {
+            console.error('JSON parse error:', jsonError);
+            showFormMessage('danger', 'Invalid response from server. Please try again.');
+            return false;
+          }
+          
+          if (result.status === 1) {
+            // ✅ Store employee_id and unique_id for other forms
+            if (result.unique_id) {
+              currentEmployeeUniqueId = result.unique_id;
+              document.querySelector('#staff-create-form input[name="unique_id"]').value = result.unique_id;
+            }
+            if (result.employee_id) {
+              currentEmployeeId = result.employee_id;
+            }
+            
+            // ✅ IMPORTANT: Preserve Country/State/City dropdown values after save
+            // Store current dropdown values before any potential reset
+            const preCountry = document.querySelector('.country-select[data-address-type="present"]');
+            const preState = document.querySelector('.state-select[data-address-type="present"]');
+            const preCity = document.querySelector('.city-select[data-address-type="present"]');
+            const permCountry = document.querySelector('.country-select[data-address-type="permanent"]');
+            const permState = document.querySelector('.state-select[data-address-type="permanent"]');
+            const permCity = document.querySelector('.city-select[data-address-type="permanent"]');
+            
+            const preservedValues = {
+              presentCountry: preCountry ? preCountry.value : '',
+              presentState: preState ? preState.value : '',
+              presentCity: preCity ? preCity.value : '',
+              permanentCountry: permCountry ? permCountry.value : '',
+              permanentState: permState ? permState.value : '',
+              permanentCity: permCity ? permCity.value : ''
+            };
+            
+            // Restore values after a short delay (in case any reload happened)
+            setTimeout(() => {
+              if (preservedValues.presentCountry && preCountry) {
+                preCountry.value = preservedValues.presentCountry;
+                if (preservedValues.presentState && preState) {
+                  preState.value = preservedValues.presentState;
+                }
+                if (preservedValues.presentCity && preCity) {
+                  preCity.value = preservedValues.presentCity;
+                }
+              }
+              if (preservedValues.permanentCountry && permCountry) {
+                permCountry.value = preservedValues.permanentCountry;
+                if (preservedValues.permanentState && permState) {
+                  permState.value = preservedValues.permanentState;
+                }
+                if (preservedValues.permanentCity && permCity) {
+                  permCity.value = preservedValues.permanentCity;
+                }
+              }
+            }, 100);
+            
+            // Show success message
+            showFormMessage('success', 'Staff details saved successfully. You can continue to the next tab.');
+            
+            // Clear message after delay
+            setTimeout(() => {
+              clearFormMessage();
+            }, 3000);
+            
+            return true;
+          } else {
+            // Show validation errors
+            if (result.errors) {
+              applyServerErrors(result.errors);
+            } else {
+              showFormMessage('danger', result.msg || 'Failed to save staff details.');
+            }
+            return false;
+          }
+        } catch (error) {
+          console.error('Error saving staff details:', error);
+          showFormMessage('danger', 'An error occurred while saving. Please try again.');
+          return false;
+        }
+      }
+      
+      // ✅ For final save or other forms, use bulk save (backward compatibility)
       // Always get the staff form for data collection
       const form = document.getElementById('staff-create-form');
       if (!form) return false;
@@ -2322,6 +2470,9 @@
               currentEmployeeUniqueId = result.unique_id;
               document.querySelector('#staff-create-form input[name="unique_id"]').value = result.unique_id;
             }
+            if (result.employee_id) {
+              currentEmployeeId = result.employee_id;
+            }
             // Redirect after delay
             redirectTimeout = setTimeout(() => {
               window.location.href = "{% url 'master:employee_list' %}";
@@ -2332,6 +2483,9 @@
             if (result.unique_id) {
               currentEmployeeUniqueId = result.unique_id;
               document.querySelector('#staff-create-form input[name="unique_id"]').value = result.unique_id;
+            }
+            if (result.employee_id) {
+              currentEmployeeId = result.employee_id;
             }
             // Clear the success message after a short delay
             setTimeout(() => {
@@ -2365,11 +2519,22 @@
         const targetSelector = btn.getAttribute('data-tab-target');
         const isLastTab = btn.textContent.trim() === 'Next' && btn.disabled;
 
-        // If it's the last tab's Next button, save the form and redirect
+        // If it's the last tab's Next button, ensure Staff Details saved then redirect
         if (isLastTab && validationFormId === 'asset-form') {
           event.preventDefault();
           event.stopPropagation();
-          await saveStaffDetails(true); // true = redirect after save
+          
+          // ✅ PHP PATTERN: Ensure Staff Details is saved separately first
+          if (!currentEmployeeUniqueId && !currentEmployeeId) {
+            const saved = await saveStaffDetails(false, 'staff-create-form');
+            if (!saved) return;
+          }
+          
+          // All forms already saved independently, just redirect
+          showFormMessage('success', 'All employee data saved successfully!');
+          setTimeout(() => {
+            window.location.href = "{% url 'master:employee_list' %}";
+          }, 1500);
           return;
         }
 
@@ -2425,32 +2590,49 @@
         event.preventDefault();
         event.stopPropagation();
         
-        // Validate the asset form first
-        const assetForm = document.getElementById('asset-form');
-        if (assetForm) {
-          const isValid = validateFormFields(assetForm);
-          if (!isValid) {
-            // Individual error messages are already shown by validateFormFields
-            // No need for a generic message
-            return;
+        // ✅ PHP PATTERN: Ensure Staff Details is saved first
+        if (!currentEmployeeUniqueId && !currentEmployeeId) {
+          // Staff Details not saved yet, save it first
+          const staffForm = document.getElementById('staff-create-form');
+          if (staffForm) {
+            const isValid = validateFormFields(staffForm);
+            if (!isValid) {
+              return;
+            }
+            
+            // Save Staff Details separately first
+            const saved = await saveStaffDetails(false, 'staff-create-form');
+            if (!saved) {
+              return; // Don't redirect if save failed
+            }
           }
         }
         
-        // Save all data and redirect
-        await saveStaffDetails(true); // true = redirect after save
+        // ✅ All forms are already saved independently via "Add" buttons
+        // Just redirect to list page (PHP pattern - no bulk save needed)
+        showFormMessage('success', 'All employee data saved successfully!');
+        setTimeout(() => {
+          window.location.href = "{% url 'master:employee_list' %}";
+        }, 1500);
       });
     }
 
     // ========== MULTIPLE RECORDS FUNCTIONS ==========
     
     // Dependent Functions
-    function addDependentToList() {
+    async function addDependentToList() {
       console.log('addDependentToList called');
       
       const form = document.getElementById('dependent-details-form');
       if (!form) {
         alert('Error: Dependent form not found!');
         console.error('Dependent form not found');
+        return false;
+      }
+      
+      // ✅ CHECK: Staff Details must be saved first
+      if (!currentEmployeeUniqueId && !currentEmployeeId) {
+        alert('⚠️ Please save Staff Details first before adding dependent information.');
         return false;
       }
       
@@ -2466,74 +2648,122 @@
         return false;
       }
       
-      console.log('Validation passed, collecting data...');
+      console.log('Validation passed, saving to database...');
       
       // Collect form data
       const formData = new FormData(form);
-      const dependentData = {
-        _id: 'DEP_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9), // Unique ID for screen tracking
-        _timestamp: new Date().toISOString()
-      };
       
-      // Add all form fields to dependentData
-      for (let [key, value] of formData.entries()) {
-        dependentData[key] = value;
+      // Add employee_id or unique_id for linking
+      if (currentEmployeeId) {
+        formData.append('employee_id', currentEmployeeId);
+      } else if (currentEmployeeUniqueId) {
+        formData.append('unique_id', currentEmployeeUniqueId);
       }
       
-      console.log('Data collected:', dependentData);
+      // Add CSRF token
+      if (csrfTokenInput) {
+        formData.append('csrfmiddlewaretoken', csrfTokenInput.value);
+      }
       
-      // Add to array (CLIENT-SIDE ONLY - No backend call)
-      dependentsList.push(dependentData);
-      console.log('Added to array. Total dependents:', dependentsList.length);
-      
-      // Refresh table to show new record
-      refreshDependentsTable();
-      console.log('Table refreshed');
-      
-      // Clear form completely - DO THIS FIRST
-      form.reset();
-      console.log('Form reset called');
-      
-      // Clear all validation states
-      clearFormValidation(form);
-      console.log('Validation cleared');
-      
-      // Reset select fields to first option
-      const selectFields = form.querySelectorAll('select');
-      selectFields.forEach(select => {
-        if (select.options.length > 0) {
-          select.selectedIndex = 0;
+      try {
+        // ✅ SAVE IMMEDIATELY TO DATABASE via AJAX
+        const response = await fetch(dependentSaveUrl, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': csrfTokenInput?.value || ''
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 1) {
+          // Success - add to array for immediate display
+          const dependentData = {
+            _id: 'DEP_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            _timestamp: new Date().toISOString(),
+            dependent_id: result.dependent_id || null
+          };
+          
+          // Add all form fields to dependentData
+          for (let [key, value] of formData.entries()) {
+            if (key !== 'csrfmiddlewaretoken' && key !== 'employee_id' && key !== 'unique_id') {
+              dependentData[key] = value;
+            }
+          }
+          
+          dependentsList.push(dependentData);
+          
+          // Refresh table to show new record
+          refreshDependentsTable();
+          
+          // Clear form completely
+          form.reset();
+          clearFormValidation(form);
+          
+          // Reset select fields to first option
+          const selectFields = form.querySelectorAll('select');
+          selectFields.forEach(select => {
+            if (select.options.length > 0) {
+              select.selectedIndex = 0;
+            }
+          });
+          
+          // Clear date inputs explicitly
+          const dateInputs = form.querySelectorAll('input[type="date"]');
+          dateInputs.forEach(input => {
+            input.value = '';
+          });
+          
+          // Clear text inputs explicitly
+          const textInputs = form.querySelectorAll('input[type="text"]');
+          textInputs.forEach(input => {
+            input.value = '';
+          });
+          
+          // Show success message
+          showAddToListSuccess('✅ Dependent saved successfully to database!');
+          
+          // Scroll to table
+          setTimeout(() => {
+            const table = document.getElementById('dependents-tbody');
+            if (table) {
+              table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }, 100);
+          
+          console.log('Dependent saved successfully:', result);
+          return true;
+        } else {
+          // Show validation errors
+          if (result.errors) {
+            console.error('Server validation errors:', result.errors);
+            // Apply errors to form fields
+            Object.keys(result.errors).forEach(fieldName => {
+              const field = form.querySelector(`[name="${fieldName}"]`);
+              if (field) {
+                field.classList.add('is-invalid');
+                const formField = field.closest('.form-field');
+                if (formField) {
+                  let feedback = formField.querySelector('.invalid-feedback');
+                  if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    formField.appendChild(feedback);
+                  }
+                  feedback.textContent = result.errors[fieldName];
+                }
+              }
+            });
+          }
+          alert(result.msg || 'Failed to save dependent. Please check the errors above.');
+          return false;
         }
-      });
-      
-      // Clear date inputs explicitly
-      const dateInputs = form.querySelectorAll('input[type="date"]');
-      dateInputs.forEach(input => {
-        input.value = '';
-      });
-      
-      // Clear text inputs explicitly
-      const textInputs = form.querySelectorAll('input[type="text"]');
-      textInputs.forEach(input => {
-        input.value = '';
-      });
-      
-      console.log('All fields cleared');
-      
-      // Show success message
-      console.log('Showing success message...');
-      showAddToListSuccess('✅ Dependent added successfully!');
-      
-      // Scroll to table to show the added record
-      setTimeout(() => {
-        const table = document.getElementById('dependents-tbody');
-        if (table) {
-          table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }, 100);
-      
-      console.log('Dependent added to list successfully:', dependentData);
-      return true;
+      } catch (error) {
+        console.error('Error saving dependent:', error);
+        alert('An error occurred while saving dependent. Please try again.');
+        return false;
+      }
     }
     
     function clearFormValidation(form) {
@@ -2711,25 +2941,109 @@
     }
 
     // Account Functions
-    function addAccountToList() {
+    async function addAccountToList() {
       const form = document.getElementById('account-details-form');
-      if (!validateFormFields(form)) return;
-      
-      const formData = new FormData(form);
-      const accountData = {};
-      for (let [key, value] of formData.entries()) {
-        accountData[key] = value;
+      if (!form) {
+        alert('Error: Account form not found!');
+        return false;
       }
       
-      accountsList.push(accountData);
-      refreshAccountsTable();
+      // ✅ CHECK: Staff Details must be saved first
+      if (!currentEmployeeUniqueId && !currentEmployeeId) {
+        alert('⚠️ Please save Staff Details first before adding account information.');
+        return false;
+      }
       
-      // Clear form and validation states
-      form.reset();
-      clearFormValidation(form);
+      if (!validateFormFields(form)) return false;
       
-      // Show success message
-      showAddToListSuccess('Account added successfully!');
+      // Collect form data
+      const formData = new FormData(form);
+      
+      // Add employee_id or unique_id for linking
+      if (currentEmployeeId) {
+        formData.append('employee_id', currentEmployeeId);
+      } else if (currentEmployeeUniqueId) {
+        formData.append('unique_id', currentEmployeeUniqueId);
+      }
+      
+      // Add CSRF token
+      if (csrfTokenInput) {
+        formData.append('csrfmiddlewaretoken', csrfTokenInput.value);
+      }
+      
+      try {
+        // ✅ SAVE IMMEDIATELY TO DATABASE via AJAX
+        const response = await fetch(accountSaveUrl, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': csrfTokenInput?.value || ''
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 1) {
+          // Success - add to array for immediate display
+          const accountData = {
+            _id: 'ACC_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            account_id: result.account_id || null
+          };
+          
+          // Add all form fields to accountData
+          for (let [key, value] of formData.entries()) {
+            if (key !== 'csrfmiddlewaretoken' && key !== 'employee_id' && key !== 'unique_id') {
+              accountData[key] = value;
+            }
+          }
+          
+          accountsList.push(accountData);
+          refreshAccountsTable();
+          
+          // Clear form and validation states
+          form.reset();
+          clearFormValidation(form);
+          
+          // Show success message
+          showAddToListSuccess('✅ Account saved successfully to database!');
+          
+          // Scroll to table
+          setTimeout(() => {
+            const table = document.getElementById('accounts-tbody');
+            if (table) {
+              table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }, 100);
+          
+          return true;
+        } else {
+          // Show validation errors
+          if (result.errors) {
+            Object.keys(result.errors).forEach(fieldName => {
+              const field = form.querySelector(`[name="${fieldName}"]`);
+              if (field) {
+                field.classList.add('is-invalid');
+                const formField = field.closest('.form-field');
+                if (formField) {
+                  let feedback = formField.querySelector('.invalid-feedback');
+                  if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    formField.appendChild(feedback);
+                  }
+                  feedback.textContent = result.errors[fieldName];
+                }
+              }
+            });
+          }
+          alert(result.msg || 'Failed to save account. Please check the errors above.');
+          return false;
+        }
+      } catch (error) {
+        console.error('Error saving account:', error);
+        alert('An error occurred while saving account. Please try again.');
+        return false;
+      }
     }
 
     function editAccount(index) {
@@ -2794,48 +3108,166 @@
     }
 
     // Qualification Functions
-    function addQualificationToList() {
+    async function addQualificationToList() {
       const form = document.getElementById('qualification-form');
       if (!form) {
         console.error('Qualification form not found');
-        return;
+        alert('Error: Qualification form not found!');
+        return false;
       }
       
-      if (!validateFormFields(form)) return;
+      // ✅ CHECK: Staff Details must be saved first
+      if (!currentEmployeeUniqueId && !currentEmployeeId) {
+        alert('⚠️ Please save Staff Details first before adding qualification information.');
+        return false;
+      }
       
+      if (!validateFormFields(form)) return false;
+      
+      // Collect form data (FormData handles file uploads automatically)
       const formData = new FormData(form);
-      const qualData = {
-        _id: 'QUAL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        _timestamp: new Date().toISOString()
-      };
       
-      for (let [key, value] of formData.entries()) {
-        if (key !== 'qualification_docs') {
-          qualData[key] = value;
+      // Add employee_id or unique_id for linking
+      if (currentEmployeeId) {
+        formData.append('employee_id', currentEmployeeId);
+      } else if (currentEmployeeUniqueId) {
+        formData.append('unique_id', currentEmployeeUniqueId);
+      }
+      
+      // Add CSRF token
+      if (csrfTokenInput) {
+        formData.append('csrfmiddlewaretoken', csrfTokenInput.value);
+      }
+      
+      try {
+        // ✅ SAVE IMMEDIATELY TO DATABASE via AJAX
+        const response = await fetch(qualificationSaveUrl, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': csrfTokenInput?.value || ''
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 1) {
+          // Success - add to array for immediate display
+          const qualData = {
+            _id: 'QUAL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            _timestamp: new Date().toISOString(),
+            qualification_id: result.qualification_id || null
+          };
+          
+          // Add all form fields to qualData
+          for (let [key, value] of formData.entries()) {
+            if (key !== 'csrfmiddlewaretoken' && key !== 'employee_id' && key !== 'unique_id' && key !== 'qualification_docs') {
+              qualData[key] = value;
+            }
+          }
+          
+          // Handle file if exists
+          let qualFileInput = form.querySelector('input[name="qualification_docs"]');
+          if (qualFileInput && qualFileInput.files.length > 0) {
+            qualData.qualification_docs = qualFileInput.files[0];
+            qualData._fileName = qualFileInput.files[0].name;
+          }
+          
+          qualificationsList.push(qualData);
+          refreshQualificationsTable();
+          
+          // ✅ Clear form fields BEFORE reset to ensure all validation states are cleared
+          // First, clear all validation states
+          clearFormValidation(form);
+          
+          // ✅ Explicitly clear Year of Passing (month input) and other date/month fields
+          const monthInputs = form.querySelectorAll('input[type="month"]');
+          monthInputs.forEach(input => {
+            input.value = '';
+            input.classList.remove('is-valid', 'is-invalid');
+            const formField = input.closest('.form-field');
+            if (formField) {
+              const feedback = formField.querySelector('.invalid-feedback');
+              if (feedback) feedback.remove();
+            }
+          });
+          
+          // Now reset the form
+          form.reset();
+          
+          // Reset select fields to first option
+          const selectFields = form.querySelectorAll('select');
+          selectFields.forEach(select => {
+            if (select.options.length > 0) select.selectedIndex = 0;
+          });
+          
+          // ✅ Clear all date/month inputs again after reset
+          const dateInputs = form.querySelectorAll('input[type="date"], input[type="month"]');
+          dateInputs.forEach(input => {
+            input.value = '';
+          });
+          
+          // ✅ Clear file upload field (Snap/Upload) and preview
+          qualFileInput = document.getElementById('qualification_docs_input');
+          if (qualFileInput) {
+            qualFileInput.value = '';
+            qualFileInput.classList.remove('is-valid', 'is-invalid');
+          }
+          
+          // ✅ Clear file preview div (removes any snap/upload preview images)
+          const filePreview = document.getElementById('qualification_docs_preview');
+          if (filePreview) {
+            filePreview.innerHTML = '';
+            // Also revoke any object URLs to free memory
+            const previewImages = filePreview.querySelectorAll('img');
+            previewImages.forEach(img => {
+              if (img.src && img.src.startsWith('blob:')) {
+                URL.revokeObjectURL(img.src);
+              }
+            });
+          }
+          
+          // ✅ Clear validation feedback for file field
+          const fileFormField = document.querySelector('#qualification_docs_input')?.closest('.form-field');
+          if (fileFormField) {
+            const feedback = fileFormField.querySelector('.invalid-feedback');
+            if (feedback) feedback.remove();
+          }
+          
+          showAddToListSuccess('✅ Qualification saved successfully to database!');
+          
+          const table = document.getElementById('qualifications-tbody');
+          if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          
+          return true;
+        } else {
+          // Show validation errors
+          if (result.errors) {
+            Object.keys(result.errors).forEach(fieldName => {
+              const field = form.querySelector(`[name="${fieldName}"]`);
+              if (field) {
+                field.classList.add('is-invalid');
+                const formField = field.closest('.form-field');
+                if (formField) {
+                  let feedback = formField.querySelector('.invalid-feedback');
+                  if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    formField.appendChild(feedback);
+                  }
+                  feedback.textContent = result.errors[fieldName];
+                }
+              }
+            });
+          }
+          alert(result.msg || 'Failed to save qualification. Please check the errors above.');
+          return false;
         }
+      } catch (error) {
+        console.error('Error saving qualification:', error);
+        alert('An error occurred while saving qualification. Please try again.');
+        return false;
       }
-      
-      const fileInput = form.querySelector('input[name="qualification_docs"]');
-      if (fileInput && fileInput.files.length > 0) {
-        qualData.qualification_docs = fileInput.files[0];
-        qualData._fileName = fileInput.files[0].name;
-      }
-      
-      qualificationsList.push(qualData);
-      refreshQualificationsTable();
-      
-      form.reset();
-      clearFormValidation(form);
-      
-      const selectFields = form.querySelectorAll('select');
-      selectFields.forEach(select => {
-        if (select.options.length > 0) select.selectedIndex = 0;
-      });
-      
-      showAddToListSuccess('✅ Qualification added successfully!');
-      
-      const table = document.getElementById('qualifications-tbody');
-      if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function editQualification(index) {
@@ -2901,48 +3333,116 @@
     }
 
     // Experience Functions
-    function addExperienceToList() {
+    async function addExperienceToList() {
       const form = document.getElementById('experience-form');
       if (!form) {
         console.error('Experience form not found');
-        return;
+        alert('Error: Experience form not found!');
+        return false;
       }
       
-      if (!validateFormFields(form)) return;
+      // ✅ CHECK: Staff Details must be saved first
+      if (!currentEmployeeUniqueId && !currentEmployeeId) {
+        alert('⚠️ Please save Staff Details first before adding experience information.');
+        return false;
+      }
       
+      if (!validateFormFields(form)) return false;
+      
+      // Collect form data (FormData handles file uploads automatically)
       const formData = new FormData(form);
-      const expData = {
-        _id: 'EXP_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        _timestamp: new Date().toISOString()
-      };
       
-      for (let [key, value] of formData.entries()) {
-        if (key !== 'experience_docs') {
-          expData[key] = value;
+      // Add employee_id or unique_id for linking
+      if (currentEmployeeId) {
+        formData.append('employee_id', currentEmployeeId);
+      } else if (currentEmployeeUniqueId) {
+        formData.append('unique_id', currentEmployeeUniqueId);
+      }
+      
+      // Add CSRF token
+      if (csrfTokenInput) {
+        formData.append('csrfmiddlewaretoken', csrfTokenInput.value);
+      }
+      
+      try {
+        // ✅ SAVE IMMEDIATELY TO DATABASE via AJAX
+        const response = await fetch(experienceSaveUrl, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': csrfTokenInput?.value || ''
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 1) {
+          // Success - add to array for immediate display
+          const expData = {
+            _id: 'EXP_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            _timestamp: new Date().toISOString(),
+            experience_id: result.experience_id || null
+          };
+          
+          // Add all form fields to expData
+          for (let [key, value] of formData.entries()) {
+            if (key !== 'csrfmiddlewaretoken' && key !== 'employee_id' && key !== 'unique_id' && key !== 'experience_docs') {
+              expData[key] = value;
+            }
+          }
+          
+          // Handle file if exists
+          const expFileInput = form.querySelector('input[name="experience_docs"]');
+          if (expFileInput && expFileInput.files.length > 0) {
+            expData.experience_docs = expFileInput.files[0];
+            expData._fileName = expFileInput.files[0].name;
+          }
+          
+          experiencesList.push(expData);
+          refreshExperiencesTable();
+          
+          form.reset();
+          clearFormValidation(form);
+          
+          const selectFields = form.querySelectorAll('select');
+          selectFields.forEach(select => {
+            if (select.options.length > 0) select.selectedIndex = 0;
+          });
+          
+          showAddToListSuccess('✅ Experience saved successfully to database!');
+          
+          const table = document.getElementById('experiences-tbody');
+          if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          
+          return true;
+        } else {
+          // Show validation errors
+          if (result.errors) {
+            Object.keys(result.errors).forEach(fieldName => {
+              const field = form.querySelector(`[name="${fieldName}"]`);
+              if (field) {
+                field.classList.add('is-invalid');
+                const formField = field.closest('.form-field');
+                if (formField) {
+                  let feedback = formField.querySelector('.invalid-feedback');
+                  if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    formField.appendChild(feedback);
+                  }
+                  feedback.textContent = result.errors[fieldName];
+                }
+              }
+            });
+          }
+          alert(result.msg || 'Failed to save experience. Please check the errors above.');
+          return false;
         }
+      } catch (error) {
+        console.error('Error saving experience:', error);
+        alert('An error occurred while saving experience. Please try again.');
+        return false;
       }
-      
-      const fileInput = form.querySelector('input[name="experience_docs"]');
-      if (fileInput && fileInput.files.length > 0) {
-        expData.experience_docs = fileInput.files[0];
-        expData._fileName = fileInput.files[0].name;
-      }
-      
-      experiencesList.push(expData);
-      refreshExperiencesTable();
-      
-      form.reset();
-      clearFormValidation(form);
-      
-      const selectFields = form.querySelectorAll('select');
-      selectFields.forEach(select => {
-        if (select.options.length > 0) select.selectedIndex = 0;
-      });
-      
-      showAddToListSuccess('✅ Experience added successfully!');
-      
-      const table = document.getElementById('experiences-tbody');
-      if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function editExperience(index) {
@@ -3008,43 +3508,130 @@
     }
 
     // Asset Functions
-    function addAssetToList() {
+    async function addAssetToList() {
       const form = document.getElementById('asset-form');
       if (!form) {
         console.error('Asset form not found');
-        return;
+        alert('Error: Asset form not found!');
+        return false;
       }
       
-      if (!validateFormFields(form)) return;
+      // ✅ CHECK: Staff Details must be saved first
+      if (!currentEmployeeUniqueId && !currentEmployeeId) {
+        alert('⚠️ Please save Staff Details first before adding asset information.');
+        return false;
+      }
       
+      if (!validateFormFields(form)) return false;
+      
+      // Collect form data
       const formData = new FormData(form);
-      const assetData = {
-        _id: 'ASSET_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        _timestamp: new Date().toISOString()
-      };
       
-      for (let [key, value] of formData.entries()) {
-        assetData[key] = value;
+      // ✅ Add asset_id if updating existing asset
+      const editingAssetId = form.getAttribute('data-editing-asset-id');
+      if (editingAssetId) {
+        formData.append('asset_id', editingAssetId);
       }
       
-      assetsList.push(assetData);
-      refreshAssetsTable();
+      // Add employee_id or unique_id for linking
+      if (currentEmployeeId) {
+        formData.append('employee_id', currentEmployeeId);
+      } else if (currentEmployeeUniqueId) {
+        formData.append('unique_id', currentEmployeeUniqueId);
+      }
       
-      form.reset();
-      clearFormValidation(form);
+      // Add CSRF token
+      if (csrfTokenInput) {
+        formData.append('csrfmiddlewaretoken', csrfTokenInput.value);
+      }
       
-      const selectFields = form.querySelectorAll('select');
-      selectFields.forEach(select => {
-        if (select.options.length > 0) select.selectedIndex = 0;
-      });
-      
-      const dateInputs = form.querySelectorAll('input[type="date"]');
-      dateInputs.forEach(input => input.value = '');
-      
-      showAddToListSuccess('✅ Asset added successfully!');
-      
-      const table = document.getElementById('assets-tbody');
-      if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      try {
+        // ✅ SAVE IMMEDIATELY TO DATABASE via AJAX
+        const response = await fetch(assetSaveUrl, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': csrfTokenInput?.value || ''
+          }
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 1) {
+          // Success - add to array for immediate display
+          const assetData = {
+            _id: 'ASSET_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            _timestamp: new Date().toISOString(),
+            asset_id: result.asset_id || null
+          };
+          
+          // Add all form fields to assetData
+          for (let [key, value] of formData.entries()) {
+            if (key !== 'csrfmiddlewaretoken' && key !== 'employee_id' && key !== 'unique_id') {
+              assetData[key] = value;
+            }
+          }
+          
+          // ✅ Get asset name from dropdown option text
+          const assetTypeSelect = form.querySelector('select[name="asset_type"]');
+          if (assetTypeSelect && assetTypeSelect.value) {
+            const selectedOption = assetTypeSelect.options[assetTypeSelect.selectedIndex];
+            if (selectedOption) {
+              assetData.asset_name = selectedOption.textContent.trim();
+            }
+          }
+          
+          assetsList.push(assetData);
+          refreshAssetsTable();
+          
+          // ✅ Clear editing asset_id attribute after successful save
+          form.removeAttribute('data-editing-asset-id');
+          
+          form.reset();
+          clearFormValidation(form);
+          
+          const selectFields = form.querySelectorAll('select');
+          selectFields.forEach(select => {
+            if (select.options.length > 0) select.selectedIndex = 0;
+          });
+          
+          const dateInputs = form.querySelectorAll('input[type="date"]');
+          dateInputs.forEach(input => input.value = '');
+          
+          showAddToListSuccess('✅ Asset saved successfully to database!');
+          
+          const table = document.getElementById('assets-tbody');
+          if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          
+          return true;
+        } else {
+          // Show validation errors
+          if (result.errors) {
+            Object.keys(result.errors).forEach(fieldName => {
+              const field = form.querySelector(`[name="${fieldName}"]`);
+              if (field) {
+                field.classList.add('is-invalid');
+                const formField = field.closest('.form-field');
+                if (formField) {
+                  let feedback = formField.querySelector('.invalid-feedback');
+                  if (!feedback) {
+                    feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    formField.appendChild(feedback);
+                  }
+                  feedback.textContent = result.errors[fieldName];
+                }
+              }
+            });
+          }
+          alert(result.msg || 'Failed to save asset. Please check the errors above.');
+          return false;
+        }
+      } catch (error) {
+        console.error('Error saving asset:', error);
+        alert('An error occurred while saving asset. Please try again.');
+        return false;
+      }
     }
 
     function editAsset(index) {
@@ -3057,11 +3644,19 @@
           if (field.type === 'radio') {
             const radio = form.querySelector(`[name="${key}"][value="${asset[key]}"]`);
             if (radio) radio.checked = true;
+          } else if (field.tagName === 'SELECT') {
+            // Handle dropdown fields (like asset_type)
+            field.value = asset[key] || '';
           } else {
-            field.value = asset[key];
+            field.value = asset[key] || '';
           }
         }
       });
+      
+      // Store asset_id for update
+      if (asset.asset_id) {
+        form.setAttribute('data-editing-asset-id', asset.asset_id);
+      }
       
       assetsList.splice(index, 1);
       refreshAssetsTable();
@@ -3193,21 +3788,24 @@
     const citiesUrl = '{% url "master:get_cities" %}';
 
     // Load countries on page load
-    function loadCountries() {
-      fetch(countriesUrl)
+    function loadCountries(preserveValues = {}) {
+      return fetch(countriesUrl)
         .then(response => response.json())
         .then(data => {
           if (data.success && data.countries) {
             const countrySelects = document.querySelectorAll('.country-select');
             countrySelects.forEach(select => {
-              // Clear existing options except the first one
-              const firstOption = select.querySelector('option[value=""]');
-              select.innerHTML = '';
-              if (firstOption) {
-                select.appendChild(firstOption);
-              } else {
-                select.innerHTML = '<option value="">Select Country</option>';
+              // Preserve current selected value before clearing
+              const addressType = select.getAttribute('data-address-type');
+              let valueToPreserve = select.value;
+              
+              // If preserveValues object has this address type, use that value (from template)
+              if (preserveValues && preserveValues[addressType] && preserveValues[addressType].country) {
+                valueToPreserve = preserveValues[addressType].country;
               }
+              
+              // Clear existing options
+              select.innerHTML = '<option value="">Select Country</option>';
               
               // Add countries
               data.countries.forEach(country => {
@@ -3216,16 +3814,45 @@
                 option.textContent = country;
                 select.appendChild(option);
               });
+              
+              // Restore value if it exists
+              if (valueToPreserve) {
+                const trimmedValue = valueToPreserve.trim();
+                console.log(`Trying to restore ${addressType} country:`, trimmedValue);
+                
+                // Try exact match first
+                let option = select.querySelector(`option[value="${trimmedValue}"]`);
+                if (option) {
+                  select.value = trimmedValue;
+                  console.log(`✅ ${addressType} country restored (exact match):`, trimmedValue);
+                } else {
+                  // Try case-insensitive match
+                  const allOptions = Array.from(select.options);
+                  const matchedOption = allOptions.find(opt => 
+                    opt.value && opt.value.trim().toLowerCase() === trimmedValue.toLowerCase()
+                  );
+                  if (matchedOption) {
+                    select.value = matchedOption.value;
+                    console.log(`✅ ${addressType} country restored (case-insensitive match):`, matchedOption.value);
+                  } else {
+                    console.warn(`❌ ${addressType} country NOT found:`, trimmedValue, 'Available options:', allOptions.map(o => o.value));
+                  }
+                }
+              } else {
+                console.log(`No value to preserve for ${addressType} country`);
+              }
             });
           }
+          return data;
         })
         .catch(error => {
           console.error('Error loading countries:', error);
+          return null;
         });
     }
 
     // Load states based on selected country
-    function loadStates(countrySelect) {
+    function loadStates(countrySelect, preserveStateValue = null, preserveCityValue = null) {
       const country = countrySelect.value;
       const addressType = countrySelect.getAttribute('data-address-type');
       const stateSelect = document.querySelector(`.state-select[data-address-type="${addressType}"]`);
@@ -3252,6 +3879,40 @@
               option.textContent = state;
               stateSelect.appendChild(option);
             });
+            
+            // Restore state value if provided
+            if (preserveStateValue) {
+              // Trim the preserve value for comparison
+              const trimmedStateValue = preserveStateValue.trim();
+              console.log(`Trying to restore ${addressType} state:`, trimmedStateValue);
+              
+              // Try to find exact match first
+              let stateOption = stateSelect.querySelector(`option[value="${trimmedStateValue}"]`);
+              if (stateOption) {
+                stateSelect.value = trimmedStateValue;
+                console.log(`✅ ${addressType} state restored (exact match):`, trimmedStateValue);
+                
+                // Load cities for preserved state and restore city value if provided
+                if (citySelect && preserveCityValue) {
+                  loadCities(stateSelect, preserveCityValue);
+                }
+              } else {
+                // Try case-insensitive match
+                const allStates = Array.from(stateSelect.options);
+                const matchedState = allStates.find(opt => 
+                  opt.value && opt.value.trim().toLowerCase() === trimmedStateValue.toLowerCase()
+                );
+                if (matchedState) {
+                  stateSelect.value = matchedState.value;
+                  console.log(`✅ ${addressType} state restored (case-insensitive match):`, matchedState.value);
+                  if (citySelect && preserveCityValue) {
+                    loadCities(stateSelect, preserveCityValue);
+                  }
+                } else {
+                  console.warn(`❌ ${addressType} state NOT found:`, trimmedStateValue, 'Available:', allStates.map(o => o.value));
+                }
+              }
+            }
           }
         })
         .catch(error => {
@@ -3260,7 +3921,7 @@
     }
 
     // Load cities based on selected state
-    function loadCities(stateSelect) {
+    function loadCities(stateSelect, preserveCityValue = null) {
       const state = stateSelect.value;
       const addressType = stateSelect.getAttribute('data-address-type');
       const countrySelect = document.querySelector(`.country-select[data-address-type="${addressType}"]`);
@@ -3286,6 +3947,33 @@
               option.textContent = city;
               citySelect.appendChild(option);
             });
+            
+            // Restore city value if provided
+            if (preserveCityValue) {
+              // Trim the preserve value for comparison
+              const trimmedCityValue = preserveCityValue.trim();
+              const addressType = stateSelect ? stateSelect.getAttribute('data-address-type') : 'unknown';
+              console.log(`Trying to restore ${addressType} city:`, trimmedCityValue);
+              
+              // Try to find exact match first
+              let cityOption = citySelect.querySelector(`option[value="${trimmedCityValue}"]`);
+              if (cityOption) {
+                citySelect.value = trimmedCityValue;
+                console.log(`✅ ${addressType} city restored (exact match):`, trimmedCityValue);
+              } else {
+                // Try case-insensitive match
+                const allCities = Array.from(citySelect.options);
+                const matchedCity = allCities.find(opt => 
+                  opt.value && opt.value.trim().toLowerCase() === trimmedCityValue.toLowerCase()
+                );
+                if (matchedCity) {
+                  citySelect.value = matchedCity.value;
+                  console.log(`✅ ${addressType} city restored (case-insensitive match):`, matchedCity.value);
+                } else {
+                  console.warn(`❌ ${addressType} city NOT found:`, trimmedCityValue, 'Available:', allCities.map(o => o.value));
+                }
+              }
+            }
           }
         })
         .catch(error => {
@@ -3293,72 +3981,143 @@
         });
     }
 
+    // Pre-populate country/state/city dropdowns for edit mode
+    // Get values directly from employee object - ensure no empty strings
+    const presentCountry = ('{{ employee.present_country|default:""|escapejs }}' || '').trim();
+    const presentState = ('{{ employee.present_state|default:""|escapejs }}' || '').trim();
+    const presentCity = ('{{ employee.present_city|default:""|escapejs }}' || '').trim();
+    const permanentCountry = ('{{ employee.permanent_country|default:""|escapejs }}' || '').trim();
+    const permanentState = ('{{ employee.permanent_state|default:""|escapejs }}' || '').trim();
+    const permanentCity = ('{{ employee.permanent_city|default:""|escapejs }}' || '').trim();
+    
+    // Debug: Log values to console for troubleshooting
+    console.log('=== EDIT FORM PRE-POPULATION VALUES ===');
+    console.log('Present Country:', presentCountry || '(empty)');
+    console.log('Present State:', presentState || '(empty)');
+    console.log('Present City:', presentCity || '(empty)');
+    console.log('Permanent Country:', permanentCountry || '(empty)');
+    console.log('Permanent State:', permanentState || '(empty)');
+    console.log('Permanent City:', permanentCity || '(empty)');
+    console.log('========================================');
+    
+    // Flag to prevent event triggers during initialization
+    let isInitializing = true;
+    
     // Event listeners for country changes
     document.querySelectorAll('.country-select').forEach(select => {
       select.addEventListener('change', function() {
-        loadStates(this);
+        // Only load states if not initializing (user actually changed the dropdown)
+        if (!isInitializing) {
+          loadStates(this);
+        }
       });
     });
 
     // Event listeners for state changes
     document.querySelectorAll('.state-select').forEach(select => {
       select.addEventListener('change', function() {
-        loadCities(this);
+        // Only load cities if not initializing (user actually changed the dropdown)
+        if (!isInitializing) {
+          loadCities(this);
+        }
       });
     });
-
-    // Load countries on page load
-    loadCountries();
     
-    // Pre-populate country/state/city dropdowns for edit mode
-    const presentCountry = '{{ employee.present_country|default:""|escapejs }}';
-    const presentState = '{{ employee.present_state|default:""|escapejs }}';
-    const presentCity = '{{ employee.present_city|default:""|escapejs }}';
-    const permanentCountry = '{{ employee.permanent_country|default:""|escapejs }}';
-    const permanentState = '{{ employee.permanent_state|default:""|escapejs }}';
-    const permanentCity = '{{ employee.permanent_city|default:""|escapejs }}';
-    
-    if (presentCountry) {
-      setTimeout(() => {
-        const preCountry = document.querySelector('.country-select[data-address-type="present"]');
-        if (preCountry) {
-          preCountry.value = presentCountry;
-          loadStates(preCountry);
-          setTimeout(() => {
-            const preState = document.querySelector('.state-select[data-address-type="present"]');
-            if (preState && presentState) {
-              preState.value = presentState;
-              loadCities(preState);
-              setTimeout(() => {
-                const preCity = document.querySelector('.city-select[data-address-type="present"]');
-                if (preCity && presentCity) preCity.value = presentCity;
-              }, 500);
-            }
-          }, 500);
-        }
-      }, 1000);
+    // Helper function to find matching option case-insensitively
+    function findMatchingOption(select, value) {
+      if (!value) return null;
+      // Try exact match first
+      let option = select.querySelector(`option[value="${value}"]`);
+      if (option) return option;
+      
+      // Try case-insensitive match
+      const allOptions = Array.from(select.options);
+      return allOptions.find(opt => 
+        opt.value && opt.value.trim().toLowerCase() === value.trim().toLowerCase()
+      );
     }
     
-    if (permanentCountry) {
+    // Store template values to preserve during country load
+    const preserveValues = {
+      present: {
+        country: presentCountry || null,
+        state: presentState || null,
+        city: presentCity || null
+      },
+      permanent: {
+        country: permanentCountry || null,
+        state: permanentState || null,
+        city: permanentCity || null
+      }
+    };
+    
+    // Load countries first with preserved values, then populate state/city
+    loadCountries(preserveValues).then(() => {
+      // Wait for countries to be fully loaded
       setTimeout(() => {
-        const permCountry = document.querySelector('.country-select[data-address-type="permanent"]');
-        if (permCountry) {
-          permCountry.value = permanentCountry;
-          loadStates(permCountry);
-          setTimeout(() => {
-            const permState = document.querySelector('.state-select[data-address-type="permanent"]');
-            if (permState && permanentState) {
-              permState.value = permanentState;
-              loadCities(permState);
-              setTimeout(() => {
-                const permCity = document.querySelector('.city-select[data-address-type="permanent"]');
-                if (permCity && permanentCity) permCity.value = permanentCity;
-              }, 500);
+        console.log('=== Starting State/City Population ===');
+        
+        // Pre-populate present address
+        if (presentCountry) {
+          const preCountry = document.querySelector('.country-select[data-address-type="present"]');
+          if (preCountry) {
+            console.log('Present Country dropdown found, current value:', preCountry.value, 'Expected:', presentCountry);
+            
+            // Ensure country is set (should already be set by loadCountries, but double-check)
+            if (preCountry.value !== presentCountry.trim()) {
+              const countryOption = findMatchingOption(preCountry, presentCountry);
+              if (countryOption) {
+                preCountry.value = countryOption.value;
+                console.log('Present Country set to:', countryOption.value);
+              }
             }
-          }, 500);
+            
+            // Load states if country is set and we have state/city values
+            if (preCountry.value && (presentState || presentCity)) {
+              console.log('Loading Present States for country:', preCountry.value);
+              loadStates(preCountry, presentState || null, presentCity || null);
+            }
+          } else {
+            console.warn('Present Country dropdown not found!');
+          }
+        } else {
+          console.log('No Present Country value to load');
         }
-      }, 1500);
-    }
+        
+        // Pre-populate permanent address
+        if (permanentCountry) {
+          const permCountry = document.querySelector('.country-select[data-address-type="permanent"]');
+          if (permCountry) {
+            console.log('Permanent Country dropdown found, current value:', permCountry.value, 'Expected:', permanentCountry);
+            
+            // Ensure country is set (should already be set by loadCountries, but double-check)
+            if (permCountry.value !== permanentCountry.trim()) {
+              const countryOption = findMatchingOption(permCountry, permanentCountry);
+              if (countryOption) {
+                permCountry.value = countryOption.value;
+                console.log('Permanent Country set to:', countryOption.value);
+              }
+            }
+            
+            // Load states if country is set and we have state/city values
+            if (permCountry.value && (permanentState || permanentCity)) {
+              console.log('Loading Permanent States for country:', permCountry.value);
+              loadStates(permCountry, permanentState || null, permanentCity || null);
+            }
+          } else {
+            console.warn('Permanent Country dropdown not found!');
+          }
+        } else {
+          console.log('No Permanent Country value to load');
+        }
+        
+        // Allow event listeners to work after initialization
+        setTimeout(() => {
+          isInitializing = false;
+          console.log('=== Initialization Complete ===');
+        }, 2000);
+      }, 500);
+    });
     
   });
 </script>

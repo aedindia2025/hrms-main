@@ -2,6 +2,7 @@
 from django.urls import path
 
 from . import views
+from . import employee_account_views
 
 app_name = 'accounts'
 
@@ -17,6 +18,12 @@ urlpatterns = [
     path('profile/', views.profile, name='profile'),
     path('settings/', views.settings_view, name='settings'),
     path('inbox/', views.inbox, name='inbox'),
+
+    # ==================== Employee Account Management ====================
+    path('employee/<int:employee_id>/create-account/', employee_account_views.create_employee_account, name='create_employee_account'),
+    path('verify/<str:token>/', employee_account_views.verify_employee_account, name='verify_employee_account'),
+    path('change-password-required/', employee_account_views.change_password_required, name='change_password_required'),
+    path('employee/<int:employee_id>/resend-verification/', employee_account_views.resend_verification, name='resend_verification'),
 
     # ==================== Accounts ====================
     path('cash-reports/', views.cash_reports_list, name='cash_reports_list'),

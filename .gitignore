@@ -1,4 +1,4 @@
 # Virtual Environment
-venv/
+env/
 .env
 env_template
