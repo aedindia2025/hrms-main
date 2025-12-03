@@ -72,8 +72,8 @@
                             <td>{{ expense_type.description|default:'--' }}</td>
                             <td>
                                 {% if expense_type.document %}
-                                    <a href="{{ expense_type.document.url }}" target="_blank" class="btn btn-sm btn-outline-info" title="View Document">
-                                        <i data-feather="eye"></i> View
+                                    <a href="{{ expense_type.document.url }}" target="_blank" class="text-info" title="View Document">
+                                        <i data-feather="file-text"></i>
                                     </a>
                                 {% else %}
                                     <span class="text-muted">--</span>
