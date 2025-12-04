@@ -109,3 +109,9 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Accidental command files (PowerShell/Shell commands)
+-files*
+tatus*
+Select-String*
+ForEach-Object*
