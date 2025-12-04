@@ -1173,14 +1173,86 @@
     const tabNavButtons = document.querySelectorAll('.tab-nav-btn[data-tab-target]');
 
     function copyAddress() {
+      if (!sameAddressToggle || !sameAddressToggle.checked) {
+        // Enable all permanent address fields when unchecked
+        presentFields.forEach((field, index) => {
+          const permInput = document.querySelector(`[name="${permFields[index]}"]`);
+          if (permInput) {
+            permInput.disabled = false;
+            permInput.required = true;
+          }
+        });
+        return;
+      }
+
+      // Copy all values from present to permanent address
       presentFields.forEach((field, index) => {
         const presentInput = document.querySelector(`[name="${field}"]`);
         const permInput = document.querySelector(`[name="${permFields[index]}"]`);
         if (!presentInput || !permInput) {
           return;
         }
-        if (sameAddressToggle.checked) {
-          permInput.value = presentInput.value;
+
+        // Copy value
+        permInput.value = presentInput.value;
+        
+        // Disable permanent field
+        permInput.disabled = true;
+        permInput.required = false;
+      });
+
+      // Handle cascading dropdowns: country -> state -> city
+      const preCountry = document.querySelector('[name="pre_country"]');
+      const permCountry = document.querySelector('[name="perm_country"]');
+      const preState = document.querySelector('[name="pre_state"]');
+      const permState = document.querySelector('[name="perm_state"]');
+      const preCity = document.querySelector('[name="pre_city"]');
+      const permCity = document.querySelector('[name="perm_city"]');
+
+      // If country is selected, load states
+      if (preCountry && permCountry && preCountry.value) {
+        setTimeout(() => {
+          if (window.loadStates) {
+            window.loadStates(permCountry);
+            // After states load, set state value and load cities
+            setTimeout(() => {
+              if (preState && permState && preState.value) {
+                permState.value = preState.value;
+                if (window.loadCities) {
+                  window.loadCities(permState);
+                  // After cities load, set city value
+                  setTimeout(() => {
+                    if (preCity && permCity && preCity.value) {
+                      permCity.value = preCity.value;
+                    }
+                  }, 500);
+                }
+              }
+            }, 500);
+          }
+        }, 100);
+      }
+    }
+
+    // Auto-copy when present address fields change (if checkbox is checked)
+    function setupAutoCopy() {
+      presentFields.forEach((field) => {
+        const presentInput = document.querySelector(`[name="${field}"]`);
+        if (presentInput) {
+          presentInput.addEventListener('change', function() {
+            if (sameAddressToggle && sameAddressToggle.checked) {
+              copyAddress();
+            }
+          });
+          presentInput.addEventListener('input', function() {
+            if (sameAddressToggle && sameAddressToggle.checked) {
+              const index = presentFields.indexOf(field);
+              const permInput = document.querySelector(`[name="${permFields[index]}"]`);
+              if (permInput && presentInput.tagName !== 'SELECT') {
+                permInput.value = presentInput.value;
+              }
+            }
+          });
         }
       });
     }
@@ -1656,10 +1728,14 @@
           if (dateValue > today) {
             return { isValid: false, message: `${labelText} cannot be a future date.` };
           }
-          // Check minimum age (18 years)
-          const age = Math.floor((today - dateValue) / (365.25 * 24 * 60 * 60 * 1000));
-          if (age < 18) {
-            return { isValid: false, message: `${labelText} must be at least 18 years ago.` };
+          // Check minimum age (18 years) - only for employee date of birth, not for dependent date of birth
+          // Dependent date of birth field is 'rel_date_of_birth', employee is 'date_of_birth'
+          // Exclude dependent fields (rel_date_of_birth, rel_dob, etc.)
+          if (!fieldName.includes('rel_') && (fieldName === 'date_of_birth' || fieldName === 'doc_dob')) {
+            const age = Math.floor((today - dateValue) / (365.25 * 24 * 60 * 60 * 1000));
+            if (age < 18) {
+              return { isValid: false, message: `${labelText} must be at least 18 years ago.` };
+            }
           }
         }
         
@@ -2096,7 +2172,11 @@
     }
 
     if (sameAddressToggle) {
-      sameAddressToggle.addEventListener('change', copyAddress);
+      sameAddressToggle.addEventListener('change', function() {
+        copyAddress();
+      });
+      // Setup auto-copy when present address fields change
+      setupAutoCopy();
     }
 
     // Ensure all required field asterisks are visible
@@ -3980,6 +4060,10 @@
           console.error('Error loading cities:', error);
         });
     }
+    
+    // Make functions globally accessible
+    window.loadStates = loadStates;
+    window.loadCities = loadCities;
 
     // Pre-populate country/state/city dropdowns for edit mode
     // Get values directly from employee object - ensure no empty strings

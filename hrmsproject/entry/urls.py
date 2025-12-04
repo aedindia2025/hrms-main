@@ -39,6 +39,8 @@ urlpatterns = [
     # Entry -> TADA
     path('tada/create/', views.tada_entry_create, name='tada_entry_create'),
     path('tada/list/', views.tada_entry_list, name='tada_entry_list'),
+    path('tada/edit/<int:pk>/', views.tada_entry_edit, name='tada_entry_edit'),
+    path('tada/delete/<int:pk>/', views.tada_entry_delete, name='tada_entry_delete'),
 
     # Entry -> Travel
     path('travel/create/', views.travel_entry_create, name='travel_entry_create'),

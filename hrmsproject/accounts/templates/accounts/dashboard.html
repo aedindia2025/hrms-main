@@ -24,7 +24,7 @@
                 
               </div>
                <div>
-              <span class="bg-success-focus text-success-main px-24 py-4 rounded-pill fw-medium text-sm">August</span>
+              <span class="bg-success-focus text-success-main px-24 py-4 rounded-pill fw-medium text-sm">{{ current_month }}</span>
                 
               </div>
             
@@ -39,7 +39,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Total Permission</span>
-                  <h6 class="text-md fw-semibold mb-0">4</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ permission_data.total }}</h6>
                 </div>
               </div>
 
@@ -49,7 +49,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Taken</span>
-                  <h6 class="text-md fw-semibold mb-0">2</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ permission_data.taken }}</h6>
                 </div>
               </div>
 
@@ -59,7 +59,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Available</span>
-                  <h6 class="text-md fw-semibold mb-0">2</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ permission_data.available }}</h6>
                 </div>
               </div>
                <div class="d-inline-flex align-items-center gap-2 p-2 radius-8 border pe-36 br-hover-primary group-item">
@@ -68,7 +68,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Request</span>
-                  <h6 class="text-md fw-semibold mb-0">0</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ permission_data.request }}</h6>
                 </div>
               </div>
             </div>
@@ -84,7 +84,7 @@
                 
               </div>
                <div>
-              <span class="bg-info-200 border border-info-400 text-info-600  rounded-pill fw-medium new-bgr">Available - 3</span>
+              <span class="bg-info-200 border border-info-400 text-info-600  rounded-pill fw-medium new-bgr">Available - {{ leave_data.casual.available|floatformat:0 }}</span>
                 
               </div>
             
@@ -100,7 +100,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Applied</span>
-                  <h6 class="text-md fw-semibold mb-0">0.0 days</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ leave_data.casual.applied|floatformat:1 }} days</h6>
                 </div>
               </div>
 
@@ -110,7 +110,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Taken</span>
-                  <h6 class="text-md fw-semibold mb-0">3.0 days</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ leave_data.casual.taken|floatformat:1 }} days</h6>
                 </div>
               </div>
            
@@ -128,7 +128,7 @@
                 
               </div>
                <div>
-              <span class="bg-success-200 border border-success-400 text-success-600 rounded-pill fw-medium new-bgr">Available - 3</span>
+              <span class="bg-success-200 border border-success-400 text-success-600 rounded-pill fw-medium new-bgr">Available - {{ leave_data.earned.available|floatformat:0 }}</span>
                 
               </div>
             
@@ -144,7 +144,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Applied</span>
-                  <h6 class="text-md fw-semibold mb-0">0.0 days</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ leave_data.earned.applied|floatformat:1 }} days</h6>
                 </div>
               </div>
 
@@ -154,7 +154,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Taken</span>
-                  <h6 class="text-md fw-semibold mb-0">3.0 days</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ leave_data.earned.taken|floatformat:1 }} days</h6>
                 </div>
               </div>
            
@@ -172,7 +172,7 @@
                 
               </div>
                <div>
-              <span class="bg-danger-200 border border-danger-400 text-danger-600  rounded-pill fw-medium new-bgr">Available - 3</span>
+              <span class="bg-danger-200 border border-danger-400 text-danger-600  rounded-pill fw-medium new-bgr">Available - {{ leave_data.sick.available|floatformat:0 }}</span>
                 
               </div>
             
@@ -188,7 +188,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Applied</span>
-                  <h6 class="text-md fw-semibold mb-0">0.0 days</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ leave_data.sick.applied|floatformat:1 }} days</h6>
                 </div>
               </div>
 
@@ -198,7 +198,7 @@
                 </span>
                 <div class="gov-text">
                   <span class="text-secondary-light text-sm fw-medium">Taken</span>
-                  <h6 class="text-md fw-semibold mb-0">3.0 days</h6>
+                  <h6 class="text-md fw-semibold mb-0">{{ leave_data.sick.taken|floatformat:1 }} days</h6>
                 </div>
               </div>
            
@@ -213,10 +213,10 @@
     <div class="col-lg-5 col-md-12">
                 <div class="card h-100 p-0">
                     <div class="card-body p-24">
-                       <div class="calendar-container">
-  <div class="calendar-header">September 2025</div>
+                       <div class="calendar-container" id="calendarContainer" style="max-height: 600px; overflow-y: auto;">
+  <div class="calendar-header">{{ current_month }} {{ current_year }}</div>
 
-  <div class="calendar-grid">
+  <div class="calendar-grid" id="calendarGrid">
     <!-- Day names -->
     <div class="day-name">Sun</div>
     <div class="day-name">Mon</div>
@@ -226,60 +226,7 @@
     <div class="day-name">Fri</div>
     <div class="day-name">Sat</div>
 
-    <!-- Week 1: Sept 1 (Monday) starts at column 2 -->
-    <div class="day"></div> <!-- Sun (blank) -->
-    <div class="day"><span class="date">1</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">2</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">3</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">4</span><div class="status-badge absent" data-tooltip="Absent">A</div></div>
-    <div class="day"><span class="date">5</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">6</span><div class="status-badge present" data-tooltip="Week Off">P</div></div>
-
-    <!-- Week 2 -->
-    <div class="day"><span class="date">7</span><div class="status-badge weekoff" data-tooltip="Week Off">WO</div></div>
-    <div class="day"><span class="date">8</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">9</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">10</span><div class="status-badge leave" data-tooltip="Leave">L</div></div>
-    <div class="day"><span class="date">11</span><div class="status-badge pco" data-tooltip="Present (Comp-Off)">P/CO</div></div>
-    <div class="day"><span class="date">12</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">13</span><div class="status-badge present" data-tooltip="Week Off">P</div></div>
-
-    <!-- Week 3 -->
-    <div class="day"><span class="date">14</span><div class="status-badge weekoff" data-tooltip="Week Off">WO</div></div>
-    <div class="day"><span class="date">15</span><div class="status-badge absent" data-tooltip="Absent">A</div></div>
-    <div class="day"><span class="date">16</span><div class="status-badge leave" data-tooltip="Leave">L</div></div>
-    <div class="day"><span class="date">17</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">18</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">19</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">20</span><div class="status-badge present" data-tooltip="Week Off">P</div></div>
-
-    <!-- Week 4 -->
-    <div class="day"><span class="date">21</span><div class="status-badge weekoff" data-tooltip="Week Off">WO</div></div>
-    <div class="day"><span class="date">22</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">23</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">24</span><div class="status-badge leave" data-tooltip="Leave">L</div></div>
-    <div class="day"><span class="date">25</span><div class="status-badge absent" data-tooltip="Absent">A</div></div>
-    <div class="day"><span class="date">26</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">27</span><div class="status-badge present" data-tooltip="Week Off">P</div></div>
-
-    <!-- Week 5 -->
-    <div class="day"><span class="date">28</span><div class="status-badge weekoff" data-tooltip="Week Off">WO</div></div>
-    <div class="day"><span class="date">29</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <div class="day"><span class="date">30</span><div class="status-badge present" data-tooltip="Present">P</div></div>
-    <!-- Empty cells to complete the week -->
-    <div class="day"><span class="date2">01</span></div>
-    <div class="day"><span class="date2">02</span></div>
-    <div class="day"><span class="date2">03</span></div>
-    <div class="day"><span class="date2">04</span></div>
-
-     <!-- Week 6 -->
-    <div class="day"><span class="date2">05</span><br><br></div>
-    <div class="day"><span class="date2">06</span></div>
-    <div class="day"><span class="date2">07</span></div>
-    <div class="day"><span class="date2">08</span></div>
-     <div class="day"><span class="date2">09</span></div>
-      <div class="day"><span class="date2">10</span></div>
-       <div class="day"><span class="date2">11</span></div>
+    <!-- Calendar days will be generated dynamically -->
   </div>
 </div>
                     </div>
@@ -296,149 +243,54 @@
                     </div>
                        <h6 class="lat-hed">Birthday Buddy</h6>
     <div class="chat-all-list">
-     
+     {% for buddy in birthday_buddies %}
           <div class="chat-sidebar-single active">
             <div class="img">
-              <img src="{% static 'assets/images/users/user1.png' %}" alt="image">
+              <img src="{% if buddy.profile_image %}{{ buddy.profile_image.url }}{% else %}{% static 'assets/images/users/user1.png' %}{% endif %}" alt="image">
             </div>
             <div class="info">
-              <h6 class="text-manual mb-1">Velmurugan P</h6>
-              <p class="mb-0 text-xs">(AED/668)</p>
+              <h6 class="text-manual mb-1">{{ buddy.staff_name }}</h6>
+              <p class="mb-0 text-xs">({{ buddy.staff_id }})</p>
             </div>
             <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">01 Oct </p>
+              <p class="mb-0 text-neutral-400 text-xs lh-1">{{ buddy.date_of_birth|date:"d M" }}</p>
+              {% if buddy.date_of_birth|date:"d" == today|date:"d" %}
               <span class="px-1 py-2-10 text-xs  bg-warning-main text-white d-inline-flex align-items-center justify-content-center">Today</span>
-            </div>
-          </div><!-- chat-sidebar-single end -->
-          <div class="chat-sidebar-single active">
-            <div class="img">
-              <img src="{% static 'assets/images/users/user1.png' %}" alt="image">
-            </div>
-            <div class="info">
-              <h6 class="text-manual mb-1">Naidu A E </h6>
-              <p class="mb-0 text-xs">(AED/692)</p>
-            </div>
-            <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">02 Oct</p>
+              {% elif buddy.date_of_birth|date:"d"|add:"1" == today|date:"d"|add:"1" %}
               <span class="px-1 py-2-10  text-xs  bg-warning-main text-white d-inline-flex align-items-center justify-content-center">Day After</span>
+              {% endif %}
             </div>
-          </div><!-- chat-sidebar-single end -->
-            <div class="chat-sidebar-single active">
-            <div class="img">
-              <img src="{% static 'assets/images/users/user1.png' %}" alt="image">
-            </div>
-            <div class="info">
-              <h6 class="text-manual mb-1">Shaik Nayab </h6>
-              <p class="mb-0 text-xs">(AED/692)</p>
-            </div>
-            <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">01 Oct</p>
-              <span class="px-1 py-2-10  text-xs  bg-warning-main text-white d-inline-flex align-items-center justify-content-center">Today</span>
-            </div>
-          </div><!-- chat-sidebar-single end -->
-            <div class="chat-sidebar-single active">
-            <div class="img">
-              <img src="{% static 'assets/images/users/user1.png' %}" alt="image">
-            </div>
-            <div class="info">
-              <h6 class="text-manual mb-1">Meganathan G </h6>
-              <p class="mb-0 text-xs">(AED/692)</p>
-            </div>
-            <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">02 Oct</p>
-              <span class="px-1 py-2-10  text-xs  bg-warning-main text-white d-inline-flex align-items-center justify-content-center">Day After</span>
-            </div>
-          </div><!-- chat-sidebar-single end -->
-            <div class="chat-sidebar-single active">
-            <div class="img">
-              <img src="{% static 'assets/images/users/user1.png' %}" alt="image">
-            </div>
-            <div class="info">
-              <h6 class="text-manual mb-1">Sivasankarapandian P </h6>
-              <p class="mb-0 text-xs">(AED/692)</p>
-            </div>
-            <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">01 Oct</p>
-              <span class="px-1 py-2-10  text-xs  bg-warning-main text-white d-inline-flex align-items-center justify-content-center">Today</span>
-            </div>
-          </div><!-- chat-sidebar-single end -->
+          </div>
+     {% empty %}
           <div class="chat-sidebar-single active">
-            <div class="img">
-              <img src="{% static 'assets/images/users/user1.png' %}" alt="image">
-            </div>
             <div class="info">
-              <h6 class="text-manual mb-1">Sivasankarapandian P </h6>
-              <p class="mb-0 text-xs">(AED/692)</p>
+              <p class="mb-0 text-xs text-muted">No birthdays this month</p>
             </div>
-            <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">01 Oct</p>
-              <span class="px-1 py-2-10  text-xs  bg-warning-main text-white d-inline-flex align-items-center justify-content-center">Today</span>
-            </div>
-          </div><!-- chat-sidebar-single end -->
-          <div class="chat-sidebar-single active">
-            <div class="img">
-              <img src="{% static 'assets/images/users/user1.png' %}" alt="image">
-            </div>
-            <div class="info">
-              <h6 class="text-manual mb-1">Sivasankarapandian P </h6>
-              <p class="mb-0 text-xs">(AED/692)</p>
-            </div>
-            <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">01 Oct</p>
-              <span class="px-1 py-2-10  text-xs  bg-warning-main text-white d-inline-flex align-items-center justify-content-center">Today</span>
-            </div>
-          </div><!-- chat-sidebar-single end -->
+          </div>
+     {% endfor %}
 </div>
  <h6 class="lat-hed3 mt-3">New Joiner(s) of the Month</h6>
  <div class="chat-all-list2">
+  {% for joiner in new_joiners %}
   <div class="chat-sidebar-single active">
             <div class="img">
-              <img src="{% static 'assets/images/users/user4.png' %}" alt="image">
+              <img src="{% if joiner.profile_image %}{{ joiner.profile_image.url }}{% else %}{% static 'assets/images/users/user4.png' %}{% endif %}" alt="image">
             </div>
             <div class="info">
-              <h6 class="text-manual mb-1">Meganathan G </h6>
-              <p class="mb-0 text-xs">Tender</p>
+              <h6 class="text-manual mb-1">{{ joiner.staff_name }}</h6>
+              <p class="mb-0 text-xs">{{ joiner.designation|default:"Employee" }}</p>
             </div>
             <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">Joined:<br> 24 Sep 2025</p>
+              <p class="mb-0 text-neutral-400 text-xs lh-1">Joined:<br> {{ joiner.date_of_join|date:"d M Y" }}</p>
             </div>
-          </div><!-- chat-sidebar-single end -->
+          </div>
+  {% empty %}
           <div class="chat-sidebar-single active">
-            <div class="img">
-              <img src="{% static 'assets/images/users/user5.png' %}" alt="image">
-            </div>
             <div class="info">
-              <h6 class="text-manual mb-1">Meganathan G </h6>
-              <p class="mb-0 text-xs">Tender</p>
+              <p class="mb-0 text-xs text-muted">No new joiners this month</p>
             </div>
-            <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">Joined:<br> 24 Sep 2025</p>
-            </div>
-          </div><!-- chat-sidebar-single end -->
-          <div class="chat-sidebar-single active">
-            <div class="img">
-              <img src="{% static 'assets/images/users/user6.png' %}" alt="image">
-            </div>
-            <div class="info">
-              <h6 class="text-manual mb-1">Meganathan G </h6>
-              <p class="mb-0 text-xs">Tender</p>
-            </div>
-            <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">Joined:<br> 24 Sep 2025</p>
-            </div>
-          </div><!-- chat-sidebar-single end -->
-          <div class="chat-sidebar-single active">
-            <div class="img">
-              <img src="{% static 'assets/images/users/user4.png' %}" alt="image">
-            </div>
-            <div class="info">
-              <h6 class="text-manual mb-1">Meganathan G </h6>
-              <p class="mb-0 text-xs">Tender</p>
-            </div>
-            <div class="action text-end">
-              <p class="mb-0 text-neutral-400 text-xs lh-1">Joined:<br> 24 Sep 2025</p>
-            </div>
-          </div><!-- chat-sidebar-single end -->
+          </div>
+  {% endfor %}
 </div>
             </div>
         </div>
@@ -448,6 +300,66 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  // Generate dynamic calendar
+  const calendarGrid = document.getElementById('calendarGrid');
+  const currentMonth = parseInt('{{ today.month }}');
+  const currentYear = parseInt('{{ today.year }}');
+  const todayDay = parseInt('{{ today.day }}');
+  
+  // Get first day of month and number of days
+  const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  
+  // Add empty cells for days before month starts
+  for (let i = 0; i < firstDay; i++) {
+    const emptyDay = document.createElement('div');
+    emptyDay.className = 'day';
+    calendarGrid.appendChild(emptyDay);
+  }
+  
+  // Add days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayDiv = document.createElement('div');
+    dayDiv.className = 'day';
+    
+    const dateSpan = document.createElement('span');
+    dateSpan.className = 'date';
+    dateSpan.textContent = day;
+    dayDiv.appendChild(dateSpan);
+    
+    // Add status badge (placeholder - you can make this dynamic based on attendance data)
+    // For now, randomly assign statuses for demo
+    const statuses = ['present', 'absent', 'leave', 'weekoff', 'pco'];
+    const statusLabels = ['Present', 'Absent', 'Leave', 'Week Off', 'Present (Comp-Off)'];
+    const statusTexts = ['P', 'A', 'L', 'WO', 'P/CO'];
+    const randomIndex = Math.floor(Math.random() * statuses.length);
+    const statusType = statuses[randomIndex];
+    const statusLabel = statusLabels[randomIndex];
+    const statusText = statusTexts[randomIndex];
+    
+    const statusBadge = document.createElement('div');
+    statusBadge.className = `status-badge ${statusType}`;
+    statusBadge.textContent = statusText;
+    statusBadge.setAttribute('data-tooltip', statusLabel);
+    dayDiv.appendChild(statusBadge);
+    
+    calendarGrid.appendChild(dayDiv);
+  }
+  
+  // Make calendar scrollable - ensure it can scroll to bottom
+  const calendarContainer = document.getElementById('calendarContainer');
+  if (calendarContainer) {
+    calendarContainer.style.overflowY = 'auto';
+    calendarContainer.style.maxHeight = '600px';
+    calendarContainer.style.height = '600px';
+    // Scroll to bottom after a short delay to ensure content is rendered
+    setTimeout(() => {
+      if (calendarContainer.scrollHeight > calendarContainer.clientHeight) {
+        calendarContainer.scrollTop = calendarContainer.scrollHeight;
+      }
+    }, 100);
+  }
+  
   // First container
   const container1 = document.querySelector('.chat-all-list');
   let scrollAmount1 = 0;

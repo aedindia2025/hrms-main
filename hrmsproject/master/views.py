@@ -3165,13 +3165,12 @@ def employee_edit(request, pk):
 @permission_required('master.delete_employee', raise_exception=True)
 @require_POST
 def employee_delete(request, pk):
-    """Delete employee only, keeping associated records intact."""
+    """Delete employee and all related data."""
     employee = get_object_or_404(Employee, pk=pk)
     employee_name = employee.staff_name
-    employee_id = employee.id
     
     try:
-        # Try to delete the employee normally
+        # Try to delete the employee
         employee.delete()
         messages.success(request, f'Employee {employee_name} deleted successfully.')
         return redirect('master:employee_list')
@@ -3181,21 +3180,27 @@ def employee_delete(request, pk):
         error_str = str(e)
         if "doesn't exist" in error_str.lower() or "table" in error_str.lower():
             # Table doesn't exist - likely PermissionEntry table or other entry tables missing
-            # Use raw SQL to delete employee, bypassing Django's ORM relationship checks
-            # This keeps all associated records intact
+            # Try to delete by manually deleting related objects and using raw SQL
             try:
                 from django.db import connection
+                from master.models import (
+                    EmployeeDependent, EmployeeAccountInfo, EmployeeQualification,
+                    EmployeeExperience, EmployeeAssetAssignment
+                )
+                
+                # Manually delete related objects from master app (these tables should exist)
+                EmployeeDependent.objects.filter(employee=employee).delete()
+                EmployeeAccountInfo.objects.filter(employee=employee).delete()
+                EmployeeQualification.objects.filter(employee=employee).delete()
+                EmployeeExperience.objects.filter(employee=employee).delete()
+                EmployeeAssetAssignment.objects.filter(employee=employee).delete()
                 
                 # Use raw SQL to delete employee, bypassing Django's ORM relationship checks
                 # This avoids the ProgrammingError from missing entry tables
                 with connection.cursor() as cursor:
-                    cursor.execute("DELETE FROM master_employee WHERE id = %s", [employee_id])
+                    cursor.execute("DELETE FROM master_employee WHERE id = %s", [employee.id])
                 
-                messages.success(
-                    request, 
-                    f'Employee {employee_name} deleted successfully. '
-                    f'Associated records have been preserved.'
-                )
+                messages.success(request, f'Employee {employee_name} deleted successfully.')
                 return redirect('master:employee_list')
                 
             except Exception as inner_e:
@@ -3216,34 +3221,77 @@ def employee_delete(request, pk):
             return redirect('master:employee_list')
             
     except ProtectedError as e:
-        # Handle protected relationships by deleting employee directly using raw SQL
-        # This bypasses the PROTECT constraint and keeps associated records intact
+        # Handle protected relationships that prevent deletion
         protected_objects = list(e.protected_objects)
-        protected_count = len(protected_objects)
         
-        try:
-            from django.db import connection
-            
-            # Use raw SQL to delete employee, bypassing Django's ORM PROTECT constraint
-            # This allows deletion while keeping associated records (they will have orphaned foreign keys)
-            with connection.cursor() as cursor:
-                cursor.execute("DELETE FROM master_employee WHERE id = %s", [employee_id])
-            
-            messages.success(
-                request, 
-                f'Employee {employee_name} deleted successfully. '
-                f'Note: {protected_count} associated record(s) still exist in the system.'
+        # Group protected objects by model type
+        from collections import defaultdict
+        objects_by_type = defaultdict(list)
+        for obj in protected_objects:
+            model_name = obj.__class__.__name__
+            objects_by_type[model_name].append(obj)
+        
+        # Build detailed error message
+        error_parts = []
+        total_count = len(protected_objects)
+        
+        # Check each type of related record
+        if 'CompOffEntry' in objects_by_type:
+            count = len(objects_by_type['CompOffEntry'])
+            error_parts.append(f'{count} Comp-Off Entry(ies)')
+        
+        if 'LeaveEntry' in objects_by_type:
+            count = len(objects_by_type['LeaveEntry'])
+            error_parts.append(f'{count} Leave Entry(ies)')
+        
+        if 'PermissionEntry' in objects_by_type:
+            count = len(objects_by_type['PermissionEntry'])
+            error_parts.append(f'{count} Permission Entry(ies)')
+        
+        if 'EmployeeDependent' in objects_by_type:
+            count = len(objects_by_type['EmployeeDependent'])
+            error_parts.append(f'{count} Dependent(s)')
+        
+        if 'EmployeeQualification' in objects_by_type:
+            count = len(objects_by_type['EmployeeQualification'])
+            error_parts.append(f'{count} Qualification(s)')
+        
+        if 'EmployeeExperience' in objects_by_type:
+            count = len(objects_by_type['EmployeeExperience'])
+            error_parts.append(f'{count} Experience(s)')
+        
+        if 'EmployeeAssetAssignment' in objects_by_type:
+            count = len(objects_by_type['EmployeeAssetAssignment'])
+            error_parts.append(f'{count} Asset Assignment(s)')
+        
+        if 'ShiftRosterAssignment' in objects_by_type:
+            count = len(objects_by_type['ShiftRosterAssignment'])
+            error_parts.append(f'{count} Roster Assignment(s)')
+        
+        # Add any other types
+        other_types = [name for name in objects_by_type.keys() 
+                      if name not in ['CompOffEntry', 'LeaveEntry', 'PermissionEntry', 
+                                     'EmployeeDependent', 'EmployeeQualification', 
+                                     'EmployeeExperience', 'EmployeeAssetAssignment', 
+                                     'ShiftRosterAssignment']]
+        for other_type in other_types:
+            count = len(objects_by_type[other_type])
+            error_parts.append(f'{count} {other_type}(s)')
+        
+        if error_parts:
+            error_msg = (
+                f'Cannot delete employee {employee_name} because they are referenced by: '
+                f'{", ".join(error_parts)}. '
+                f'Please remove these related records first.'
             )
-            return redirect('master:employee_list')
-            
-        except Exception as delete_error:
-            # If raw SQL delete fails, show error
+        else:
             error_msg = (
                 f'Cannot delete employee {employee_name} because they are referenced by '
-                f'{protected_count} other record(s). Error: {str(delete_error)}'
+                f'{total_count} other record(s). Please remove the related records first.'
             )
-            messages.error(request, error_msg)
-            return redirect('master:employee_list')
+        
+        messages.error(request, error_msg)
+        return redirect('master:employee_list')
 
 
 @permission_required('master.view_employee', raise_exception=True)

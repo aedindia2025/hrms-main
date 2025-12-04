@@ -20,8 +20,122 @@ def home(request):
 
 @login_required
 def dashboard(request):
-    """Dashboard for authenticated users."""
-    return render(request, 'accounts/dashboard.html')
+    """Dashboard for authenticated users with dynamic data."""
+    from django.utils import timezone
+    from datetime import datetime, timedelta
+    from django.db.models import Q, Sum, Count
+    from master.models import Employee
+    from entry.models import PermissionEntry, LeaveEntry
+    
+    today = timezone.now().date()
+    current_month = today.month
+    current_year = today.year
+    current_month_name = today.strftime('%B')
+    
+    # Get employee linked to user (if exists)
+    employee = None
+    try:
+        # Try to find employee by email or username
+        employee = Employee.objects.filter(
+            Q(personal_email=request.user.email) | 
+            Q(office_email=request.user.email) |
+            Q(staff_id=request.user.username)
+        ).first()
+        
+        # Also check if user has a profile with employee_code
+        try:
+            profile = request.user.profile
+            if profile.employee_code:
+                employee = Employee.objects.filter(staff_id=profile.employee_code).first() or employee
+        except:
+            pass
+    except:
+        pass
+    
+    # Permission Details (Current Month)
+    permission_data = {
+        'total': 0,
+        'taken': 0,
+        'available': 0,
+        'request': 0,
+    }
+    
+    if employee:
+        # Get permission entries for current month
+        permission_entries = PermissionEntry.objects.filter(
+            employee=employee,
+            permission_date__year=current_year,
+            permission_date__month=current_month
+        )
+        permission_data['total'] = permission_entries.count()
+        permission_data['taken'] = permission_entries.filter(status='approved').count()
+        permission_data['request'] = permission_entries.filter(status='pending').count()
+        # Assuming 4 permissions per month as default, adjust as needed
+        permission_data['available'] = max(0, 4 - permission_data['taken'])
+    
+    # Leave Details (Current Month)
+    leave_data = {
+        'casual': {'applied': 0.0, 'taken': 0.0, 'available': 3.0},
+        'earned': {'applied': 0.0, 'taken': 0.0, 'available': 3.0},
+        'sick': {'applied': 0.0, 'taken': 0.0, 'available': 3.0},
+    }
+    
+    if employee:
+        # Get leave entries for current month
+        leave_entries = LeaveEntry.objects.filter(
+            employee=employee,
+            from_date__year=current_year,
+            from_date__month=current_month
+        )
+        
+        # Casual Leave
+        casual_leaves = leave_entries.filter(leave_type='casual-leave')
+        leave_data['casual']['applied'] = sum([float(leave.leave_days) for leave in casual_leaves.filter(approval_status__in=['pending', 'staff_approved'])])
+        leave_data['casual']['taken'] = sum([float(leave.leave_days) for leave in casual_leaves.filter(approval_status='hr_approved')])
+        leave_data['casual']['available'] = max(0, 3.0 - leave_data['casual']['taken'])
+        
+        # Earned Leave
+        earned_leaves = leave_entries.filter(leave_type='earned-leave')
+        leave_data['earned']['applied'] = sum([float(leave.leave_days) for leave in earned_leaves.filter(approval_status__in=['pending', 'staff_approved'])])
+        leave_data['earned']['taken'] = sum([float(leave.leave_days) for leave in earned_leaves.filter(approval_status='hr_approved')])
+        leave_data['earned']['available'] = max(0, 3.0 - leave_data['earned']['taken'])
+        
+        # Sick Leave
+        sick_leaves = leave_entries.filter(leave_type='Sick-leave')
+        leave_data['sick']['applied'] = sum([float(leave.leave_days) for leave in sick_leaves.filter(approval_status__in=['pending', 'staff_approved'])])
+        leave_data['sick']['taken'] = sum([float(leave.leave_days) for leave in sick_leaves.filter(approval_status='hr_approved')])
+        leave_data['sick']['available'] = max(0, 3.0 - leave_data['sick']['taken'])
+    
+    # Calendar Data - Get attendance for current month
+    calendar_data = {}
+    if employee:
+        # This is a placeholder - you'll need to implement actual attendance tracking
+        # For now, we'll generate a basic calendar structure
+        pass
+    
+    # Birthday Buddies (Current Month)
+    birthday_buddies = Employee.objects.filter(
+        date_of_birth__month=current_month
+    ).exclude(date_of_birth__isnull=True).order_by('date_of_birth__day')[:10]
+    
+    # New Joiners (Current Month)
+    new_joiners = Employee.objects.filter(
+        date_of_join__year=current_year,
+        date_of_join__month=current_month
+    ).order_by('-date_of_join')[:10]
+    
+    context = {
+        'employee': employee,
+        'current_month': current_month_name,
+        'current_year': current_year,
+        'permission_data': permission_data,
+        'leave_data': leave_data,
+        'birthday_buddies': birthday_buddies,
+        'new_joiners': new_joiners,
+        'today': today,
+    }
+    
+    return render(request, 'accounts/dashboard.html', context)
 
 
 def login_view(request):

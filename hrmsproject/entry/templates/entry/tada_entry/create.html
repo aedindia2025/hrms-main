@@ -20,84 +20,141 @@
 
  <div class="card shadow-sm">
         <div class="card-body">
-           <form>
+           <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <!-- Main Entry Fields -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label">Expense Date <span class="text-danger">*</span></label>
+                        <input type="date" name="expense_date" class="form-control" value="{{ values.expense_date }}" required>
+                        {% if errors.expense_date %}
+                            <div class="text-danger small">{{ errors.expense_date }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Batch No</label>
+                        <input type="text" name="batch_no" class="form-control" value="{{ values.batch_no }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Site <span class="text-danger">*</span></label>
+                        <select name="site" class="form-select" required>
+                            <option value="">Select Site</option>
+                            {% for site in sites %}
+                                <option value="{{ site.id }}" {% if values.site|stringformat:"s" == site.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ site.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.site %}
+                            <div class="text-danger small">{{ errors.site }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Employee <span class="text-danger">*</span></label>
+                        <select name="employee" class="form-select" required>
+                            <option value="">Select Employee</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}" {% if values.employee|stringformat:"s" == employee.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ employee.staff_name }} - {{ employee.staff_id }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.employee %}
+                            <div class="text-danger small">{{ errors.employee }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
         <div class="row g-3">
 
-          <!-- Employee Name -->
+          <!-- Expense Item Form -->
        <div class="col-md-3">
-  <label class="form-label">Expense Type</label>
+  <label class="form-label">Expense Type <span class="text-danger">*</span></label>
   <div class="custom-select-wrapper">
-    <input type="text" class="custom-select-input" placeholder="Search or Select" readonly>
-    <div class="custom-select-dropdown">
-      <div data-value="Drinking Water Expenses">Drinking Water Expenses</div>
-      <div data-value="Food Expenses Special">Food Expenses Special</div>
-      <div data-value="Food Expenses">Food Expenses</div>
-      <div data-value="Lodging Expenses">Lodging Expenses</div>
-      <div data-value="Miscallaneous Expenses">Miscallaneous Expenses</div>
-      <div data-value="Staff Refreshment">Staff Refreshment</div>
-      <div data-value="Staff Welfare Expenses">Staff Welfare Expenses</div>
-      <div data-value="Tollgate Expenses">Tollgate Expenses</div>
-      <div data-value="Travelling Expenses">Travelling Expenses</div>
+    <input type="text" id="expenseTypeInput" class="custom-select-input" placeholder="Search or Select" readonly>
+    <input type="hidden" id="expenseTypeId">
+    <div class="custom-select-dropdown" id="expenseTypeDropdown">
+      {% if expense_types %}
+        {% for expense_type in expense_types %}
+          <div data-value="{{ expense_type.name }}" data-id="{{ expense_type.id }}">{{ expense_type.name }}</div>
+        {% endfor %}
+      {% else %}
+        <div data-value="Drinking Water Expenses">Drinking Water Expenses</div>
+        <div data-value="Food Expenses Special">Food Expenses Special</div>
+        <div data-value="Food Expenses">Food Expenses</div>
+        <div data-value="Lodging Expenses">Lodging Expenses</div>
+        <div data-value="Miscallaneous Expenses">Miscallaneous Expenses</div>
+        <div data-value="Staff Refreshment">Staff Refreshment</div>
+        <div data-value="Staff Welfare Expenses">Staff Welfare Expenses</div>
+        <div data-value="Tollgate Expenses">Tollgate Expenses</div>
+        <div data-value="Travelling Expenses">Travelling Expenses</div>
+      {% endif %}
     </div>
   </div>
 </div>
         <div class="col-md-3">
-        <label class="form-label">Sub Expense Type</label>
+        <label class="form-label">Sub Expense Type <span class="text-danger">*</span></label>
   <div class="custom-select-wrapper">
-    <input type="text" class="custom-select-input" placeholder="Search or Select" readonly>
-    <div class="custom-select-dropdown">
-      <div data-value="Bike Own">Bike Own</div>
-      <div data-value="Bike Rental">Bike Rental</div>
-      <div data-value="Bus">Bus</div>
-      <div data-value="Car CNG">Car CNG</div>
-      <div data-value="Car Petrol">Car Petrol</div>
-      <div data-value="Car Rental">Car Rental</div>
-      <div data-value="Taxi/Auto">Taxi/Auto</div>
-      <div data-value="Train">Train</div>
+    <input type="text" id="subExpenseTypeInput" class="custom-select-input" placeholder="Search or Select" readonly>
+    <input type="hidden" id="subExpenseTypeId">
+    <div class="custom-select-dropdown" id="subExpenseTypeDropdown">
+      {% if sub_expense_types %}
+        {% for sub_expense_type in sub_expense_types %}
+          <div data-value="{{ sub_expense_type.name }}" data-id="{{ sub_expense_type.id }}">{{ sub_expense_type.name }}</div>
+        {% endfor %}
+      {% else %}
+        <div data-value="Bike Own">Bike Own</div>
+        <div data-value="Bike Rental">Bike Rental</div>
+        <div data-value="Bus">Bus</div>
+        <div data-value="Car CNG">Car CNG</div>
+        <div data-value="Car Petrol">Car Petrol</div>
+        <div data-value="Car Rental">Car Rental</div>
+        <div data-value="Taxi/Auto">Taxi/Auto</div>
+        <div data-value="Train">Train</div>
+      {% endif %}
     </div>
   </div>
-
           </div>
-          <!-- Permission text -->
           <div class="col-md-3">
             <label class="form-label">From Location <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" required>
+            <input type="text" id="fromLocation" class="form-control">
           </div>
         <div class="col-md-3">
             <label class="form-label">To Location <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" required>
+            <input type="text" id="toLocation" class="form-control">
           </div>
         <div class="col-md-3">
-            <label class="form-label">Start Meter <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" required>
+            <label class="form-label">Start Meter</label>
+            <input type="number" step="0.01" id="startMeter" class="form-control">
           </div>
         <div class="col-md-3">
-            <label class="form-label">End Meter <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" required>
+            <label class="form-label">End Meter</label>
+            <input type="number" step="0.01" id="endMeter" class="form-control">
           </div>
          <div class="col-md-3">
-            <label class="form-label">Total Kilometer <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" required>
+            <label class="form-label">Total Kilometer</label>
+            <input type="number" step="0.01" id="totalKilometer" class="form-control" readonly>
           </div>
           <div class="col-md-3">
             <label class="form-label">Amount <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" required>
+            <input type="number" step="0.01" id="amount" class="form-control">
           </div>
    <div class="col-md-3">
-    <label  class="form-label">Upload Image</label>
-    <input class="form-control" type="file" accept="image/*">
+    <label class="form-label">Upload Image</label>
+    <input class="form-control" type="file" id="uploadImage" accept="image/*">
     </div>
     <div class="col-md-3">
-    <label  class="form-label">Meter Upload Image</label>
-    <input class="form-control" type="file" accept="image/*">
+    <label class="form-label">Meter Upload Image</label>
+    <input class="form-control" type="file" id="meterUploadImage" accept="image/*">
     </div>
-          <!-- Reason -->
           <div class="col-md-6">
-            <label class="form-label">Description <span class="text-danger">*</span></label>
-            <textarea class="form-control" rows="3" required></textarea>
+            <label class="form-label">Description</label>
+            <textarea id="description" class="form-control" rows="3"></textarea>
           </div>
-        <div class="col-md-1 d-flex align-items-center mb-3 text-end">
-        <button class="btn btn-primary w-100">Add</button>
+        <div class="col-md-2 d-flex align-items-center mb-3 gap-2">
+        <button type="button" id="addBtn" class="btn btn-primary">Add</button>
+        <button type="button" id="updateBtn" class="btn btn-success" style="display: none;">Update</button>
+        <button type="button" id="cancelEditBtn" class="btn btn-secondary" style="display: none;">Cancel</button>
       </div>
         </div>
 
@@ -105,6 +162,11 @@
        <div class="container " style="margin-top:40px;">
 
        <p class="fw-bold fs-6 text-uppercase">TADA Sub List</p>
+       {% if errors.sub_items %}
+         <div class="alert alert-danger mt-2">
+           <strong>Error:</strong> {{ errors.sub_items }}
+         </div>
+       {% endif %}
   <!-- Table Wrapper -->
   <div id="tableWrapper" class="table-responsive">
     <table class="balance-table" id="recordsTable">
@@ -115,12 +177,13 @@
           <th>From Location</th>
           <th>To Location</th>
           <th>Amount</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
         <!-- Initially No Records -->
         <tr id="noRecordsRow"  class="table-success">
-          <td colspan="5" class="no-records text-center">No Records Found</td>
+          <td colspan="6" class="no-records text-center">No Records Found</td>
         </tr>
       </tbody>
     </table>
@@ -135,7 +198,7 @@
                 <!-- Buttons -->
                 <div class="mt-5 d-flex justify-content-end gap-2">
                     <button type="submit" class="btn btn-success px-4">Submit</button>
-                    <a href="#" class="btn btn-danger px-4">Cancel</a>
+                    <a href="{% url 'entry:tada_entry_list' %}" class="btn btn-danger px-4">Cancel</a>
                 </div>
             </form>
 
@@ -270,11 +333,438 @@
     </style>
      
 
-<script src="https://unpkg.com/feather-icons"></script>
+<script src="https://unpkg.com/feather-icons@4.29.2/dist/feather.min.js"></script>
 <script>
-  feather.replace();
+  // Wait for DOM to be ready before replacing icons
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof feather !== 'undefined') {
+        feather.replace();
+      }
+    });
+  } else {
+    if (typeof feather !== 'undefined') {
+      feather.replace();
+    }
+  }
+  
+  // Store sub-items data in array (like asset creation)
+  let tadaSubListItems = [];
+  let tadaItemCounter = 0;
+  
+  // Restore sub-items if validation failed
+  const restoredItems = JSON.parse('{{ restored_sub_items_json|escapejs }}');
+  
+  // Initialize with restored items if any
+  if (restoredItems && restoredItems.length > 0) {
+    restoredItems.forEach((item) => {
+      tadaSubListItems.push({
+        id: tadaItemCounter++,
+        expense_type_id: item.expense_type_id,
+        expense_type_name: item.expense_type_name || 'Unknown',
+        sub_expense_type_id: item.sub_expense_type_id || '',
+        sub_expense_type_name: item.sub_expense_type_name || '',
+        from_location: item.from_location || '',
+        to_location: item.to_location || '',
+        start_meter: item.start_meter || '',
+        end_meter: item.end_meter || '',
+        total_kilometer: item.total_kilometer || '',
+        amount: item.amount || '',
+        description: item.description || ''
+      });
+    });
+  }
+  
+  // Refresh sublist table from array (following employee creation pattern)
+  function refreshSubListTable() {
+    const tableBody = document.querySelector("#recordsTable tbody");
+    if (!tableBody) {
+      console.error('Table tbody not found');
+      return;
+    }
+    
+    // Clear table using innerHTML (like employee creation)
+    tableBody.innerHTML = '';
+    
+    // If no items, show empty message
+    if (tadaSubListItems.length === 0) {
+      tableBody.innerHTML = '<tr id="noRecordsRow" class="table-success"><td colspan="6" class="no-records text-center">No Records Found</td></tr>';
+      return;
+    }
+    
+    // Add items from array using innerHTML (simpler, like employee creation)
+    tadaSubListItems.forEach((item, index) => {
+      const row = document.createElement('tr');
+      row.id = `row-${item.id}`;
+      row.innerHTML = `
+        <td>${item.expense_type_name || '-'}</td>
+        <td>${item.sub_expense_type_name || '-'}</td>
+        <td>${item.from_location || '-'}</td>
+        <td>${item.to_location || '-'}</td>
+        <td>₹${parseFloat(item.amount || 0).toFixed(2)}</td>
+        <td>
+          <button type="button" class="btn btn-sm btn-primary me-1" onclick="editItem(${item.id})" title="Edit">
+            <i data-feather="edit-2"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-danger" onclick="removeItem(${item.id})" title="Delete">
+            <i data-feather="trash-2"></i>
+          </button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
+    
+    // Replace icons after table is updated
+    if (typeof feather !== 'undefined') {
+      feather.replace();
+    }
+  }
+  
+  // Add hidden inputs on form submit (following employee creation pattern)
+  function addHiddenInputs() {
+    // Remove existing hidden inputs
+    const existingInputs = document.querySelectorAll('input[name^="sub_items_"]');
+    existingInputs.forEach(input => input.remove());
+    
+    // Add hidden inputs for all items
+    const form = document.querySelector('form');
+    if (!form) {
+      console.error('Form not found!');
+      return false;
+    }
+    
+    // Validate items before adding inputs
+    for (let i = 0; i < tadaSubListItems.length; i++) {
+      const item = tadaSubListItems[i];
+      if (!item.expense_type_id || !item.sub_expense_type_id || !item.amount || !item.from_location || !item.to_location) {
+        console.error(`Item ${i} is missing required fields:`, item);
+        return false;
+      }
+    }
+    
+    // Add hidden inputs for all items (same format as backend expects)
+    tadaSubListItems.forEach((item) => {
+      const fields = {
+        'sub_items_expense_type[]': item.expense_type_id,
+        'sub_items_sub_expense_type[]': item.sub_expense_type_id || '',
+        'sub_items_from_location[]': item.from_location,
+        'sub_items_to_location[]': item.to_location,
+        'sub_items_start_meter[]': item.start_meter || '',
+        'sub_items_end_meter[]': item.end_meter || '',
+        'sub_items_total_kilometer[]': item.total_kilometer || '',
+        'sub_items_amount[]': item.amount,
+        'sub_items_description[]': item.description || ''
+      };
+      
+      Object.keys(fields).forEach(fieldName => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = fieldName;
+        input.value = String(fields[fieldName] || '');
+        form.appendChild(input);
+      });
+    });
+    
+    return true;
+  }
+  
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    refreshSubListTable();
+  });
+
+  const addBtn = document.getElementById("addBtn");
+  const updateBtn = document.getElementById("updateBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  const tableBody = document.querySelector("#recordsTable tbody");
+  const noRecordsRow = document.getElementById("noRecordsRow");
+  
+  // Cancel edit button event
+  if (cancelEditBtn) {
+    cancelEditBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      cancelEdit();
+    });
+  }
+
+  // Calculate total kilometer
+  function calculateTotalKm() {
+    const startMeter = parseFloat(document.getElementById("startMeter").value) || 0;
+    const endMeter = parseFloat(document.getElementById("endMeter").value) || 0;
+    const totalKmInput = document.getElementById("totalKilometer");
+    
+    if (startMeter && endMeter) {
+      if (endMeter >= startMeter) {
+        totalKmInput.value = (endMeter - startMeter).toFixed(2);
+      } else {
+        // Handle meter rollover
+        totalKmInput.value = ((999999 - startMeter) + endMeter).toFixed(2);
+      }
+    } else {
+      totalKmInput.value = '';
+    }
+  }
+
+  document.getElementById("startMeter").addEventListener("input", calculateTotalKm);
+  document.getElementById("endMeter").addEventListener("input", calculateTotalKm);
+
+  // Function to add or update item
+  function addOrUpdateItem() {
+    // Get form values
+    const expenseType = document.getElementById("expenseTypeInput").value;
+    const expenseTypeId = document.getElementById("expenseTypeId").value;
+    const subExpenseType = document.getElementById("subExpenseTypeInput").value;
+    const subExpenseTypeId = document.getElementById("subExpenseTypeId").value;
+    const fromLocation = document.getElementById("fromLocation").value;
+    const toLocation = document.getElementById("toLocation").value;
+    const startMeter = document.getElementById("startMeter").value;
+    const endMeter = document.getElementById("endMeter").value;
+    const totalKilometer = document.getElementById("totalKilometer").value;
+    const amount = document.getElementById("amount").value;
+    const description = document.getElementById("description").value;
+
+    // Validation
+    if (!expenseType || !expenseTypeId) {
+      alert("Please select an Expense Type");
+      return;
+    }
+    if (!subExpenseType || !subExpenseTypeId) {
+      alert("Please select a Sub Expense Type");
+      return;
+    }
+    if (!fromLocation || !toLocation) {
+      alert("Please enter From and To locations");
+      return;
+    }
+    if (!amount || parseFloat(amount) <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    const item = {
+      id: editingItemId || tadaItemCounter++,
+      expense_type_id: expenseTypeId,
+      expense_type_name: expenseType,
+      sub_expense_type_id: subExpenseTypeId || '',
+      sub_expense_type_name: subExpenseType || '',
+      from_location: fromLocation,
+      to_location: toLocation,
+      start_meter: startMeter || '',
+      end_meter: endMeter || '',
+      total_kilometer: totalKilometer || '',
+      amount: amount,
+      description: description || ''
+    };
+    
+    if (editingItemId) {
+      // Update existing item
+      const index = tadaSubListItems.findIndex(i => i.id === editingItemId);
+      if (index !== -1) {
+        tadaSubListItems[index] = item;
+      }
+      editingItemId = null;
+      
+      // Show Add button, hide Update and Cancel buttons
+      document.getElementById("addBtn").style.display = 'inline-block';
+      document.getElementById("updateBtn").style.display = 'none';
+      document.getElementById("cancelEditBtn").style.display = 'none';
+    } else {
+      // Add new item
+      tadaSubListItems.push(item);
+    }
+    
+    // Refresh table
+    refreshSubListTable();
+
+    // Clear form
+    const expenseTypeInputEl = document.getElementById("expenseTypeInput");
+    const expenseTypeIdEl = document.getElementById("expenseTypeId");
+    if (expenseTypeInputEl && expenseTypeIdEl) {
+      expenseTypeInputEl.value = '';
+      expenseTypeIdEl.value = '';
+      expenseTypeInputEl.setAttribute("readonly", true);
+    }
+    
+    const subExpenseTypeInputEl = document.getElementById("subExpenseTypeInput");
+    const subExpenseTypeIdEl = document.getElementById("subExpenseTypeId");
+    if (subExpenseTypeInputEl && subExpenseTypeIdEl) {
+      subExpenseTypeInputEl.value = '';
+      subExpenseTypeIdEl.value = '';
+      subExpenseTypeInputEl.setAttribute("readonly", true);
+    }
+    
+    document.getElementById("fromLocation").value = '';
+    document.getElementById("toLocation").value = '';
+    document.getElementById("startMeter").value = '';
+    document.getElementById("endMeter").value = '';
+    document.getElementById("totalKilometer").value = '';
+    document.getElementById("amount").value = '';
+    document.getElementById("description").value = '';
+    document.getElementById("uploadImage").value = '';
+    document.getElementById("meterUploadImage").value = '';
+  }
+  
+  // Add to sublist
+  addBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    addOrUpdateItem();
+  });
+  
+  // Update item
+  if (updateBtn) {
+    updateBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      addOrUpdateItem();
+    });
+  }
+
+  // Variable to track which item is being edited
+  let editingItemId = null;
+  
+  // Edit item function
+  window.editItem = function(itemId) {
+    // Find the item in the array
+    const item = tadaSubListItems.find(i => i.id === itemId);
+    if (!item) {
+      alert('Item not found');
+      return;
+    }
+    
+    // Set editing mode
+    editingItemId = itemId;
+    
+    // Populate form fields with item data
+    const expenseTypeInput = document.getElementById("expenseTypeInput");
+    const expenseTypeId = document.getElementById("expenseTypeId");
+    if (expenseTypeInput && expenseTypeId) {
+      expenseTypeInput.value = item.expense_type_name || '';
+      expenseTypeId.value = item.expense_type_id || '';
+      expenseTypeInput.removeAttribute("readonly");
+    }
+    
+    const subExpenseTypeInput = document.getElementById("subExpenseTypeInput");
+    const subExpenseTypeId = document.getElementById("subExpenseTypeId");
+    if (subExpenseTypeInput && subExpenseTypeId) {
+      subExpenseTypeInput.value = item.sub_expense_type_name || '';
+      subExpenseTypeId.value = item.sub_expense_type_id || '';
+      subExpenseTypeInput.removeAttribute("readonly");
+    }
+    
+    document.getElementById("fromLocation").value = item.from_location || '';
+    document.getElementById("toLocation").value = item.to_location || '';
+    document.getElementById("startMeter").value = item.start_meter || '';
+    document.getElementById("endMeter").value = item.end_meter || '';
+    document.getElementById("totalKilometer").value = item.total_kilometer || '';
+    document.getElementById("amount").value = item.amount || '';
+    document.getElementById("description").value = item.description || '';
+    
+    // Show Update and Cancel buttons, hide Add button
+    document.getElementById("addBtn").style.display = 'none';
+    document.getElementById("updateBtn").style.display = 'inline-block';
+    document.getElementById("cancelEditBtn").style.display = 'inline-block';
+    
+    // Scroll to form fields
+    if (expenseTypeInput) {
+      expenseTypeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+  
+  // Cancel edit function
+  window.cancelEdit = function() {
+    editingItemId = null;
+    
+    // Clear form fields
+    const expenseTypeInput = document.getElementById("expenseTypeInput");
+    const expenseTypeId = document.getElementById("expenseTypeId");
+    if (expenseTypeInput && expenseTypeId) {
+      expenseTypeInput.value = '';
+      expenseTypeId.value = '';
+      expenseTypeInput.setAttribute("readonly", true);
+    }
+    
+    const subExpenseTypeInput = document.getElementById("subExpenseTypeInput");
+    const subExpenseTypeId = document.getElementById("subExpenseTypeId");
+    if (subExpenseTypeInput && subExpenseTypeId) {
+      subExpenseTypeInput.value = '';
+      subExpenseTypeId.value = '';
+      subExpenseTypeInput.setAttribute("readonly", true);
+    }
+    
+    document.getElementById("fromLocation").value = '';
+    document.getElementById("toLocation").value = '';
+    document.getElementById("startMeter").value = '';
+    document.getElementById("endMeter").value = '';
+    document.getElementById("totalKilometer").value = '';
+    document.getElementById("amount").value = '';
+    document.getElementById("description").value = '';
+    document.getElementById("uploadImage").value = '';
+    document.getElementById("meterUploadImage").value = '';
+    
+    // Show Add button, hide Update and Cancel buttons
+    document.getElementById("addBtn").style.display = 'inline-block';
+    document.getElementById("updateBtn").style.display = 'none';
+    document.getElementById("cancelEditBtn").style.display = 'none';
+  };
+  
+  // Remove item function
+  window.removeItem = function(itemId) {
+    if (confirm("Are you sure you want to remove this item?")) {
+      // If editing this item, cancel edit first
+      if (editingItemId === itemId) {
+        cancelEdit();
+      }
+      
+      // Remove from array
+      tadaSubListItems = tadaSubListItems.filter(item => item.id !== itemId);
+      
+      // Refresh table
+      refreshSubListTable();
+    }
+  };
+
+  // Form submission validation (following employee creation pattern)
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      // Check if there are any items in the sublist
+      if (tadaSubListItems.length === 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        alert('Please add at least one expense item to the sublist before submitting.');
+        return false;
+      }
+      
+      // Validate all items have required fields
+      const invalidItems = tadaSubListItems.filter(item => 
+        !item.expense_type_id || !item.sub_expense_type_id || !item.amount || !item.from_location || !item.to_location
+      );
+      
+      if (invalidItems.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        alert('Some items are missing required fields (Expense Type, Sub Expense Type, From Location, To Location, or Amount). Please check and try again.');
+        return false;
+      }
+      
+      // Add hidden inputs for all items before submitting
+      const success = addHiddenInputs();
+      
+      if (!success) {
+        e.preventDefault();
+        e.stopPropagation();
+        alert('Error: Could not prepare form data. Please try again.');
+        return false;
+      }
+      
+      // Allow form to submit normally
+      return true;
+    });
+  }
+
+  // Update custom select to store IDs
   document.querySelectorAll(".custom-select-wrapper").forEach(wrapper => {
     const input = wrapper.querySelector(".custom-select-input");
+    const hiddenInput = wrapper.querySelector("input[type='hidden']");
     const dropdown = wrapper.querySelector(".custom-select-dropdown");
 
     // Show/hide dropdown on click
@@ -297,6 +787,9 @@
     dropdown.addEventListener("click", e => {
       if (e.target.dataset.value) {
         input.value = e.target.dataset.value;
+        if (hiddenInput && e.target.dataset.id) {
+          hiddenInput.value = e.target.dataset.id;
+        }
         dropdown.style.display = "none";
         input.setAttribute("readonly", true);
       }
@@ -309,36 +802,6 @@
         input.setAttribute("readonly", true);
       }
     });
-  });
-  const addBtn = document.getElementById("addBtn");
-  const tableBody = document.querySelector("#recordsTable tbody");
-  const noRecordsRow = document.getElementById("noRecordsRow");
-
-  // Example data from inputs (replace with your real form values)
-  const dummyData = {
-    expense: "Food Expenses",
-    subExpense: "Bus",
-    from: "Erode",
-    to: "Chennai",
-    amount: "1500"
-  };
-
-  addBtn.addEventListener("click", function () {
-    // Remove "No Records" row if present
-    if (noRecordsRow) {
-      noRecordsRow.remove();
-    }
-
-    // Add new row
-    const newRow = document.createElement("tr");
-    newRow.innerHTML = `
-      <td>${dummyData.expense}</td>
-      <td>${dummyData.subExpense}</td>
-      <td>${dummyData.from}</td>
-      <td>${dummyData.to}</td>
-      <td>${dummyData.amount}</td>
-    `;
-    tableBody.appendChild(newRow);
   });
 </script>
 {% endblock %}
