@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Leave Entry - Edit{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Link to Create Page -->
+     <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Leave Entry Edit </span></h6>
+
+     <a href="{% url 'entry:leave_entry_list' %}" class="btn-back">
+   <i data-feather="arrow-left"></i> Back
+</a>
+</div>
+
+
+ <div class="card shadow-sm">
+        <div class="card-body">
+           <form method="post" novalidate>
+                {% csrf_token %}
+        <div class="row g-3">
+
+          <!-- Employee Name -->
+          <div class="col-md-6">
+            <label class="form-label">Employee Name <span class="text-danger">*</span></label>
+            <select class="form-select" name="employee" id="employeeSelect" required>
+              <option value="">Select Employee</option>
+              {% for employee in employees %}
+                <option value="{{ employee.id }}" {% if values.employee|stringformat:"s" == employee.id|stringformat:"s" %}selected{% endif %}>
+                  {{ employee.staff_name }} - {{ employee.staff_id }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.employee %}
+              <div class="text-danger small mt-1">{{ errors.employee }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Site Name -->
+          <div class="col-md-6">
+            <label class="form-label">Site Name <span class="text-danger">*</span></label>
+            <select class="form-select" name="site" required>
+              <option value="">Select Site</option>
+              {% for site in sites %}
+                <option value="{{ site.id }}" {% if values.site|stringformat:"s" == site.id|stringformat:"s" %}selected{% endif %}>
+                  {{ site.name }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.site %}
+              <div class="text-danger small mt-1">{{ errors.site }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">From Date <span class="text-danger">*</span></label>
+            <input type="date" name="from_date" id="fromDate" class="form-control" value="{{ values.from_date }}" required>
+            {% if errors.from_date %}
+              <div class="text-danger small mt-1">{{ errors.from_date }}</div>
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">To Date <span class="text-danger">*</span></label>
+            <input type="date" name="to_date" id="toDate" class="form-control" value="{{ values.to_date }}" required>
+            {% if errors.to_date %}
+              <div class="text-danger small mt-1">{{ errors.to_date }}</div>
+            {% endif %}
+          </div>
+         <div class="col-md-3">
+            <label class="form-label">Leave Days</label>
+            <input type="text" id="leaveDays" class="form-control" value="{% if calculated_days %}{{ calculated_days }}{% else %}{{ leave_entry.leave_days }}{% endif %}" readonly>
+          </div>
+          <!-- Leave Type -->
+          <div class="col-md-3">
+            <label class="form-label">Leave Type <span class="text-danger">*</span></label>
+             <select name="leave_type" id="leaveType" class="form-select" required>
+                <option value="">Select Leave Type</option>
+                {% for key, label in leave_type_choices %}
+                    <option value="{{ key }}" {% if values.leave_type == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+                </select>
+            {% if errors.leave_type %}
+              <div class="text-danger small mt-1">{{ errors.leave_type }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Leave Duration Type</label>
+             <select name="leave_duration_type" id="leaveDurationType" class="form-select">
+                {% for key, label in duration_type_choices %}
+                    <option value="{{ key }}" {% if values.leave_duration_type == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+                </select>
+          </div>
+         <div class="col-md-3">
+            <label class="form-label">Entry Date</label>
+            <input type="text" value="{{ leave_entry.entry_date|date:'d-m-Y' }}" class="form-control" readonly>
+          </div>
+          <!-- Reason -->
+          <div class="col-md-12">
+            <label class="form-label">Reason <span class="text-danger">*</span></label>
+            <textarea name="reason" class="form-control" rows="3" required>{{ values.reason }}</textarea>
+            {% if errors.reason %}
+              <div class="text-danger small mt-1">{{ errors.reason }}</div>
+            {% endif %}
+          </div>
+   
+        </div>
+
+        <!-- Leave Balance Table -->
+        <div class="form-section-bottom">
+        <table class="balance-table mt-3">
+            <thead>
+                <tr>
+                    <th>LEAVE TYPE</th>
+                    <th>BALANCE DAYS</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Casual Leave</td>
+                    <td>0.00</td>
+                </tr>
+                <tr>
+                    <td>Earned Leave</td>
+                    <td>11</td>
+                </tr>
+                <tr>
+                    <td>Sick Leave</td>
+                    <td>0.50</td>
+                </tr>
+                <tr>
+                    <td>Compensatory Leave/Off</td>
+                    <td>1</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+        <!-- Buttons -->
+                <div class="mt-5 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-success px-4">Update</button>
+                    <a href="{% url 'entry:leave_entry_list' %}" class="btn btn-danger px-4">Cancel</a>
+                </div>
+            </form>
+
+
+    </div>
+</div>
+</div>
+
+    <!-- Card -->
+<style>
+    .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #28a745; /* green shade */
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: 0.2s ease-in-out;
+}
+
+.btn-back:hover {
+  background-color: #218838; /* darker green */
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.btn-back i {
+  font-size: 14px;
+}
+.form-check .form-check-input{
+    margin-top:7px;
+    margin-right:6px;
+}
+.details-box {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 15px;
+    }
+    .details-box  li i {
+  vertical-align: middle;
+}
+/* Basic container styling */
+.leave-creation-container {
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 900px;
+    margin: 20px auto;
+}
+
+/* Flexbox for form rows */
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Specific styling for the reason textarea to take full width */
+.reason-field {
+    flex: 100%;
+}
+
+/* Label and input styling */
+label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #555;
+    font-size: 14px;
+}
+
+.required {
+    color: red;
+}
+
+input[type="text"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensures padding doesn't affect total width */
+    font-size: 14px;
+}
+
+textarea {
+    resize: vertical; /* Allows user to resize vertically but not horizontally */
+}
+
+/* Balance Table styling */
+.form-section-bottom {
+    margin-top: 30px;
+}
+
+.balance-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.balance-table th,
+.balance-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+    font-size: 14px;
+}
+
+.balance-table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Button styling */
+.button-row {
+    margin-top: 30px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.submit-btn, .cancel-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.submit-btn {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.cancel-btn {
+    background-color: #f0f0f0;
+    color: #555;
+    border: 1px solid #ccc;
+}
+    </style>
+     
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    function calculateLeaveDays() {
+        let fromDate = document.getElementById("fromDate").value;
+        let toDate = document.getElementById("toDate").value;
+        let durationType = document.getElementById("leaveDurationType").value;
+        let leaveDaysField = document.getElementById("leaveDays");
+
+        if (fromDate && toDate) {
+            let from = new Date(fromDate);
+            let to = new Date(toDate);
+
+            if (to < from) {
+                leaveDaysField.value = "Invalid";
+                return;
+            }
+
+            let daysDiff = Math.floor((to - from) / (1000 * 60 * 60 * 24)) + 1;
+            let calculatedDays = 0;
+
+            if (durationType === 'full_day') {
+                calculatedDays = daysDiff;
+            } else if (durationType === 'forenoon' || durationType === 'afternoon') {
+                if (daysDiff === 1) {
+                    calculatedDays = 0.50;
+                } else {
+                    calculatedDays = (daysDiff - 1) + 0.50;
+                }
+            } else {
+                calculatedDays = daysDiff;
+            }
+
+            leaveDaysField.value = calculatedDays.toFixed(2);
+        } else {
+            leaveDaysField.value = "";
+        }
+    }
+
+    document.getElementById("fromDate").addEventListener("change", calculateLeaveDays);
+    document.getElementById("toDate").addEventListener("change", calculateLeaveDays);
+    document.getElementById("leaveDurationType").addEventListener("change", calculateLeaveDays);
+
+    // Calculate on page load if values exist
+    if (document.getElementById("fromDate").value && document.getElementById("toDate").value) {
+        calculateLeaveDays();
+    }
+
+    feather.replace();
+</script>
+{% endblock %}
+

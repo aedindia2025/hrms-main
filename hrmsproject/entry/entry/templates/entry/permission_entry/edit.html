@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Permission Entry - Edit{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Link to Create Page -->
+     <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Permission Entry Edit </span></h6>
+
+     <a href="{% url 'entry:permission_entry_list' %}" class="btn-back">
+   <i data-feather="arrow-left"></i> Back
+</a>
+</div>
+
+
+ <div class="card shadow-sm">
+        <div class="card-body">
+           <form method="post" novalidate>
+                {% csrf_token %}
+        <div class="row g-3">
+
+          <!-- Employee Name -->
+          <div class="col-md-6">
+            <label class="form-label">Employee Name<span class="text-danger">*</span></label>
+            <select class="form-select" name="employee" id="employeeSelect" required>
+              <option value="">Select Employee</option>
+              {% for employee in employees %}
+                <option value="{{ employee.id }}" {% if values.employee|stringformat:"s" == employee.id|stringformat:"s" %}selected{% endif %}>
+                  {{ employee.staff_name }} - {{ employee.staff_id }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.employee %}
+              <div class="text-danger small mt-1">{{ errors.employee }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Site Name -->
+          <div class="col-md-6">
+            <label class="form-label">Site Name<span class="text-danger">*</span></label>
+            <select class="form-select" name="site" required>
+              <option value="">Select Site</option>
+              {% for site in sites %}
+                <option value="{{ site.id }}" {% if values.site|stringformat:"s" == site.id|stringformat:"s" %}selected{% endif %}>
+                  {{ site.name }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if errors.site %}
+              <div class="text-danger small mt-1">{{ errors.site }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Permission Date -->
+          <div class="col-md-3">
+            <label class="form-label">Permission Date <span class="text-danger">*</span></label>
+            <input type="date" name="permission_date" class="form-control" value="{{ values.permission_date }}" required>
+            {% if errors.permission_date %}
+              <div class="text-danger small mt-1">{{ errors.permission_date }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Start Time -->
+          <div class="col-md-3">
+            <label class="form-label">Start Time</label>
+            <input type="time" id="startTime" name="permission_start_time" class="form-control" value="{{ values.permission_start_time }}">
+            {% if errors.permission_start_time %}
+              <div class="text-danger small mt-1">{{ errors.permission_start_time }}</div>
+            {% endif %}
+          </div>
+
+          <!-- End Time -->
+          <div class="col-md-3">
+            <label class="form-label">End Time</label>
+            <input type="time" id="endTime" name="permission_end_time" class="form-control" value="{{ values.permission_end_time }}">
+            {% if errors.permission_end_time %}
+              <div class="text-danger small mt-1">{{ errors.permission_end_time }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Difference Time -->
+          <div class="col-md-3">
+            <label class="form-label">Difference Time</label>
+            <input type="text" id="diffTime" class="form-control" readonly>
+          </div>
+
+          <!-- Reason -->
+          <div class="col-md-12">
+            <label class="form-label">Reason <span class="text-danger">*</span></label>
+            <textarea name="reason" class="form-control" rows="3" required>{{ values.reason }}</textarea>
+          </div>
+
+        </div>
+
+        <!-- Available Permissions / Employee Details -->
+        {% if selected_employee %}
+        <div class="mt-5 details-box">
+          <h6 class="text-primary mb-2">Employee Details</h6>
+          <p><strong>{{ selected_employee.staff_name }}</strong></p>
+          <ul class="list-unstyled row">
+        <div class="col-md-6">
+            <li><i data-feather="hash" class="me-2"></i> {{ selected_employee.staff_id }}</li>
+            {% if selected_employee.personal_email or selected_employee.office_email %}
+            <li><i data-feather="mail" class="me-2"></i> {{ selected_employee.personal_email|default:selected_employee.office_email }}</li>
+            {% endif %}
+            {% if selected_employee.personal_contact or selected_employee.office_contact %}
+            <li><i data-feather="phone" class="me-2"></i> {{ selected_employee.personal_contact|default:selected_employee.office_contact }}</li>
+            {% endif %}
+            {% if selected_employee.salary_category %}
+            <li><i data-feather="dollar-sign" class="me-2"></i> Salary Type: {{ selected_employee.salary_category }}</li>
+            {% endif %}
+
+        </div>
+        <div class="col-md-6">
+            {% if selected_employee.work_location %}
+            <li><i data-feather="map-pin" class="me-2"></i> Work Location: {{ selected_employee.work_location }}</li>
+            {% endif %}
+            {% if selected_employee.designation %}
+            <li><i data-feather="briefcase" class="me-2"></i> Designation: {{ selected_employee.designation }}</li>
+            {% endif %}
+            {% if selected_employee.reporting_officer %}
+            <li><i data-feather="users" class="me-2"></i> Reporting Officer: {{ selected_employee.reporting_officer }}</li>
+            {% endif %}
+        </div>    
+          </ul>
+        </div>
+        {% endif %}
+
+        <!-- Buttons -->
+                <div class="mt-5 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-success px-4">Update</button>
+                    <a href="{% url 'entry:permission_entry_list' %}" class="btn btn-danger px-4">Cancel</a>
+                </div>
+            </form>
+
+
+    </div>
+</div>
+</div>
+
+    <!-- Card -->
+<style>
+    .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #28a745; /* green shade */
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: 0.2s ease-in-out;
+}
+
+.btn-back:hover {
+  background-color: #218838; /* darker green */
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.btn-back i {
+  font-size: 14px;
+}
+.form-check .form-check-input{
+    margin-top:7px;
+    margin-right:6px;
+}
+.details-box {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 15px;
+    }
+    .details-box  li i {
+  vertical-align: middle;
+}
+    </style>
+     
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    function calculateDiffTime() {
+    let start = document.getElementById("startTime").value;
+    let end = document.getElementById("endTime").value;
+    let diffField = document.getElementById("diffTime");
+
+    if (start && end) {
+      let s = new Date("1970-01-01T" + start + ":00");
+      let e = new Date("1970-01-01T" + end + ":00");
+
+      if (e < s) e.setDate(e.getDate() + 1);
+
+      let diffMs = e - s;
+      let hrs = Math.floor(diffMs / (1000 * 60 * 60));
+      let mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+      diffField.value = hrs + " hrs " + mins + " mins";
+    } else {
+      diffField.value = "";
+    }
+  }
+
+  document.getElementById("startTime").addEventListener("change", calculateDiffTime);
+  document.getElementById("endTime").addEventListener("change", calculateDiffTime);
+  
+  // Calculate on page load if values exist
+  if (document.getElementById("startTime").value && document.getElementById("endTime").value) {
+    calculateDiffTime();
+  }
+
+  feather.replace();
+</script>
+{% endblock %}
+

@@ -3224,29 +3224,70 @@ def employee_delete(request, pk):
         # Handle protected relationships that prevent deletion
         protected_objects = list(e.protected_objects)
         
-        # Check if the protected objects are CompOffEntry records
-        if protected_objects and hasattr(protected_objects[0], 'work_date'):
-            # CompOffEntry records
-            entry_dates = [str(obj.work_date) for obj in protected_objects[:5]]  # Show first 5
-            entry_count = len(protected_objects)
-            
-            if entry_count > 5:
-                error_msg = (
-                    f'Cannot delete employee {employee_name} because they have {entry_count} '
-                    f'Comp-Off Entry record(s) associated. Please delete the Comp-Off entries first. '
-                    f'Entries include: {", ".join(entry_dates)}...'
-                )
-            else:
-                error_msg = (
-                    f'Cannot delete employee {employee_name} because they have {entry_count} '
-                    f'Comp-Off Entry record(s) associated: {", ".join(entry_dates)}. '
-                    f'Please delete the Comp-Off entries first.'
-                )
+        # Group protected objects by model type
+        from collections import defaultdict
+        objects_by_type = defaultdict(list)
+        for obj in protected_objects:
+            model_name = obj.__class__.__name__
+            objects_by_type[model_name].append(obj)
+        
+        # Build detailed error message
+        error_parts = []
+        total_count = len(protected_objects)
+        
+        # Check each type of related record
+        if 'CompOffEntry' in objects_by_type:
+            count = len(objects_by_type['CompOffEntry'])
+            error_parts.append(f'{count} Comp-Off Entry(ies)')
+        
+        if 'LeaveEntry' in objects_by_type:
+            count = len(objects_by_type['LeaveEntry'])
+            error_parts.append(f'{count} Leave Entry(ies)')
+        
+        if 'PermissionEntry' in objects_by_type:
+            count = len(objects_by_type['PermissionEntry'])
+            error_parts.append(f'{count} Permission Entry(ies)')
+        
+        if 'EmployeeDependent' in objects_by_type:
+            count = len(objects_by_type['EmployeeDependent'])
+            error_parts.append(f'{count} Dependent(s)')
+        
+        if 'EmployeeQualification' in objects_by_type:
+            count = len(objects_by_type['EmployeeQualification'])
+            error_parts.append(f'{count} Qualification(s)')
+        
+        if 'EmployeeExperience' in objects_by_type:
+            count = len(objects_by_type['EmployeeExperience'])
+            error_parts.append(f'{count} Experience(s)')
+        
+        if 'EmployeeAssetAssignment' in objects_by_type:
+            count = len(objects_by_type['EmployeeAssetAssignment'])
+            error_parts.append(f'{count} Asset Assignment(s)')
+        
+        if 'ShiftRosterAssignment' in objects_by_type:
+            count = len(objects_by_type['ShiftRosterAssignment'])
+            error_parts.append(f'{count} Roster Assignment(s)')
+        
+        # Add any other types
+        other_types = [name for name in objects_by_type.keys() 
+                      if name not in ['CompOffEntry', 'LeaveEntry', 'PermissionEntry', 
+                                     'EmployeeDependent', 'EmployeeQualification', 
+                                     'EmployeeExperience', 'EmployeeAssetAssignment', 
+                                     'ShiftRosterAssignment']]
+        for other_type in other_types:
+            count = len(objects_by_type[other_type])
+            error_parts.append(f'{count} {other_type}(s)')
+        
+        if error_parts:
+            error_msg = (
+                f'Cannot delete employee {employee_name} because they are referenced by: '
+                f'{", ".join(error_parts)}. '
+                f'Please remove these related records first.'
+            )
         else:
-            # Other protected relationships
             error_msg = (
                 f'Cannot delete employee {employee_name} because they are referenced by '
-                f'{len(protected_objects)} other record(s). Please remove the related records first.'
+                f'{total_count} other record(s). Please remove the related records first.'
             )
         
         messages.error(request, error_msg)

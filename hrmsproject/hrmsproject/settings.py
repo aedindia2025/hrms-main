@@ -44,8 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'master',
-    'entry',
-    'approval',
+    'entry.entry',  # Nested app structure
+    'approval.approval',  # Nested app structure
     'reports',
 ]
 

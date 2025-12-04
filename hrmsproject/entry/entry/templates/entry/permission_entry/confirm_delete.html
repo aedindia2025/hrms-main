@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Permission Entry{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper py-5" style="max-width: 640px; margin: 0 auto;">
+  <div class="card border-danger">
+    <div class="card-body">
+      <h5 class="card-title text-danger">Delete Permission Entry</h5>
+      <p class="card-text">
+        Are you sure you want to delete the Permission entry for 
+        <strong>{{ permission_entry.employee.staff_name }}</strong> 
+        ({{ permission_entry.employee.staff_id }}) 
+        on {{ permission_entry.permission_date|date:"d-m-Y" }}?
+      </p>
+
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'entry:permission_entry_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

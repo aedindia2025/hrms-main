@@ -1,6 +1,3 @@
-import calendar
-from datetime import date
-
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
@@ -23,160 +20,119 @@ def home(request):
 
 @login_required
 def dashboard(request):
-    """Dashboard for authenticated users."""
-    # Get current date
-    today = date.today()
-    current_year = today.year
+    """Dashboard for authenticated users with dynamic data."""
+    from django.utils import timezone
+    from datetime import datetime, timedelta
+    from django.db.models import Q, Sum, Count
+    from master.models import Employee
+    from entry.entry.models import PermissionEntry, LeaveEntry
+    
+    today = timezone.now().date()
     current_month = today.month
+    current_year = today.year
+    current_month_name = today.strftime('%B')
     
-    # Calculate calendar structure
-    month_name = calendar.month_name[current_month]  # e.g., "January"
-    first_day = date(current_year, current_month, 1)
-    last_day = date(current_year, current_month, calendar.monthrange(current_year, current_month)[1])
-    
-    # Get weekday of first day (0=Monday, 6=Sunday)
-    # Adjust to match calendar display (Sunday=0, Monday=1, ..., Saturday=6)
-    first_day_weekday = (first_day.weekday() + 1) % 7  # Convert Monday=0 to Sunday=0
-    
-    # Calculate days in month
-    days_in_month = calendar.monthrange(current_year, current_month)[1]
-    
-    # Create calendar days list
-    calendar_days = []
-    
-    # Calculate previous month's last day (for showing dates before current month)
-    if current_month == 1:
-        prev_month = 12
-        prev_year = current_year - 1
-    else:
-        prev_month = current_month - 1
-        prev_year = current_year
-    
-    prev_month_days = calendar.monthrange(prev_year, prev_month)[1]
-    
-    # Add empty cells for days before month starts (show previous month dates)
-    for i in range(first_day_weekday):
-        prev_day = prev_month_days - first_day_weekday + i + 1
-        calendar_days.append({
-            'date': None,
-            'day': prev_day,
-            'is_current_month': False,
-            'is_today': False,
-            'status': None,
-        })
-    
-    # Add all days of current month
-    for day in range(1, days_in_month + 1):
-        day_date = date(current_year, current_month, day)
-        is_today = (day_date == today)
-        
-        calendar_days.append({
-            'date': day_date,
-            'day': day,
-            'is_current_month': True,
-            'is_today': is_today,
-            'status': None,  # Will be populated with attendance data if available
-            'weekday': day_date.weekday(),  # 0=Monday, 6=Sunday
-        })
-    
-    # Add empty cells to complete last week (show next month dates)
-    # Fix: When month ends on Sunday (weekday=6), last_day_weekday becomes 0
-    # We need to calculate cells needed to complete the week properly
-    last_day_weekday = last_day.weekday()  # 0=Monday, 6=Sunday
-    # Calculate cells needed: (7 - (weekday + 1)) % 7
-    # This ensures: Sunday (6) -> 0 cells, Saturday (5) -> 1 cell, etc.
-    cells_to_add = (7 - (last_day_weekday + 1)) % 7
-    next_day = 1
-    for _ in range(cells_to_add):
-        calendar_days.append({
-            'date': None,
-            'day': next_day,
-            'is_current_month': False,
-            'is_today': False,
-            'status': None,
-        })
-        next_day += 1
-    
-    # Optional: Fetch attendance data for logged-in user
-    # This can be enhanced later to fetch actual attendance records
-    attendance_data = {}
-    
-    # Try to get employee record if user has profile with employee_code
+    # Get employee linked to user (if exists)
+    employee = None
     try:
-        profile = request.user.profile
-        if profile.employee_code:
-            # Link to Employee model if needed
-            # from master.models import Employee
-            # employee = Employee.objects.filter(staff_id=profile.employee_code).first()
-            # if employee:
-            #     # Fetch attendance records, leaves, week offs, etc.
+        # Try to find employee by email or username
+        employee = Employee.objects.filter(
+            Q(personal_email=request.user.email) | 
+            Q(office_email=request.user.email) |
+            Q(staff_id=request.user.username)
+        ).first()
+        
+        # Also check if user has a profile with employee_code
+        try:
+            profile = request.user.profile
+            if profile.employee_code:
+                employee = Employee.objects.filter(staff_id=profile.employee_code).first() or employee
+        except:
             pass
-    except (AttributeError, Exception) as e:
-        # Handle cases where profile doesn't exist or other errors
-        # Silently continue with default dashboard values
+    except:
         pass
     
-    # Initialize default values for dashboard statistics
-    # These will be populated from database in future
-    permission_month = calendar.month_abbr[current_month]  # e.g., "Jan"
+    # Permission Details (Current Month)
+    permission_data = {
+        'total': 0,
+        'taken': 0,
+        'available': 0,
+        'request': 0,
+    }
     
-    # Permission Details (default values - to be fetched from PermissionEntry model)
-    permission_total = 0
-    permission_taken = 0
-    permission_available = 0
-    permission_request = 0
+    if employee:
+        # Get permission entries for current month
+        permission_entries = PermissionEntry.objects.filter(
+            employee=employee,
+            permission_date__year=current_year,
+            permission_date__month=current_month
+        )
+        permission_data['total'] = permission_entries.count()
+        permission_data['taken'] = permission_entries.filter(status='approved').count()
+        permission_data['request'] = permission_entries.filter(status='pending').count()
+        # Assuming 4 permissions per month as default, adjust as needed
+        permission_data['available'] = max(0, 4 - permission_data['taken'])
     
-    # Leave Details (default values - to be fetched from LeaveEntry model)
-    casual_leave_available = 0
-    casual_leave_applied = 0.0
-    casual_leave_taken = 0.0
+    # Leave Details (Current Month)
+    leave_data = {
+        'casual': {'applied': 0.0, 'taken': 0.0, 'available': 3.0},
+        'earned': {'applied': 0.0, 'taken': 0.0, 'available': 3.0},
+        'sick': {'applied': 0.0, 'taken': 0.0, 'available': 3.0},
+    }
     
-    earned_leave_available = 0
-    earned_leave_applied = 0.0
-    earned_leave_taken = 0.0
+    if employee:
+        # Get leave entries for current month
+        leave_entries = LeaveEntry.objects.filter(
+            employee=employee,
+            from_date__year=current_year,
+            from_date__month=current_month
+        )
+        
+        # Casual Leave
+        casual_leaves = leave_entries.filter(leave_type='casual-leave')
+        leave_data['casual']['applied'] = sum([float(leave.leave_days) for leave in casual_leaves.filter(approval_status__in=['pending', 'staff_approved'])])
+        leave_data['casual']['taken'] = sum([float(leave.leave_days) for leave in casual_leaves.filter(approval_status='hr_approved')])
+        leave_data['casual']['available'] = max(0, 3.0 - leave_data['casual']['taken'])
+        
+        # Earned Leave
+        earned_leaves = leave_entries.filter(leave_type='earned-leave')
+        leave_data['earned']['applied'] = sum([float(leave.leave_days) for leave in earned_leaves.filter(approval_status__in=['pending', 'staff_approved'])])
+        leave_data['earned']['taken'] = sum([float(leave.leave_days) for leave in earned_leaves.filter(approval_status='hr_approved')])
+        leave_data['earned']['available'] = max(0, 3.0 - leave_data['earned']['taken'])
+        
+        # Sick Leave
+        sick_leaves = leave_entries.filter(leave_type='Sick-leave')
+        leave_data['sick']['applied'] = sum([float(leave.leave_days) for leave in sick_leaves.filter(approval_status__in=['pending', 'staff_approved'])])
+        leave_data['sick']['taken'] = sum([float(leave.leave_days) for leave in sick_leaves.filter(approval_status='hr_approved')])
+        leave_data['sick']['available'] = max(0, 3.0 - leave_data['sick']['taken'])
     
-    sick_leave_available = 0
-    sick_leave_applied = 0.0
-    sick_leave_taken = 0.0
+    # Calendar Data - Get attendance for current month
+    calendar_data = {}
+    if employee:
+        # This is a placeholder - you'll need to implement actual attendance tracking
+        # For now, we'll generate a basic calendar structure
+        pass
     
-    # Birthday Buddies (default empty list - to be fetched from Employee model)
-    birthday_buddies = []
+    # Birthday Buddies (Current Month)
+    birthday_buddies = Employee.objects.filter(
+        date_of_birth__month=current_month
+    ).exclude(date_of_birth__isnull=True).order_by('date_of_birth__day')[:10]
     
-    # New Joiners (default empty list - to be fetched from Employee model)
-    new_joiners = []
-    
-    # Announcement (default empty - to be fetched from Announcement model if exists)
-    announcement_text = ""
+    # New Joiners (Current Month)
+    new_joiners = Employee.objects.filter(
+        date_of_join__year=current_year,
+        date_of_join__month=current_month
+    ).order_by('-date_of_join')[:10]
     
     context = {
-        'calendar_year': current_year,
-        'calendar_month': current_month,
-        'calendar_month_name': month_name,
-        'calendar_days': calendar_days,
-        'attendance_data': attendance_data,
-        'today': today,
-        # Permission Details
-        'permission_month': permission_month,
-        'permission_total': permission_total,
-        'permission_taken': permission_taken,
-        'permission_available': permission_available,
-        'permission_request': permission_request,
-        # Leave Details
-        'casual_leave_available': casual_leave_available,
-        'casual_leave_applied': casual_leave_applied,
-        'casual_leave_taken': casual_leave_taken,
-        'earned_leave_available': earned_leave_available,
-        'earned_leave_applied': earned_leave_applied,
-        'earned_leave_taken': earned_leave_taken,
-        'sick_leave_available': sick_leave_available,
-        'sick_leave_applied': sick_leave_applied,
-        'sick_leave_taken': sick_leave_taken,
-        # Birthday Buddies
+        'employee': employee,
+        'current_month': current_month_name,
+        'current_year': current_year,
+        'permission_data': permission_data,
+        'leave_data': leave_data,
         'birthday_buddies': birthday_buddies,
-        # New Joiners
         'new_joiners': new_joiners,
-        # Announcement
-        'announcement_text': announcement_text,
+        'today': today,
     }
     
     return render(request, 'accounts/dashboard.html', context)
@@ -197,8 +153,7 @@ def login_view(request):
                 profile = user.profile
                 if profile.must_change_password:
                     return redirect('accounts:change_password_required')
-            except AttributeError:
-                # User doesn't have a profile, continue to dashboard
+            except:
                 pass
             
             return redirect('accounts:dashboard')
