@@ -23,7 +23,10 @@ urlpatterns = [
     # ==================== TADA ====================
     path('tada/', views.tada_approval_list, name='tada_approval_list'),
     path('tada-head/', views.tada_head_approval_list, name='tada_head_approval_list'),
+    path('tada-head/<int:pk>/update/', views.tada_head_approval_update, name='tada_head_approval_update'),
+    path('tada-head/<int:pk>/update-amount/', views.tada_head_approval_amount_update, name='tada_head_approval_amount_update'),
     path('tada-hr/', views.tada_hr_approval_list, name='tada_hr_approval_list'),
+    path('tada-hr/<int:pk>/update/', views.tada_hr_approval_update, name='tada_hr_approval_update'),
     path('tada-hr/print/', views.tada_hr_print, name='tada_hr_print'),
 
     # ==================== Travel HR ====================

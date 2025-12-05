@@ -147,7 +147,8 @@
                                 {% if perms.approval.approve_hrcompoffapproval %}
                                     <form method="post"
                                           action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
-                                          class="d-inline">
+                                          class="d-inline"
+                                          onsubmit="return confirmApproval(this, 'approve');">
                                         {% csrf_token %}
                                         <input type="hidden" name="status" value="approved">
                                         <input type="hidden" name="note" value="">
@@ -157,7 +158,8 @@
                                     </form>
                                     <form method="post"
                                           action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
-                                          class="d-inline">
+                                          class="d-inline"
+                                          onsubmit="return confirmApproval(this, 'reject');">
                                         {% csrf_token %}
                                         <input type="hidden" name="status" value="rejected">
                                         <input type="hidden" name="note" value="">
@@ -276,6 +278,13 @@
         url.searchParams.set('per_page', value);
         url.searchParams.delete('page');
         window.location.href = url.toString();
+    }
+    
+    function confirmApproval(form, action) {
+        const message = action === 'approve' 
+            ? 'Are you sure you want to approve this comp off entry?'
+            : 'Are you sure you want to reject this comp off entry?';
+        return confirm(message);
     }
 </script>
 {% endblock %}
