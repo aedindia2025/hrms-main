@@ -123,7 +123,7 @@
             <td>{{ entry.get_leave_type_display }}</td>
             <td>{{ entry.reason|truncatewords:10|default:"-" }}</td>
             <td>
-                <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1" style="{{ entry.approval_badge_class }}">
+                <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1" {% if entry.approval_badge_class %}style="{{ entry.approval_badge_class }}"{% endif %}>
                   <i data-feather="check-circle" class="me-1 status-icon" data-color="{{ entry.approval_icon_color }}" style="width:14px; height:14px;"></i>
                   <span style="font-size: 0.75rem; color: inherit !important;">
                     {% if entry.approval_status == 'hr_approved' %}
