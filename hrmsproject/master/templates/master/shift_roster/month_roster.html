@@ -9,14 +9,14 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h6 class="mb-3 fw-bold text-secondary text-nowrap">Master / <span class="text-dark">Shift roster Month</span></h6>
-      <div class="d-flex gap-2">
-        <a href="{% url 'master:shift_roster_month_update' %}" class="btn btn-success">
-          <i data-feather="plus" style="width: 16px; height: 16px;"></i> Create New Month Roster
-        </a>
+      
         <a href="{% url 'master:shift_roster_week' %}" class="btn-back text-nowrap">
           <i data-feather="arrow-left"></i> Go to Week
         </a>
-      </div>
+        <a href="{% url 'master:shift_roster_month_update' %}" class="btn btn-success btn-create text-nowrap">
+          <i data-feather="plus"></i> Create 
+        </a>
+      
     </div>
 
 
