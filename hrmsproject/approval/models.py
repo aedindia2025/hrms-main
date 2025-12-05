@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 
-from entry.models import CompOffEntry
+from entry.models import CompOffEntry, LeaveEntry
 from master.models import Employee
 
 User = get_user_model()
@@ -82,7 +82,7 @@ class HRCompOffApproval(models.Model):
 class LeaveApproval(models.Model):
     """
     Model for Leave Approvals.
-    Can be extended when LeaveEntry model is created.
+    Connected to LeaveEntry model.
     """
     APPROVAL_PENDING = 'pending'
     APPROVAL_APPROVED = 'approved'
@@ -93,6 +93,14 @@ class LeaveApproval(models.Model):
         (APPROVAL_REJECTED, 'Rejected'),
     ]
 
+    leave_entry = models.OneToOneField(
+        LeaveEntry,
+        on_delete=models.CASCADE,
+        related_name='leave_approval',
+        help_text='The Leave Entry being approved',
+        null=True,
+        blank=True
+    )
     approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_CHOICES,
@@ -104,9 +112,10 @@ class LeaveApproval(models.Model):
         null=True,
         blank=True,
         related_name='leave_approvals',
+        help_text='User who approved/rejected'
     )
-    approval_note = models.TextField(blank=True)
-    approval_date = models.DateTimeField(null=True, blank=True)
+    approval_note = models.TextField(blank=True, help_text='Notes or comments from approver')
+    approval_date = models.DateTimeField(null=True, blank=True, help_text='Date and time of approval')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -120,7 +129,29 @@ class LeaveApproval(models.Model):
         ]
 
     def __str__(self):
+        if self.leave_entry:
+            return f'Leave Approval for {self.leave_entry} - {self.get_approval_status_display()}'
         return f'Leave Approval - {self.get_approval_status_display()}'
+
+    @property
+    def approval_badge_class(self) -> str:
+        """Return CSS classes for approval status badge."""
+        mapping = {
+            self.APPROVAL_APPROVED: 'background-color:#d4edda; color:#155724;',
+            self.APPROVAL_REJECTED: 'background-color:#f8d7da; color:#721c24;',
+            self.APPROVAL_PENDING: 'background-color:#d1ecf1; color:#0c5460;',
+        }
+        return mapping.get(self.approval_status, 'background-color:#e2e3e5; color:#383d41;')
+
+    @property
+    def approval_icon_color(self) -> str:
+        """Return icon color for approval status."""
+        mapping = {
+            self.APPROVAL_APPROVED: '#28a745',
+            self.APPROVAL_REJECTED: '#dc3545',
+            self.APPROVAL_PENDING: '#17a2b8',
+        }
+        return mapping.get(self.approval_status, '#6c757d')
 
 
 class PermissionApproval(models.Model):

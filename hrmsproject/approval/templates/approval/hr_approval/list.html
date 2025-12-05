@@ -126,7 +126,12 @@
                             <td>{{ entry.worked_hours_display|default:"-" }}</td>
                             <td>{{ entry.get_day_status_display }}</td>
                             <td>
-                                <span class="badge rounded-pill {{ entry.head_approval_badge_class }}">
+                                <span class="badge rounded-pill d-inline-flex align-items-center {{ entry.head_approval_badge_class }}">
+                                    {% if entry.head_approval_status == 'approved' %}
+                                        <i data-feather="check-circle" class="me-1" style="width:14px; height:14px; color:#28a745;"></i>
+                                    {% elif entry.head_approval_status == 'rejected' %}
+                                        <i data-feather="x-circle" class="me-1" style="width:14px; height:14px; color:#dc3545;"></i>
+                                    {% endif %}
                                     {{ entry.get_head_approval_status_display }}
                                     {% if entry.head_approval_by %}
                                         by {{ entry.head_approval_by }}
@@ -139,14 +144,14 @@
                                 {% endif %}
                             </td>
                             <td class="text-nowrap">
-                                {% if perms.approval.approve_hr_compoff_approval %}
+                                {% if perms.approval.approve_hrcompoffapproval %}
                                     <form method="post"
                                           action="{% url 'approval:hr_comp_off_approval_update' entry.pk %}"
                                           class="d-inline">
                                         {% csrf_token %}
                                         <input type="hidden" name="status" value="approved">
                                         <input type="hidden" name="note" value="">
-                                        <button type="submit" class="btn btn-sm btn-success me-1">
+                                        <button type="submit" class="btn btn-xs btn-success me-1">
                                             Approve
                                         </button>
                                     </form>
@@ -156,7 +161,7 @@
                                         {% csrf_token %}
                                         <input type="hidden" name="status" value="rejected">
                                         <input type="hidden" name="note" value="">
-                                        <button type="submit" class="btn btn-sm btn-danger">
+                                        <button type="submit" class="btn btn-xs btn-danger">
                                             Reject
                                         </button>
                                     </form>
@@ -240,11 +245,32 @@
     .table th, .table td {
         font-size: 14px;
     }
+    .btn-xs {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        line-height: 1.2;
+        border-radius: 0.2rem;
+        font-weight: 500;
+    }
 </style>
 
 <script src="https://unpkg.com/feather-icons"></script>
 <script>
     feather.replace();
+    
+    // Apply icon colors and ensure icons are rendered
+    (function applyStatusIconStyles() {
+        setTimeout(function() {
+            document.querySelectorAll('[data-feather]').forEach(function(el) {
+                var color = el.style.color;
+                if (color) {
+                    el.setAttribute('data-color', color);
+                }
+            });
+            feather.replace();
+        }, 100);
+    })();
+    
     function updateHrCompPerPage(value) {
         const url = new URL(window.location.href);
         url.searchParams.set('per_page', value);

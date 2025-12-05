@@ -19,9 +19,13 @@
       <div class="user-grid-card position-relative border radius-16 overflow-hidden bg-tb-success h-100">
         <div class="pb-16 pt-16 ms-16 me-16 com-pro text-center">
           <div class="border border-top-0 border-start-0 border-end-0 pro-class">
-            <span class="w-50-px h-50-px bg-success text-white rounded-circle d-flex justify-content-center align-items-center mx-auto">
-              {{ request.user.first_name|first|default:'U' }}
-            </span>
+            {% if user_profile_image %}
+              <img src="{{ user_profile_image }}" alt="Profile" class="w-50-px h-50-px rounded-circle object-fit-cover mx-auto">
+            {% else %}
+              <span class="w-50-px h-50-px bg-success text-white rounded-circle d-flex justify-content-center align-items-center mx-auto">
+                {{ request.user.first_name|first|default:request.user.username|first|upper|default:'U' }}
+              </span>
+            {% endif %}
             <h6 class="mb-0 mt-12">{{ request.user.get_full_name|default:request.user.username }}</h6>
             <span class="text-secondary-light mb-0 sub-tex">{{ request.user.email|default:'--' }}</span>
           </div>

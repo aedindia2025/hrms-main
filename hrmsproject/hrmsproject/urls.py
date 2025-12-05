@@ -31,8 +31,8 @@ urlpatterns = [
     # ==================== Main Apps ====================
     path('', include('accounts.urls')),           # Home, Login, Dashboard, Cash Reports, Demo
     path('master/', include('master.urls')),       # Master data management
-    path('entry/', include('entry.entry.urls')),         # Data entry (Comp Off, Leave, Manual, Permission, Site, TADA, Travel)
-    path('approval/', include('approval.approval.urls')),   # Approval workflows (HR, Leave, Permission, TADA, Travel)
+    path('entry/', include('entry.urls')),         # Data entry (Comp Off, Leave, Manual, Permission, Site, TADA, Travel)
+    path('approval/', include('approval.urls')),   # Approval workflows (HR, Leave, Permission, TADA, Travel)
     path('reports/', include('reports.urls')),     # Reports (Attendance, Monthly, TADA)
 ]
 
