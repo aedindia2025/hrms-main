@@ -1299,10 +1299,6 @@
           if (permInput) {
             permInput.disabled = false;
             permInput.required = true;
-
-          }
-        });
-
             permInput.setAttribute('required', 'required');
             permInput.setAttribute('tabindex', (index + 8).toString()); // Set proper tabindex (8-14)
             // Clear values when unchecked
@@ -1331,9 +1327,6 @@
         // Copy value
         permInput.value = presentInput.value;
         
-        // Disable permanent field
-        permInput.disabled = true;
-        permInput.required = false;
         // Disable permanent field and remove from tab order
         permInput.disabled = true;
         permInput.required = false;

@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Copy Month Roster{% endblock %}
+
+{% block content %}
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark">Copy Month Roster</span></h6>
+        <a href="{% url 'master:shift_roster_month' %}" class="btn-back text-nowrap">
+            <i data-feather="arrow-left"></i> Back to List
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="alert alert-info">
+                <strong>Copy Roster:</strong> Copying roster from <strong>{{ source_roster.from_date|date:"F Y" }}</strong> 
+                ({{ source_roster.site.name }} - {{ source_roster.get_salary_type_display }})
+                <br>
+                <small>All employee assignments will be copied to the new month with adjusted dates.</small>
+            </div>
+
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                <input type="hidden" name="source_roster_id" value="{{ source_roster.id }}">
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Source Roster <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" 
+                               value="{{ source_roster.site.name }} - {{ source_roster.from_date|date:'F Y' }} ({{ source_roster.get_salary_type_display }})" 
+                               readonly disabled>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">New Month Start Date <span class="text-danger">*</span></label>
+                        <input type="month" name="new_month_date" class="form-control {% if errors.new_month_date %}is-invalid{% endif %}" 
+                               value="{{ values.new_month_date }}" required>
+                        {% if errors.new_month_date %}
+                            <div class="invalid-feedback">{{ errors.new_month_date }}</div>
+                        {% else %}
+                            <small class="form-text text-muted">Select the first month for the new roster (e.g., January 2025)</small>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-3">
+                    <div class="col-12">
+                        <div class="alert alert-warning">
+                            <strong>Note:</strong>
+                            <ul class="mb-0">
+                                <li>The new roster will be created as <strong>Draft</strong> status</li>
+                                <li>All employee shift assignments will be copied with dates adjusted to the new month</li>
+                                <li>You can modify the copied roster after creation</li>
+                                <li>If a roster already exists for the selected month, you'll need to edit it instead</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{% url 'master:shift_roster_month' %}" class="btn btn-outline-secondary px-4">Cancel</a>
+                    <button type="submit" class="btn btn-success px-4">
+                        <i data-feather="copy"></i> Copy Roster
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #dfe5e1ff;
+    color: #171616ff !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: 0.2s ease-in-out;
+}
+
+.btn-back:hover {
+    background-color: #218838;
+    color: #fff !important;
+    text-decoration: none;
+}
+</style>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+</script>
+
+{% endblock %}
+

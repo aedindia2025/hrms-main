@@ -74,6 +74,7 @@ urlpatterns = [
     path('shift-roster/create/', views.shift_roster_create, name='shift_roster_create'),
     path('shift-roster/month/', views.shift_roster_month, name='shift_roster_month'),
     path('shift-roster/month-update/', views.shift_roster_month_update, name='shift_roster_month_update'),
+    path('shift-roster/month-copy/', views.shift_roster_month_copy, name='shift_roster_month_copy'),
     path('employee/list/', views.employee_list, name='employee_list'),
     path('employee/create/', views.employee_create, name='employee_create'),
     path('employee/edit/<int:pk>/', views.employee_edit, name='employee_edit'),

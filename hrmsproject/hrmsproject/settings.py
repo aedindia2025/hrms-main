@@ -32,6 +32,15 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else ['*']
 
+# CSRF Settings for Nginx Proxy
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if os.getenv('CSRF_TRUSTED_ORIGINS') else []
+if not CSRF_TRUSTED_ORIGINS:
+    # Auto-detect from ALLOWED_HOSTS
+    hosts = ALLOWED_HOSTS if isinstance(ALLOWED_HOSTS, list) else ALLOWED_HOSTS.split(',')
+    CSRF_TRUSTED_ORIGINS = [f'http://{host}' for host in hosts if host and host != '*'] + \
+                          [f'https://{host}' for host in hosts if host and host != '*'] + \
+                          ['http://192.168.0.114:8002', 'http://192.168.0.114:8001']
+
 
 # Application definition
 
@@ -146,6 +155,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# STATIC_ROOT is where collectstatic collects all static files for production
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

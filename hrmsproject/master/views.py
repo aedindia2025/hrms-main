@@ -3191,6 +3191,142 @@ def shift_roster_month_update(request):
 
 
 @permission_required('master.add_shift', raise_exception=True)
+def shift_roster_month_copy(request):
+    """Copy existing month roster to a new month - Approach 3: Copy & Modify."""
+    source_roster_id = request.GET.get('id') or request.POST.get('source_roster_id')
+    source_roster = None
+    errors = {}
+    values = {
+        'new_month_date': request.POST.get('new_month_date', '').strip(),
+    }
+    
+    # Get source roster from database
+    if source_roster_id:
+        try:
+            source_roster = ShiftRoster.objects.select_related('site').prefetch_related('assignments').get(
+                pk=int(source_roster_id),
+                roster_type=ShiftRoster.ROSTER_TYPE_MONTH
+            )
+        except (ShiftRoster.DoesNotExist, ValueError, TypeError):
+            messages.error(request, 'Source roster not found.')
+            return redirect('master:shift_roster_month')
+    
+    if not source_roster:
+        messages.error(request, 'Please select a roster to copy.')
+        return redirect('master:shift_roster_month')
+    
+    if request.method == 'POST':
+        # Parse month input (format: YYYY-MM)
+        new_month_date = None
+        if values['new_month_date']:
+            try:
+                # Parse YYYY-MM format from month input
+                year, month = map(int, values['new_month_date'].split('-'))
+                new_month_date = date(year, month, 1)
+            except (ValueError, AttributeError):
+                errors['new_month_date'] = 'Please select a valid month.'
+        
+        if not new_month_date:
+            if 'new_month_date' not in errors:
+                errors['new_month_date'] = 'Please select a month for the new roster.'
+        else:
+            # Check if roster already exists for this month and site
+            existing_roster = ShiftRoster.objects.filter(
+                site=source_roster.site,
+                salary_type=source_roster.salary_type,
+                roster_type=ShiftRoster.ROSTER_TYPE_MONTH,
+                from_date__year=new_month_date.year,
+                from_date__month=new_month_date.month
+            ).first()
+            
+            if existing_roster:
+                errors['new_month_date'] = f'A roster already exists for {new_month_date.strftime("%B %Y")}. Please edit it instead.'
+        
+        # Calculate new month end date
+        new_to_date = None
+        if new_month_date:
+            if new_month_date.month == 12:
+                new_to_date = date(new_month_date.year + 1, 1, 1) - timedelta(days=1)
+            else:
+                new_to_date = date(new_month_date.year, new_month_date.month + 1, 1) - timedelta(days=1)
+        
+        # Create new roster and copy assignments
+        if not errors and new_month_date:
+            try:
+                # Create new ShiftRoster
+                new_roster = ShiftRoster.objects.create(
+                    site=source_roster.site,
+                    salary_type=source_roster.salary_type,
+                    from_date=new_month_date,
+                    to_date=new_to_date,
+                    roster_type=ShiftRoster.ROSTER_TYPE_MONTH,
+                    status=ShiftRoster.STATUS_DRAFT,
+                    description=f'Copied from {source_roster.from_date.strftime("%B %Y")}',
+                )
+                
+                # Copy all assignments with adjusted dates
+                # Strategy: Preserve day-of-month pattern (e.g., 15th Jan -> 15th Feb)
+                source_assignments = ShiftRosterAssignment.objects.filter(roster=source_roster).select_related('employee', 'site', 'shift')
+                assignments_copied = 0
+                
+                for source_assignment in source_assignments:
+                    # Calculate new date preserving day of month
+                    source_day = source_assignment.date.day
+                    source_month = source_assignment.date.month
+                    source_year = source_assignment.date.year
+                    
+                    # Calculate how many months to shift
+                    months_diff = (new_month_date.year - source_year) * 12 + (new_month_date.month - source_month)
+                    
+                    # Calculate target year and month
+                    target_year = new_month_date.year
+                    target_month = new_month_date.month
+                    
+                    # Handle day-of-month: if source day doesn't exist in target month (e.g., Feb 30), use last day
+                    try:
+                        new_assignment_date = date(target_year, target_month, source_day)
+                    except ValueError:
+                        # Day doesn't exist in target month (e.g., Jan 31 -> Feb 31)
+                        # Use last day of target month
+                        if target_month == 12:
+                            last_day = date(target_year + 1, 1, 1) - timedelta(days=1)
+                        else:
+                            last_day = date(target_year, target_month + 1, 1) - timedelta(days=1)
+                        new_assignment_date = last_day
+                    
+                    # Only copy if new date is within the new month range
+                    if new_assignment_date >= new_month_date and new_assignment_date <= new_to_date:
+                        ShiftRosterAssignment.objects.create(
+                            roster=new_roster,
+                            employee=source_assignment.employee,
+                            date=new_assignment_date,
+                            shift=source_assignment.shift,
+                            shift_name=source_assignment.shift_name,
+                            site=source_assignment.site,
+                            is_day_off=source_assignment.is_day_off,
+                        )
+                        assignments_copied += 1
+                
+                messages.success(
+                    request,
+                    f'Roster copied successfully! {assignments_copied} assignments copied to {new_month_date.strftime("%B %Y")}.'
+                )
+                # Redirect to edit page for the new roster
+                return redirect(f'{reverse("master:shift_roster_month_update")}?id={new_roster.id}')
+                
+            except Exception as e:
+                messages.error(request, f'Error copying roster: {str(e)}')
+    
+    # Prepare context for copy form
+    context = {
+        'source_roster': source_roster,
+        'values': values,
+        'errors': errors,
+    }
+    return render(request, 'master/shift_roster/month_copy.html', context)
+
+
+@permission_required('master.add_shift', raise_exception=True)
 def shift_edit_form(request):
     shift_id = request.GET.get('id')
     shift = None

@@ -4,6 +4,7 @@ python-dotenv==1.2.1
 pillow
 requests
 openpyxl
+gunicorn==21.2.0
 
 
 

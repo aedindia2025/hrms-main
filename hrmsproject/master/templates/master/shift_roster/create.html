@@ -85,8 +85,8 @@
                 <input type="checkbox" name="dayoff_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="mt-1" {% if assignment.is_day_off %}checked{% endif %}>
                 {% endwith %}
               {% else %}
-                <input type="text" name="schedule_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="form-control">
-                <input type="checkbox" name="dayoff_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="mt-1">
+              <input type="text" name="schedule_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="form-control">
+              <input type="checkbox" name="dayoff_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="mt-1">
               {% endif %}
               {% endwith %}
             </td>
