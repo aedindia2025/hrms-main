@@ -69,10 +69,14 @@
               </td>
               <td>{{ company.created_at|date:'d M Y' }}</td>
               <td class="text-nowrap">
-                <a href="{% url 'master:company_edit' company.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
-                <form action="{% url 'master:company_delete' company.pk %}" method="post" class="d-inline">
+                <a href="{% url 'master:company_edit' company.pk %}" class="text-primary me-2" title="Edit">
+                  <i data-feather="edit" width="18" height="18"></i>
+                </a>
+                <form action="{% url 'master:company_delete' company.pk %}" method="post" style="display: inline;" onclick="return confirm('Delete this company?');">
                   {% csrf_token %}
-                  <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this company?');">Delete</button>
+                  <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Delete" style="text-decoration: none;">
+                    <i data-feather="trash-2" width="18" height="18"></i>
+                  </button>
                 </form>
               </td>
             </tr>
@@ -87,4 +91,9 @@
     </div>
   </div>
 </div>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+  feather.replace();
+</script>
 {% endblock %}
