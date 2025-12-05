@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from entry.models import CompOffEntry, LeaveEntry, PermissionEntry
+from entry.models import CompOffEntry, LeaveEntry, PermissionEntry, TADAEntry
 from master.models import Employee, Site
 from .models import HRCompOffApproval, LeaveApproval, PermissionApproval
 
@@ -407,13 +407,244 @@ def tada_approval_list(request):
 
 @permission_required('approval.view_tadaapproval', raise_exception=True)
 def tada_head_approval_list(request):
-    """Approval -> TADA Head Approval list."""
-    return render(request, 'approval/tadaHead_approval/list.html')
+    """Approval -> TADA Head Approval list with filters & pagination."""
+    per_page = request.GET.get('per_page', '').strip() or '10'
+    search_query = request.GET.get('q', '').strip()
+    page_number = request.GET.get('page')
+
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    site_id = request.GET.get('site', '').strip()
+    employee_id = request.GET.get('employee', '').strip()
+    status = request.GET.get('status', '').strip()
+
+    try:
+        per_page_value = max(int(per_page), 1)
+    except ValueError:
+        per_page_value = 10
+
+    tada_entries = TADAEntry.objects.select_related('employee', 'site')
+
+    if search_query:
+        tada_entries = tada_entries.filter(
+            Q(employee__staff_name__icontains=search_query)
+            | Q(employee__staff_id__icontains=search_query)
+            | Q(site__name__icontains=search_query)
+            | Q(entry_no__icontains=search_query)
+            | Q(batch_no__icontains=search_query)
+        )
+
+    if from_date:
+        tada_entries = tada_entries.filter(expense_date__gte=from_date)
+    if to_date:
+        tada_entries = tada_entries.filter(expense_date__lte=to_date)
+    if site_id:
+        tada_entries = tada_entries.filter(site_id=site_id)
+    if employee_id:
+        tada_entries = tada_entries.filter(employee_id=employee_id)
+    if status:
+        tada_entries = tada_entries.filter(head_approval_status=status)
+
+    tada_entries = tada_entries.order_by('-expense_date', '-entry_date', 'employee__staff_name')
+
+    paginator = Paginator(tada_entries, per_page_value)
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    base_querystring = query_params.urlencode()
+    page_query_base = f'{base_querystring}&' if base_querystring else ''
+
+    context = {
+        'tada_entries': page_obj,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'per_page': str(per_page_value),
+        'per_page_value': per_page_value,
+        'base_querystring': base_querystring,
+        'page_query_base': page_query_base,
+        'total_entries': paginator.count,
+        'from_date': from_date,
+        'to_date': to_date,
+        'filter_site_id': site_id,
+        'filter_employee_id': employee_id,
+        'filter_status': status,
+        'sites': Site.objects.order_by('name'),
+        'employees': Employee.objects.order_by('staff_name'),
+        'approval_choices': TADAEntry.APPROVAL_CHOICES,
+    }
+    return render(request, 'approval/tadaHead_approval/list.html', context)
+
+@permission_required('approval.approve_tadaapproval', raise_exception=True)
+@require_POST
+def tada_head_approval_update(request, pk):
+    """
+    Update TADA head approval status.
+    Updates the head_approval_status on TADAEntry directly.
+    """
+    tada_entry = get_object_or_404(TADAEntry, pk=pk)
+
+    new_status = request.POST.get('status', '').strip()
+    note = request.POST.get('note', '').strip()
+
+    valid_statuses = {choice[0] for choice in TADAEntry.APPROVAL_CHOICES}
+    if new_status not in valid_statuses:
+        messages.error(request, 'Invalid approval status.')
+    else:
+        # Update TADAEntry head approval status
+        tada_entry.head_approval_status = new_status
+        # Save approver name
+        tada_entry.head_approval_by = request.user.get_full_name() or request.user.get_username()
+        tada_entry.head_approval_date = timezone.now()
+        tada_entry.save()
+        
+        messages.success(request, 'TADA head approval status updated successfully.')
+
+    # Redirect back to the referring page if available, otherwise to the list view
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('approval:tada_head_approval_list')
+
+
+@permission_required('approval.approve_tadaapproval', raise_exception=True)
+@require_POST
+def tada_head_approval_amount_update(request, pk):
+    """
+    Update TADA head approval amount.
+    Updates the head_approval_amount on TADAEntry.
+    """
+    from django.http import JsonResponse
+    from decimal import Decimal, InvalidOperation
+    
+    tada_entry = get_object_or_404(TADAEntry, pk=pk)
+    
+    amount_str = request.POST.get('amount', '').strip()
+    
+    if not amount_str:
+        return JsonResponse({'success': False, 'error': 'Amount is required'}, status=400)
+    
+    try:
+        amount = Decimal(amount_str)
+        if amount < 0:
+            return JsonResponse({'success': False, 'error': 'Amount cannot be negative'}, status=400)
+        
+        tada_entry.head_approval_amount = amount
+        tada_entry.save()
+        
+        return JsonResponse({
+            'success': True, 
+            'message': 'Head approval amount updated successfully',
+            'amount': str(amount)
+        })
+    except (InvalidOperation, ValueError):
+        return JsonResponse({'success': False, 'error': 'Invalid amount format'}, status=400)
+
 
 @permission_required('approval.view_tadaapproval', raise_exception=True)
 def tada_hr_approval_list(request):
-    """Approval -> TADA HR Approval list."""
-    return render(request, 'approval/tadaHr_approval/list.html')
+    """Approval -> TADA HR Approval list with filters & pagination."""
+    per_page = request.GET.get('per_page', '').strip() or '10'
+    search_query = request.GET.get('q', '').strip()
+    page_number = request.GET.get('page')
+
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    site_id = request.GET.get('site', '').strip()
+    employee_id = request.GET.get('employee', '').strip()
+    status = request.GET.get('status', '').strip()
+
+    try:
+        per_page_value = max(int(per_page), 1)
+    except ValueError:
+        per_page_value = 10
+
+    # Only show entries that have been approved by head
+    tada_entries = TADAEntry.objects.select_related('employee', 'site').filter(
+        head_approval_status=TADAEntry.APPROVAL_APPROVED
+    )
+
+    if search_query:
+        tada_entries = tada_entries.filter(
+            Q(employee__staff_name__icontains=search_query)
+            | Q(employee__staff_id__icontains=search_query)
+            | Q(site__name__icontains=search_query)
+            | Q(entry_no__icontains=search_query)
+            | Q(batch_no__icontains=search_query)
+        )
+
+    if from_date:
+        tada_entries = tada_entries.filter(expense_date__gte=from_date)
+    if to_date:
+        tada_entries = tada_entries.filter(expense_date__lte=to_date)
+    if site_id:
+        tada_entries = tada_entries.filter(site_id=site_id)
+    if employee_id:
+        tada_entries = tada_entries.filter(employee_id=employee_id)
+    if status:
+        tada_entries = tada_entries.filter(hr_approval_status=status)
+
+    tada_entries = tada_entries.order_by('-expense_date', '-entry_date', 'employee__staff_name')
+
+    paginator = Paginator(tada_entries, per_page_value)
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    base_querystring = query_params.urlencode()
+    page_query_base = f'{base_querystring}&' if base_querystring else ''
+
+    context = {
+        'tada_entries': page_obj,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'per_page': str(per_page_value),
+        'per_page_value': per_page_value,
+        'base_querystring': base_querystring,
+        'page_query_base': page_query_base,
+        'total_entries': paginator.count,
+        'from_date': from_date,
+        'to_date': to_date,
+        'filter_site_id': site_id,
+        'filter_employee_id': employee_id,
+        'filter_status': status,
+        'sites': Site.objects.order_by('name'),
+        'employees': Employee.objects.order_by('staff_name'),
+        'approval_choices': TADAEntry.APPROVAL_CHOICES,
+    }
+    return render(request, 'approval/tadaHr_approval/list.html', context)
+
+@permission_required('approval.approve_tadaapproval', raise_exception=True)
+@require_POST
+def tada_hr_approval_update(request, pk):
+    """
+    Update TADA HR approval status.
+    Updates the hr_approval_status on TADAEntry directly.
+    """
+    tada_entry = get_object_or_404(TADAEntry, pk=pk)
+
+    new_status = request.POST.get('status', '').strip()
+    note = request.POST.get('note', '').strip()
+
+    valid_statuses = {choice[0] for choice in TADAEntry.APPROVAL_CHOICES}
+    if new_status not in valid_statuses:
+        messages.error(request, 'Invalid approval status.')
+    else:
+        # Update TADAEntry HR approval status
+        tada_entry.hr_approval_status = new_status
+        # Save approver name
+        tada_entry.hr_approval_by = request.user.get_full_name() or request.user.get_username()
+        tada_entry.hr_approval_date = timezone.now()
+        tada_entry.save()
+        
+        messages.success(request, 'TADA HR approval status updated successfully.')
+
+    # Redirect back to the referring page if available, otherwise to the list view
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('approval:tada_hr_approval_list')
+
 
 @permission_required('approval.view_tadaapproval', raise_exception=True)
 def tada_hr_print(request):

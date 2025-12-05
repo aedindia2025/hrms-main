@@ -152,7 +152,6 @@
             <textarea id="description" class="form-control" rows="3"></textarea>
           </div>
         <div class="col-md-2 d-flex align-items-center mb-3 gap-2">
-        <button type="button" id="addBtn" class="btn btn-primary">Add</button>
         <button type="button" id="updateBtn" class="btn btn-success" style="display: none;">Update</button>
         <button type="button" id="cancelEditBtn" class="btn btn-secondary" style="display: none;">Cancel</button>
       </div>
@@ -352,6 +351,9 @@
   let tadaSubListItems = [];
   let tadaItemCounter = 0;
   
+  // Variable to track which item is being edited
+  let editingItemId = null;
+  
   // Restore sub-items if validation failed
   const restoredItems = JSON.parse('{{ restored_sub_items_json|escapejs }}');
   
@@ -541,35 +543,53 @@
       return;
     }
 
-    const item = {
-      id: editingItemId || tadaItemCounter++,
-      expense_type_id: expenseTypeId,
-      expense_type_name: expenseType,
-      sub_expense_type_id: subExpenseTypeId || '',
-      sub_expense_type_name: subExpenseType || '',
-      from_location: fromLocation,
-      to_location: toLocation,
-      start_meter: startMeter || '',
-      end_meter: endMeter || '',
-      total_kilometer: totalKilometer || '',
-      amount: amount,
-      description: description || ''
-    };
-    
-    if (editingItemId) {
-      // Update existing item
+    if (editingItemId !== null && editingItemId !== undefined) {
+      // Update existing item - find and replace
       const index = tadaSubListItems.findIndex(i => i.id === editingItemId);
       if (index !== -1) {
-        tadaSubListItems[index] = item;
+        // Update existing item with same ID
+        tadaSubListItems[index] = {
+          id: editingItemId,
+          expense_type_id: expenseTypeId,
+          expense_type_name: expenseType,
+          sub_expense_type_id: subExpenseTypeId || '',
+          sub_expense_type_name: subExpenseType || '',
+          from_location: fromLocation,
+          to_location: toLocation,
+          start_meter: startMeter || '',
+          end_meter: endMeter || '',
+          total_kilometer: totalKilometer || '',
+          amount: amount,
+          description: description || ''
+        };
+        
+        // Reset editing state
+        editingItemId = null;
+        
+        // Show Add button, hide Update and Cancel buttons
+        document.getElementById("addBtn").style.display = 'inline-block';
+        document.getElementById("updateBtn").style.display = 'none';
+        document.getElementById("cancelEditBtn").style.display = 'none';
+      } else {
+        alert('Error: Item not found for updating. Please try again.');
+        return;
       }
-      editingItemId = null;
-      
-      // Show Add button, hide Update and Cancel buttons
-      document.getElementById("addBtn").style.display = 'inline-block';
-      document.getElementById("updateBtn").style.display = 'none';
-      document.getElementById("cancelEditBtn").style.display = 'none';
     } else {
       // Add new item
+      const item = {
+        id: tadaItemCounter++,
+        expense_type_id: expenseTypeId,
+        expense_type_name: expenseType,
+        sub_expense_type_id: subExpenseTypeId || '',
+        sub_expense_type_name: subExpenseType || '',
+        from_location: fromLocation,
+        to_location: toLocation,
+        start_meter: startMeter || '',
+        end_meter: endMeter || '',
+        total_kilometer: totalKilometer || '',
+        amount: amount,
+        description: description || ''
+      };
       tadaSubListItems.push(item);
     }
     
@@ -618,9 +638,6 @@
     });
   }
 
-  // Variable to track which item is being edited
-  let editingItemId = null;
-  
   // Edit item function
   window.editItem = function(itemId) {
     // Find the item in the array

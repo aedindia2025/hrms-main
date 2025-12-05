@@ -106,6 +106,7 @@
                             <th>Emp ID</th>
                             <th>Staff Name</th>
                             <th>Amount</th>
+                            <th>Head App Amt</th>
                             <th>Head App</th>
                             <th>HR App</th>
                             <th>Acc App</th>
@@ -125,14 +126,15 @@
                             <td>{{ entry.employee.staff_id }}</td>
                             <td>{{ entry.employee.staff_name }}</td>
                             <td>₹{{ entry.total_amount|floatformat:2 }}</td>
+                            <td>₹{% if entry.head_approval_amount %}{{ entry.head_approval_amount|floatformat:2 }}{% else %}{{ entry.total_amount|floatformat:2 }}{% endif %}</td>
                             <td>
                                 <span class="badge rounded-pill {{ entry.head_approval_badge_class }}">
-                                    {{ entry.get_head_approval_status_display }}
+                                    {{ entry.get_head_approval_status_display }}{% if entry.head_approval_by %} by {{ entry.head_approval_by }}{% endif %}
                                 </span>
                             </td>
                             <td>
                                 <span class="badge rounded-pill {{ entry.hr_approval_badge_class }}">
-                                    {{ entry.get_hr_approval_status_display }}
+                                    {{ entry.get_hr_approval_status_display }}{% if entry.hr_approval_by %} by {{ entry.hr_approval_by }}{% endif %}
                                 </span>
                             </td>
                             <td>
@@ -163,7 +165,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="14" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No TADA entries found.</td>
+                            <td colspan="15" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No TADA entries found.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
