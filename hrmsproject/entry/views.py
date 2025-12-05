@@ -1,4 +1,6 @@
  # entry/views.py
+import json
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -7,8 +9,8 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 
-from master.models import Employee, Site
-from .models import CompOffEntry, SiteEntry, PermissionEntry, LeaveEntry
+from master.models import Employee, Site, ExpenseType, SubExpense
+from .models import CompOffEntry, SiteEntry, PermissionEntry, LeaveEntry, TADAEntry, TADAEntrySubItem
 
 # ------------------------
 # ENTRY -> COMP OFF
@@ -968,7 +970,7 @@ def site_entry_create(request):
                 from_site=values['from_site'],
                 to_site=values['to_site'],
                 description=values['description'],
-                transfer_type=values['transfer_type'] or None,
+                transfer_type=values['transfer_type'] if values['transfer_type'] else '',
             )
             messages.success(request, 'Site transfer entry created successfully.')
             return redirect('entry:site_entry_list')
@@ -1064,13 +1066,493 @@ def site_entry_delete(request, pk):
 # ------------------------
 # ENTRY -> TADA
 # ------------------------
-@permission_required('entry.add_tadaentry', raise_exception=True)
-def tada_entry_create(request):
-    return render(request, 'entry/tada_entry/create.html')
-
 @permission_required('entry.view_tadaentry', raise_exception=True)
 def tada_entry_list(request):
-    return render(request, 'entry/tada_entry/list.html')
+    per_page = request.GET.get('per_page', '').strip() or '10'
+    search_query = request.GET.get('q', '').strip()
+    page_number = request.GET.get('page')
+    filter_site = request.GET.get('site', '').strip()
+    filter_employee = request.GET.get('employee', '').strip()
+    filter_from_date = request.GET.get('from_date', '').strip()
+    filter_to_date = request.GET.get('to_date', '').strip()
+
+    try:
+        per_page_value = max(int(per_page), 1)
+    except ValueError:
+        per_page_value = 10
+
+    # Fetch employees and sites for filter dropdowns
+    employees = Employee.objects.order_by('staff_name')
+    sites = Site.objects.order_by('name')
+
+    tada_entries = TADAEntry.objects.select_related('employee', 'site').prefetch_related('sub_items')
+
+    # Apply filters
+    if filter_site:
+        tada_entries = tada_entries.filter(site_id=filter_site)
+    if filter_employee:
+        tada_entries = tada_entries.filter(employee_id=filter_employee)
+    if filter_from_date:
+        try:
+            from_date_obj = datetime.strptime(filter_from_date, '%Y-%m-%d').date()
+            tada_entries = tada_entries.filter(expense_date__gte=from_date_obj)
+        except ValueError:
+            pass
+    if filter_to_date:
+        try:
+            to_date_obj = datetime.strptime(filter_to_date, '%Y-%m-%d').date()
+            tada_entries = tada_entries.filter(expense_date__lte=to_date_obj)
+        except ValueError:
+            pass
+
+    # Apply search
+    if search_query:
+        tada_entries = tada_entries.filter(
+            Q(entry_no__icontains=search_query)
+            | Q(batch_no__icontains=search_query)
+            | Q(employee__staff_name__icontains=search_query)
+            | Q(employee__staff_id__icontains=search_query)
+            | Q(site__name__icontains=search_query)
+        )
+
+    # Pagination
+    paginator = Paginator(tada_entries, per_page_value)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'tada_entries': page_obj,
+        'employees': employees,
+        'sites': sites,
+        'per_page': per_page,
+        'search_query': search_query,
+        'filter_site': filter_site,
+        'filter_employee': filter_employee,
+        'filter_from_date': filter_from_date,
+        'filter_to_date': filter_to_date,
+    }
+    return render(request, 'entry/tada_entry/list.html', context)
+
+
+@permission_required('entry.add_tadaentry', raise_exception=True)
+def tada_entry_create(request):
+    employees = Employee.objects.order_by('staff_name')
+    sites = Site.objects.order_by('name')
+    expense_types = ExpenseType.objects.filter(is_active=True).order_by('name')
+    sub_expense_types = SubExpense.objects.filter(status=SubExpense.STATUS_ACTIVE).select_related('expense_type').order_by('expense_type__name', 'name')
+
+    values = {
+        'expense_date': '',
+        'batch_no': '',
+        'site': '',
+        'employee': '',
+    }
+    errors = {}
+    selected_employee = None
+
+    if request.method == 'POST':
+        values['expense_date'] = request.POST.get('expense_date', '').strip()
+        values['batch_no'] = request.POST.get('batch_no', '').strip()
+        values['site'] = request.POST.get('site', '').strip()
+        values['employee'] = request.POST.get('employee', '').strip()
+
+        expense_date_obj = None
+
+        if not values['expense_date']:
+            errors['expense_date'] = 'Expense date is required.'
+        else:
+            try:
+                expense_date_obj = datetime.strptime(values['expense_date'], '%Y-%m-%d').date()
+            except ValueError:
+                errors['expense_date'] = 'Invalid date format.'
+
+        if not values['employee']:
+            errors['employee'] = 'Employee selection is required.'
+        elif not Employee.objects.filter(pk=values['employee']).exists():
+            errors['employee'] = 'Selected employee does not exist.'
+        else:
+            selected_employee = Employee.objects.get(pk=values['employee'])
+
+        if not values['site']:
+            errors['site'] = 'Site selection is required.'
+        elif not Site.objects.filter(pk=values['site']).exists():
+            errors['site'] = 'Selected site does not exist.'
+
+        # Process sub items
+        sub_items_data = []
+        sub_item_errors = []
+        restored_sub_items = []  # For restoring items if validation fails
+        
+        # Get sub items from form (assuming they're sent as arrays)
+        expense_types_post = request.POST.getlist('sub_items_expense_type[]')
+        sub_expense_types_post = request.POST.getlist('sub_items_sub_expense_type[]')
+        from_locations_post = request.POST.getlist('sub_items_from_location[]')
+        to_locations_post = request.POST.getlist('sub_items_to_location[]')
+        start_meters_post = request.POST.getlist('sub_items_start_meter[]')
+        end_meters_post = request.POST.getlist('sub_items_end_meter[]')
+        total_kilometers_post = request.POST.getlist('sub_items_total_kilometer[]')
+        amounts_post = request.POST.getlist('sub_items_amount[]')
+        descriptions_post = request.POST.getlist('sub_items_description[]')
+
+        if not expense_types_post:
+            errors['sub_items'] = 'At least one expense item is required.'
+
+        # Collect sub items data (for both validation and restoration)
+        for i in range(len(expense_types_post)):
+            if not expense_types_post[i] or not amounts_post[i]:
+                continue
+            
+            try:
+                amount = float(amounts_post[i])
+                if amount <= 0:
+                    sub_item_errors.append(f'Item {i+1}: Amount must be greater than 0.')
+                    continue
+            except ValueError:
+                sub_item_errors.append(f'Item {i+1}: Invalid amount format.')
+                continue
+
+            # Convert numeric fields to Decimal
+            start_meter = None
+            if i < len(start_meters_post) and start_meters_post[i]:
+                try:
+                    start_meter = Decimal(str(start_meters_post[i]))
+                except (ValueError, InvalidOperation):
+                    start_meter = None
+            
+            end_meter = None
+            if i < len(end_meters_post) and end_meters_post[i]:
+                try:
+                    end_meter = Decimal(str(end_meters_post[i]))
+                except (ValueError, InvalidOperation):
+                    end_meter = None
+            
+            total_kilometer = None
+            if i < len(total_kilometers_post) and total_kilometers_post[i]:
+                try:
+                    total_kilometer = Decimal(str(total_kilometers_post[i]))
+                except (ValueError, InvalidOperation):
+                    total_kilometer = None
+            
+            item_data = {
+                'expense_type_id': expense_types_post[i],
+                'sub_expense_type_id': sub_expense_types_post[i] if i < len(sub_expense_types_post) and sub_expense_types_post[i] else None,
+                'from_location': from_locations_post[i] if i < len(from_locations_post) else '',
+                'to_location': to_locations_post[i] if i < len(to_locations_post) else '',
+                'start_meter': start_meter,
+                'end_meter': end_meter,
+                'total_kilometer': total_kilometer,
+                'amount': Decimal(str(amount)),
+                'description': descriptions_post[i] if i < len(descriptions_post) else '',
+            }
+            
+            # Get expense type name for display
+            try:
+                expense_type_obj = ExpenseType.objects.get(pk=expense_types_post[i])
+                item_data['expense_type_name'] = expense_type_obj.name
+            except ExpenseType.DoesNotExist:
+                item_data['expense_type_name'] = 'Unknown'
+            
+            # Get sub expense type name if exists
+            if item_data['sub_expense_type_id']:
+                try:
+                    sub_expense_type_obj = SubExpense.objects.get(pk=item_data['sub_expense_type_id'])
+                    item_data['sub_expense_type_name'] = sub_expense_type_obj.name
+                except SubExpense.DoesNotExist:
+                    item_data['sub_expense_type_name'] = ''
+            else:
+                item_data['sub_expense_type_name'] = ''
+            
+            sub_items_data.append(item_data)
+            restored_sub_items.append(item_data)
+
+        if sub_item_errors:
+            errors['sub_items'] = '; '.join(sub_item_errors)
+
+        if not errors and sub_items_data:
+                # Create TADA entry (without calculating total_amount yet)
+                tada_entry = TADAEntry.objects.create(
+                    expense_date=expense_date_obj,
+                    batch_no=values['batch_no'],
+                    employee_id=values['employee'],
+                    site_id=values['site'],
+                    total_amount=0,  # Set to 0 initially
+                )
+
+                # Create sub items
+                total_amount = Decimal('0')
+                for item_data in sub_items_data:
+                    TADAEntrySubItem.objects.create(
+                        tada_entry=tada_entry,
+                        expense_type_id=item_data['expense_type_id'],
+                        sub_expense_type_id=item_data['sub_expense_type_id'],
+                        from_location=item_data['from_location'],
+                        to_location=item_data['to_location'],
+                        start_meter=item_data['start_meter'],
+                        end_meter=item_data['end_meter'],
+                        total_kilometer=item_data['total_kilometer'],
+                        amount=item_data['amount'],
+                        description=item_data['description'],
+                    )
+                    total_amount += item_data['amount']
+
+                # Update total amount after all sub items are created
+                tada_entry.total_amount = total_amount
+                tada_entry.save()
+
+                messages.success(request, 'TADA entry created successfully.')
+                return redirect('entry:tada_entry_list')
+
+    # Serialize restored sub items for JavaScript
+    restored_sub_items_json = json.dumps(restored_sub_items if request.method == 'POST' and errors else [])
+    
+    context = {
+        'employees': employees,
+        'sites': sites,
+        'expense_types': expense_types,
+        'sub_expense_types': sub_expense_types,
+        'values': values,
+        'errors': errors,
+        'selected_employee': selected_employee,
+        'restored_sub_items_json': restored_sub_items_json,
+    }
+    return render(request, 'entry/tada_entry/create.html', context)
+
+
+@permission_required('entry.change_tadaentry', raise_exception=True)
+def tada_entry_edit(request, pk):
+    tada_entry = get_object_or_404(TADAEntry.objects.prefetch_related('sub_items'), pk=pk)
+    employees = Employee.objects.order_by('staff_name')
+    sites = Site.objects.order_by('name')
+    expense_types = ExpenseType.objects.filter(is_active=True).order_by('name')
+    sub_expense_types = SubExpense.objects.filter(status=SubExpense.STATUS_ACTIVE).select_related('expense_type').order_by('expense_type__name', 'name')
+
+    values = {
+        'expense_date': tada_entry.expense_date.strftime('%Y-%m-%d') if tada_entry.expense_date else '',
+        'batch_no': tada_entry.batch_no,
+        'site': str(tada_entry.site_id) if tada_entry.site_id else '',
+        'employee': str(tada_entry.employee_id) if tada_entry.employee_id else '',
+    }
+    errors = {}
+    selected_employee = tada_entry.employee
+    
+    # Initialize POST variables (will be populated in POST request)
+    expense_types_post = []
+    sub_expense_types_post = []
+    from_locations_post = []
+    to_locations_post = []
+    start_meters_post = []
+    end_meters_post = []
+    total_kilometers_post = []
+    amounts_post = []
+    descriptions_post = []
+
+    if request.method == 'POST':
+        values['expense_date'] = request.POST.get('expense_date', '').strip()
+        values['batch_no'] = request.POST.get('batch_no', '').strip()
+        values['site'] = request.POST.get('site', '').strip()
+        values['employee'] = request.POST.get('employee', '').strip()
+
+        expense_date_obj = None
+
+        if not values['expense_date']:
+            errors['expense_date'] = 'Expense date is required.'
+        else:
+            try:
+                expense_date_obj = datetime.strptime(values['expense_date'], '%Y-%m-%d').date()
+            except ValueError:
+                errors['expense_date'] = 'Invalid date format.'
+
+        if not values['employee']:
+            errors['employee'] = 'Employee selection is required.'
+        elif not Employee.objects.filter(pk=values['employee']).exists():
+            errors['employee'] = 'Selected employee does not exist.'
+        else:
+            selected_employee = Employee.objects.get(pk=values['employee'])
+
+        if not values['site']:
+            errors['site'] = 'Site selection is required.'
+        elif not Site.objects.filter(pk=values['site']).exists():
+            errors['site'] = 'Selected site does not exist.'
+
+        # Process sub items
+        sub_items_data = []
+        sub_item_errors = []
+        
+        expense_types_post = request.POST.getlist('sub_items_expense_type[]')
+        sub_expense_types_post = request.POST.getlist('sub_items_sub_expense_type[]')
+        from_locations_post = request.POST.getlist('sub_items_from_location[]')
+        to_locations_post = request.POST.getlist('sub_items_to_location[]')
+        start_meters_post = request.POST.getlist('sub_items_start_meter[]')
+        end_meters_post = request.POST.getlist('sub_items_end_meter[]')
+        total_kilometers_post = request.POST.getlist('sub_items_total_kilometer[]')
+        amounts_post = request.POST.getlist('sub_items_amount[]')
+        descriptions_post = request.POST.getlist('sub_items_description[]')
+
+        if not expense_types_post:
+            errors['sub_items'] = 'At least one expense item is required.'
+
+        if not errors:
+            for i in range(len(expense_types_post)):
+                if not expense_types_post[i] or not amounts_post[i]:
+                    continue
+                
+                try:
+                    amount = Decimal(str(amounts_post[i]))
+                    if amount <= 0:
+                        sub_item_errors.append(f'Item {i+1}: Amount must be greater than 0.')
+                        continue
+                except (ValueError, InvalidOperation):
+                    sub_item_errors.append(f'Item {i+1}: Invalid amount format.')
+                    continue
+
+                # Convert numeric fields to Decimal
+                start_meter = None
+                if i < len(start_meters_post) and start_meters_post[i]:
+                    try:
+                        start_meter = Decimal(str(start_meters_post[i]))
+                    except (ValueError, InvalidOperation):
+                        start_meter = None
+                
+                end_meter = None
+                if i < len(end_meters_post) and end_meters_post[i]:
+                    try:
+                        end_meter = Decimal(str(end_meters_post[i]))
+                    except (ValueError, InvalidOperation):
+                        end_meter = None
+                
+                total_kilometer = None
+                if i < len(total_kilometers_post) and total_kilometers_post[i]:
+                    try:
+                        total_kilometer = Decimal(str(total_kilometers_post[i]))
+                    except (ValueError, InvalidOperation):
+                        total_kilometer = None
+
+                sub_items_data.append({
+                    'expense_type_id': expense_types_post[i],
+                    'sub_expense_type_id': sub_expense_types_post[i] if i < len(sub_expense_types_post) and sub_expense_types_post[i] else None,
+                    'from_location': from_locations_post[i] if i < len(from_locations_post) else '',
+                    'to_location': to_locations_post[i] if i < len(to_locations_post) else '',
+                    'start_meter': start_meter,
+                    'end_meter': end_meter,
+                    'total_kilometer': total_kilometer,
+                    'amount': amount,
+                    'description': descriptions_post[i] if i < len(descriptions_post) else '',
+                })
+
+            if sub_item_errors:
+                errors['sub_items'] = '; '.join(sub_item_errors)
+
+            if not errors and sub_items_data:
+                # Update TADA entry
+                tada_entry.expense_date = expense_date_obj
+                tada_entry.batch_no = values['batch_no']
+                tada_entry.employee_id = values['employee']
+                tada_entry.site_id = values['site']
+                tada_entry.save()
+
+                # Delete existing sub items and create new ones
+                tada_entry.sub_items.all().delete()
+                total_amount = Decimal('0')
+                for item_data in sub_items_data:
+                    TADAEntrySubItem.objects.create(
+                        tada_entry=tada_entry,
+                        expense_type_id=item_data['expense_type_id'],
+                        sub_expense_type_id=item_data['sub_expense_type_id'],
+                        from_location=item_data['from_location'],
+                        to_location=item_data['to_location'],
+                        start_meter=item_data['start_meter'],
+                        end_meter=item_data['end_meter'],
+                        total_kilometer=item_data['total_kilometer'],
+                        amount=item_data['amount'],
+                        description=item_data['description'],
+                    )
+                    total_amount += item_data['amount']
+
+                # Update total amount after all sub items are created
+                tada_entry.total_amount = total_amount
+                tada_entry.save()
+
+                messages.success(request, 'TADA entry updated successfully.')
+                return redirect('entry:tada_entry_list')
+
+    # Prepare existing sub_items for template (for initial load)
+    existing_sub_items = []
+    if tada_entry and tada_entry.pk:
+        for sub_item in tada_entry.sub_items.all():
+            existing_sub_items.append({
+                'expense_type_id': str(sub_item.expense_type_id),
+                'expense_type_name': sub_item.expense_type.name if sub_item.expense_type else '',
+                'sub_expense_type_id': str(sub_item.sub_expense_type_id) if sub_item.sub_expense_type_id else '',
+                'sub_expense_type_name': sub_item.sub_expense_type.name if sub_item.sub_expense_type else '',
+                'from_location': sub_item.from_location or '',
+                'to_location': sub_item.to_location or '',
+                'start_meter': str(sub_item.start_meter) if sub_item.start_meter else '',
+                'end_meter': str(sub_item.end_meter) if sub_item.end_meter else '',
+                'total_kilometer': str(sub_item.total_kilometer) if sub_item.total_kilometer else '',
+                'amount': str(sub_item.amount),
+                'description': sub_item.description or '',
+            })
+    
+    # Serialize sub items for JavaScript (existing items or restored items on validation failure)
+    restored_sub_items = []
+    if request.method == 'POST' and errors:
+        # On validation failure, restore from POST data
+        for i in range(len(expense_types_post)):
+            if not expense_types_post[i] or not amounts_post[i]:
+                continue
+            try:
+                expense_type = ExpenseType.objects.get(pk=expense_types_post[i])
+                sub_expense_type = None
+                if i < len(sub_expense_types_post) and sub_expense_types_post[i]:
+                    try:
+                        sub_expense_type = SubExpense.objects.get(pk=sub_expense_types_post[i])
+                    except SubExpense.DoesNotExist:
+                        pass
+                
+                restored_sub_items.append({
+                    'expense_type_id': expense_types_post[i],
+                    'expense_type_name': expense_type.name,
+                    'sub_expense_type_id': sub_expense_types_post[i] if i < len(sub_expense_types_post) and sub_expense_types_post[i] else '',
+                    'sub_expense_type_name': sub_expense_type.name if sub_expense_type else '',
+                    'from_location': from_locations_post[i] if i < len(from_locations_post) else '',
+                    'to_location': to_locations_post[i] if i < len(to_locations_post) else '',
+                    'start_meter': start_meters_post[i] if i < len(start_meters_post) and start_meters_post[i] else '',
+                    'end_meter': end_meters_post[i] if i < len(end_meters_post) and end_meters_post[i] else '',
+                    'total_kilometer': total_kilometers_post[i] if i < len(total_kilometers_post) and total_kilometers_post[i] else '',
+                    'amount': amounts_post[i],
+                    'description': descriptions_post[i] if i < len(descriptions_post) else '',
+                })
+            except ExpenseType.DoesNotExist:
+                continue
+    
+    # Use restored items if validation failed, otherwise use existing items
+    sub_items_json = json.dumps(restored_sub_items if restored_sub_items else existing_sub_items)
+    
+    context = {
+        'tada_entry': tada_entry,
+        'employees': employees,
+        'sites': sites,
+        'expense_types': expense_types,
+        'sub_expense_types': sub_expense_types,
+        'values': values,
+        'errors': errors,
+        'selected_employee': selected_employee,
+        'restored_sub_items_json': sub_items_json,
+    }
+    return render(request, 'entry/tada_entry/edit.html', context)
+
+
+@permission_required('entry.delete_tadaentry', raise_exception=True)
+def tada_entry_delete(request, pk):
+    tada_entry = get_object_or_404(TADAEntry, pk=pk)
+    if request.method == 'POST':
+        tada_entry.delete()
+        messages.success(request, 'TADA entry deleted successfully.')
+        return redirect('entry:tada_entry_list')
+    
+    context = {
+        'tada_entry': tada_entry,
+    }
+    return render(request, 'entry/tada_entry/confirm_delete.html', context)
 
 
 # ------------------------

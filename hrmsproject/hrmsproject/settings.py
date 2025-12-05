@@ -44,8 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts',
     'master',
-    'entry',  # Entry app
-    'approval',  # Approval app
+    'entry',  
+    'approval',  
     'reports',
 ]
 

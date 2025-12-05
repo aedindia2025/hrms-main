@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete TADA Entry{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper py-5" style="max-width: 640px; margin: 0 auto;">
+  <div class="card border-danger">
+    <div class="card-body">
+      <h5 class="card-title text-danger">Delete TADA Entry</h5>
+      <p class="card-text">
+        Are you sure you want to delete the TADA entry 
+        <strong>{{ tada_entry.entry_no|default:"N/A" }}</strong> 
+        for <strong>{{ tada_entry.employee.staff_name }}</strong> 
+        ({{ tada_entry.employee.staff_id }}) 
+        on {{ tada_entry.expense_date|date:"d-m-Y" }}?
+      </p>
+      <p class="text-muted">
+        This will also delete all associated expense items. This action cannot be undone.
+      </p>
+
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a href="{% url 'entry:tada_entry_list' %}" class="btn btn-outline-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

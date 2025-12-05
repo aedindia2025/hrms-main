@@ -381,10 +381,13 @@ def permission_approval_update(request, pk):
         permission_approval = PermissionApproval.objects.create()
         permission_approval.approval_status = new_status
         permission_approval.approved_by = request.user
-        permission_approval.approval_note = note
+        # Store entry ID in approval_note for reliable matching in get_approver_name
+        entry_id_marker = f'entry_id:{permission_entry.pk}'
+        if note:
+            permission_approval.approval_note = f'{note}\n{entry_id_marker}'
+        else:
+            permission_approval.approval_note = entry_id_marker
         permission_approval.approval_date = timezone.now()
-        # Store permission_entry_id in approval_note or use a workaround
-        # For now, we'll match by timestamp in the model method
         permission_approval.save()
         
         messages.success(request, 'Permission approval status updated successfully.')

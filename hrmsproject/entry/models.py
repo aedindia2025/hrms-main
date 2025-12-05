@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 
 from django.db import models
+from django.core.validators import MinValueValidator
 
-from master.models import Employee, Site
+from master.models import Employee, Site, ExpenseType, SubExpense
 
 
 class CompOffEntry(models.Model):
@@ -115,7 +116,8 @@ class SiteEntry(models.Model):
     transfer_type = models.CharField(
         max_length=10,
         choices=TRANSFER_TYPE_CHOICES,
-        blank=True
+        blank=True,
+        null=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -198,29 +200,52 @@ class PermissionEntry(models.Model):
             approval_status = status_mapping.get(self.status)
             
             if approval_status:
-                # Try to match by timestamp - get approvals created around the time this entry was updated
-                # Look for approvals created within 5 minutes of the entry's last update
-                time_window_start = self.updated_at - timedelta(minutes=5)
-                time_window_end = self.updated_at + timedelta(minutes=5)
-                
+                # Try to match by checking if approval_note contains this entry's ID
+                # The approval view stores entry ID in approval_note as a workaround
                 approval = PermissionApproval.objects.filter(
                     approval_status=approval_status,
                     approved_by__isnull=False,
-                    created_at__gte=time_window_start,
-                    created_at__lte=time_window_end
+                    approval_note__contains=f'entry_id:{self.pk}'
                 ).select_related('approved_by').order_by('-created_at').first()
                 
-                # If no match found in time window, get the most recent one with matching status
+                # If not found by entry ID, try to match by approval_date (more accurate than created_at)
+                if not approval:
+                    time_window_start = self.updated_at - timedelta(minutes=15)
+                    time_window_end = self.updated_at + timedelta(minutes=5)
+                    approval = PermissionApproval.objects.filter(
+                        approval_status=approval_status,
+                        approved_by__isnull=False,
+                        approval_date__isnull=False,
+                        approval_date__gte=time_window_start,
+                        approval_date__lte=time_window_end
+                    ).select_related('approved_by').order_by('-approval_date').first()
+                
+                # If no match found by approval_date, try matching by created_at
+                if not approval:
+                    time_window_start = self.updated_at - timedelta(minutes=15)
+                    time_window_end = self.updated_at + timedelta(minutes=5)
+                    approval = PermissionApproval.objects.filter(
+                        approval_status=approval_status,
+                        approved_by__isnull=False,
+                        created_at__gte=time_window_start,
+                        created_at__lte=time_window_end
+                    ).select_related('approved_by').order_by('-created_at').first()
+                
+                # Last fallback: get the most recent approval with matching status
+                # This is less reliable but better than showing nothing
                 if not approval:
                     approval = PermissionApproval.objects.filter(
                         approval_status=approval_status,
                         approved_by__isnull=False
-                    ).select_related('approved_by').order_by('-created_at').first()
+                    ).select_related('approved_by').order_by('-approval_date', '-created_at').first()
                 
                 if approval and approval.approved_by:
                     return approval.approved_by.get_full_name() or approval.approved_by.username
-        except Exception:
-            pass
+        except Exception as e:
+            # Log the exception for debugging (optional)
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error getting approver name for PermissionEntry {self.pk}: {str(e)}")
         return None
 
 
@@ -356,3 +381,204 @@ class LeaveEntry(models.Model):
             self.APPROVAL_PENDING: '#17a2b8',
         }
         return mapping.get(self.approval_status, '#6c757d')
+
+
+class TADAEntry(models.Model):
+    APPROVAL_PENDING = 'pending'
+    APPROVAL_APPROVED = 'approved'
+    APPROVAL_REJECTED = 'rejected'
+    APPROVAL_CHOICES = [
+        (APPROVAL_PENDING, 'Pending'),
+        (APPROVAL_APPROVED, 'Approved'),
+        (APPROVAL_REJECTED, 'Rejected'),
+    ]
+
+    entry_date = models.DateField(auto_now_add=True)
+    expense_date = models.DateField()
+    entry_no = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    batch_no = models.CharField(max_length=50, blank=True)
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name='tada_entries',
+    )
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.PROTECT,
+        related_name='tada_entries',
+    )
+    total_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0)]
+    )
+    head_approval_status = models.CharField(
+        max_length=20,
+        choices=APPROVAL_CHOICES,
+        default=APPROVAL_PENDING,
+    )
+    hr_approval_status = models.CharField(
+        max_length=20,
+        choices=APPROVAL_CHOICES,
+        default=APPROVAL_PENDING,
+    )
+    acc_approval_status = models.CharField(
+        max_length=20,
+        choices=APPROVAL_CHOICES,
+        default=APPROVAL_PENDING,
+    )
+    is_printed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-expense_date', '-entry_date', 'employee__staff_name']
+        verbose_name = 'TADA Entry'
+        verbose_name_plural = 'TADA Entries'
+
+    def __str__(self):
+        return f'{self.employee} - {self.expense_date} (Entry: {self.entry_no or "N/A"})'
+
+    def save(self, *args, **kwargs):
+        if not self.entry_no:
+            # Generate entry number: TADA-YYYYMMDD-XXX
+            today = datetime.now().date()
+            prefix = f'TADA-{today.strftime("%Y%m%d")}'
+            last_entry = TADAEntry.objects.filter(entry_no__startswith=prefix).order_by('-entry_no').first()
+            if last_entry and last_entry.entry_no:
+                try:
+                    last_num = int(last_entry.entry_no.split('-')[-1])
+                    new_num = last_num + 1
+                except (ValueError, IndexError):
+                    new_num = 1
+            else:
+                new_num = 1
+            self.entry_no = f'{prefix}-{new_num:03d}'
+        
+        # Calculate total amount from sub items only if entry has a primary key
+        # (can't access related objects before saving)
+        if self.pk:
+            self.total_amount = sum(item.amount for item in self.sub_items.all())
+        else:
+            # For new entries, total_amount will be calculated after sub_items are created
+            # Set to 0 initially if not already set
+            if not hasattr(self, '_total_amount_set'):
+                self.total_amount = 0
+        
+        super().save(*args, **kwargs)
+
+    @property
+    def head_approval_badge_class(self) -> str:
+        mapping = {
+            self.APPROVAL_APPROVED: 'text-success bg-success-subtle border border-success',
+            self.APPROVAL_REJECTED: 'text-danger bg-danger-subtle border border-danger',
+            self.APPROVAL_PENDING: 'text-info bg-info-subtle border border-info',
+        }
+        return mapping.get(self.head_approval_status, 'text-secondary bg-secondary-subtle border border-secondary')
+
+    @property
+    def hr_approval_badge_class(self) -> str:
+        mapping = {
+            self.APPROVAL_APPROVED: 'text-success bg-success-subtle border border-success',
+            self.APPROVAL_REJECTED: 'text-danger bg-danger-subtle border border-danger',
+            self.APPROVAL_PENDING: 'text-info bg-info-subtle border border-info',
+        }
+        return mapping.get(self.hr_approval_status, 'text-secondary bg-secondary-subtle border border-secondary')
+
+    @property
+    def acc_approval_badge_class(self) -> str:
+        mapping = {
+            self.APPROVAL_APPROVED: 'text-success bg-success-subtle border border-success',
+            self.APPROVAL_REJECTED: 'text-danger bg-danger-subtle border border-danger',
+            self.APPROVAL_PENDING: 'text-info bg-info-subtle border border-info',
+        }
+        return mapping.get(self.acc_approval_status, 'text-secondary bg-secondary-subtle border border-secondary')
+
+
+class TADAEntrySubItem(models.Model):
+    tada_entry = models.ForeignKey(
+        TADAEntry,
+        on_delete=models.CASCADE,
+        related_name='sub_items',
+    )
+    expense_type = models.ForeignKey(
+        ExpenseType,
+        on_delete=models.PROTECT,
+        related_name='tada_sub_items',
+    )
+    sub_expense_type = models.ForeignKey(
+        SubExpense,
+        on_delete=models.PROTECT,
+        related_name='tada_sub_items',
+        null=True,
+        blank=True,
+    )
+    from_location = models.CharField(max_length=255)
+    to_location = models.CharField(max_length=255)
+    start_meter = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)]
+    )
+    end_meter = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)]
+    )
+    total_kilometer = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)]
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
+    )
+    upload_image = models.ImageField(
+        upload_to='tada_entry/images/',
+        null=True,
+        blank=True,
+    )
+    meter_upload_image = models.ImageField(
+        upload_to='tada_entry/meter_images/',
+        null=True,
+        blank=True,
+    )
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'TADA Entry Sub Item'
+        verbose_name_plural = 'TADA Entry Sub Items'
+
+    def __str__(self):
+        return f'{self.tada_entry.entry_no} - {self.expense_type.name} - {self.amount}'
+
+    def save(self, *args, **kwargs):
+        # Calculate total kilometer if start and end meter are provided
+        if self.start_meter is not None and self.end_meter is not None:
+            try:
+                # Convert to Decimal if they're strings
+                from decimal import Decimal
+                start = Decimal(str(self.start_meter)) if not isinstance(self.start_meter, Decimal) else self.start_meter
+                end = Decimal(str(self.end_meter)) if not isinstance(self.end_meter, Decimal) else self.end_meter
+                
+                if end >= start:
+                    self.total_kilometer = end - start
+                else:
+                    # Handle meter rollover
+                    self.total_kilometer = (Decimal('999999') - start) + end
+            except (ValueError, TypeError):
+                # If conversion fails, leave total_kilometer as is
+                pass
+        super().save(*args, **kwargs)

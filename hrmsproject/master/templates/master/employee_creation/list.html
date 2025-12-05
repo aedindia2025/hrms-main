@@ -120,12 +120,12 @@
                                     <td>{{ employee.work_location|default:"-" }}</td>
                                     <td>
                                         <a href="{% url 'master:employee_edit' employee.pk %}" class="text-primary me-2" title="Edit">
-                                            <i data-feather="edit"></i>
+                                            <i data-feather="edit"> </i>
                                         </a>
                                         <form method="post" action="{% url 'master:employee_delete' employee.pk %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this employee?');">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-link text-danger p-0 border-0" title="Delete" style="text-decoration: none;">
-                                                <i data-feather="trash-2"></i>
+                                                <i data-feather="trash-2" ></i>
                                             </button>
                                         </form>
                                     </td>

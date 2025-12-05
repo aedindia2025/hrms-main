@@ -1,0 +1,842 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}TADA Entry - Edit{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Tada Entry Edit </span></h6>
+        <button onclick="history.back()" class="btn-back">
+            <i data-feather="arrow-left"></i> Back
+        </button>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <!-- Main Entry Fields -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label">Expense Date <span class="text-danger">*</span></label>
+                        <input type="date" name="expense_date" class="form-control" value="{{ values.expense_date }}" required>
+                        {% if errors.expense_date %}
+                            <div class="text-danger small">{{ errors.expense_date }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Batch No</label>
+                        <input type="text" name="batch_no" class="form-control" value="{{ values.batch_no }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Site <span class="text-danger">*</span></label>
+                        <select name="site" class="form-select" required>
+                            <option value="">Select Site</option>
+                            {% for site in sites %}
+                                <option value="{{ site.id }}" {% if values.site|stringformat:"s" == site.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ site.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.site %}
+                            <div class="text-danger small">{{ errors.site }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Employee <span class="text-danger">*</span></label>
+                        <select name="employee" class="form-select" required>
+                            <option value="">Select Employee</option>
+                            {% for employee in employees %}
+                                <option value="{{ employee.id }}" {% if values.employee|stringformat:"s" == employee.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ employee.staff_name }} - {{ employee.staff_id }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.employee %}
+                            <div class="text-danger small">{{ errors.employee }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+        <div class="row g-3">
+
+          <!-- Expense Item Form -->
+       <div class="col-md-3">
+  <label class="form-label">Expense Type <span class="text-danger">*</span></label>
+  <div class="custom-select-wrapper">
+    <input type="text" id="expenseTypeInput" class="custom-select-input" placeholder="Search or Select" readonly>
+    <input type="hidden" id="expenseTypeId">
+    <div class="custom-select-dropdown" id="expenseTypeDropdown">
+      {% if expense_types %}
+        {% for expense_type in expense_types %}
+          <div data-value="{{ expense_type.name }}" data-id="{{ expense_type.id }}">{{ expense_type.name }}</div>
+        {% endfor %}
+      {% else %}
+        <div data-value="Drinking Water Expenses">Drinking Water Expenses</div>
+        <div data-value="Food Expenses Special">Food Expenses Special</div>
+        <div data-value="Food Expenses">Food Expenses</div>
+        <div data-value="Lodging Expenses">Lodging Expenses</div>
+        <div data-value="Miscallaneous Expenses">Miscallaneous Expenses</div>
+        <div data-value="Staff Refreshment">Staff Refreshment</div>
+        <div data-value="Staff Welfare Expenses">Staff Welfare Expenses</div>
+        <div data-value="Tollgate Expenses">Tollgate Expenses</div>
+        <div data-value="Travelling Expenses">Travelling Expenses</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+        <div class="col-md-3">
+        <label class="form-label">Sub Expense Type <span class="text-danger">*</span></label>
+  <div class="custom-select-wrapper">
+    <input type="text" id="subExpenseTypeInput" class="custom-select-input" placeholder="Search or Select" readonly>
+    <input type="hidden" id="subExpenseTypeId">
+    <div class="custom-select-dropdown" id="subExpenseTypeDropdown">
+      {% if sub_expense_types %}
+        {% for sub_expense_type in sub_expense_types %}
+          <div data-value="{{ sub_expense_type.name }}" data-id="{{ sub_expense_type.id }}">{{ sub_expense_type.name }}</div>
+        {% endfor %}
+      {% else %}
+        <div data-value="Bike Own">Bike Own</div>
+        <div data-value="Bike Rental">Bike Rental</div>
+        <div data-value="Bus">Bus</div>
+        <div data-value="Car CNG">Car CNG</div>
+        <div data-value="Car Petrol">Car Petrol</div>
+        <div data-value="Car Rental">Car Rental</div>
+        <div data-value="Taxi/Auto">Taxi/Auto</div>
+        <div data-value="Train">Train</div>
+      {% endif %}
+    </div>
+  </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">From Location <span class="text-danger">*</span></label>
+            <input type="text" id="fromLocation" class="form-control">
+          </div>
+        <div class="col-md-3">
+            <label class="form-label">To Location <span class="text-danger">*</span></label>
+            <input type="text" id="toLocation" class="form-control">
+          </div>
+        <div class="col-md-3">
+            <label class="form-label">Start Meter</label>
+            <input type="number" step="0.01" id="startMeter" class="form-control">
+          </div>
+        <div class="col-md-3">
+            <label class="form-label">End Meter</label>
+            <input type="number" step="0.01" id="endMeter" class="form-control">
+          </div>
+         <div class="col-md-3">
+            <label class="form-label">Total Kilometer</label>
+            <input type="number" step="0.01" id="totalKilometer" class="form-control" readonly>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Amount <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" id="amount" class="form-control">
+          </div>
+   <div class="col-md-3">
+    <label class="form-label">Upload Image</label>
+    <input class="form-control" type="file" id="uploadImage" accept="image/*">
+    </div>
+    <div class="col-md-3">
+    <label class="form-label">Meter Upload Image</label>
+    <input class="form-control" type="file" id="meterUploadImage" accept="image/*">
+    </div>
+          <div class="col-md-6">
+            <label class="form-label">Description</label>
+            <textarea id="description" class="form-control" rows="3"></textarea>
+          </div>
+        <div class="col-md-1 d-flex align-items-center mb-3 text-end">
+        <button type="button" id="addBtn" class="btn btn-primary w-100">Add</button>
+      </div>
+        </div>
+
+        {% if errors.sub_items %}
+          <div class="alert alert-danger mt-4">
+            <strong>Error:</strong> {{ errors.sub_items }}
+          </div>
+        {% endif %}
+
+                <!-- Buttons -->
+                <div class="mt-5 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-success px-4">Update</button>
+                    <a href="{% url 'entry:tada_entry_list' %}" class="btn btn-danger px-4">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #28a745;
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: 0.2s ease-in-out;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-back:hover {
+  background-color: #218838;
+  color: #fff !important;
+  text-decoration: none;
+}
+
+.btn-back i {
+  font-size: 14px;
+}
+.form-check .form-check-input{
+    margin-top:7px;
+    margin-right:6px;
+}
+.details-box {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 15px;
+    }
+    .details-box  li i {
+  vertical-align: middle;
+}
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+    font-family: Arial, sans-serif;
+  }
+
+  .custom-select-input {
+    width: 100%;
+    padding: 8px 30px 8px 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    cursor: pointer;
+  }
+
+  .custom-select-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #555;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .custom-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 150px;
+    border: 1px solid #ccc;
+    border-top: none;
+    background: #fff;
+    overflow-y: auto;
+    display: none;
+    z-index: 1000;
+  }
+
+  .custom-select-dropdown div {
+    padding: 8px;
+    cursor: pointer;
+  }
+
+  .custom-select-dropdown div:hover {
+    background-color: #a4c8feff;
+    color:#000;
+
+  }
+    </style>
+     
+
+<script src="https://unpkg.com/feather-icons@4.29.2/dist/feather.min.js"></script>
+<script>
+  // Wait for DOM to be ready before replacing icons
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof feather !== 'undefined') {
+        feather.replace();
+      }
+    });
+  } else {
+    if (typeof feather !== 'undefined') {
+      feather.replace();
+    }
+  }
+  
+  // Store sub-items data in array (like asset creation)
+  let tadaSubListItems = [];
+  let tadaItemCounter = 0;
+  
+  // Restore sub-items if validation failed or load existing items for edit
+  const restoredItems = JSON.parse('{{ restored_sub_items_json|escapejs }}');
+  
+  // Function to populate form fields with item values
+  function populateFormFields(item) {
+    if (!item) return;
+    
+    // Populate expense type
+    const expenseTypeInput = document.getElementById("expenseTypeInput");
+    const expenseTypeId = document.getElementById("expenseTypeId");
+    if (expenseTypeInput && expenseTypeId) {
+      expenseTypeInput.value = item.expense_type_name || '';
+      expenseTypeId.value = item.expense_type_id || '';
+      expenseTypeInput.setAttribute("readonly", true);
+    }
+    
+    // Populate sub expense type - ensure it's set properly and maintained
+    const subExpenseTypeInput = document.getElementById("subExpenseTypeInput");
+    const subExpenseTypeId = document.getElementById("subExpenseTypeId");
+    const subExpenseTypeDropdown = document.getElementById("subExpenseTypeDropdown");
+    if (subExpenseTypeInput && subExpenseTypeId) {
+      // Mark as programmatically set to prevent custom select from clearing it
+      subExpenseTypeInput.setAttribute("data-programmatic", "true");
+      
+      // Verify the option exists in dropdown by ID
+      if (item.sub_expense_type_id && subExpenseTypeDropdown) {
+        const matchingOption = subExpenseTypeDropdown.querySelector(`div[data-id="${item.sub_expense_type_id}"]`);
+        if (matchingOption) {
+          // Use the value from the matching option to ensure consistency
+          subExpenseTypeInput.value = matchingOption.dataset.value || item.sub_expense_type_name || '';
+          subExpenseTypeId.value = item.sub_expense_type_id || '';
+        } else {
+          // Option not found, use the stored name
+          subExpenseTypeInput.value = item.sub_expense_type_name || '';
+          subExpenseTypeId.value = item.sub_expense_type_id || '';
+        }
+      } else {
+        // No ID or dropdown, use name
+        subExpenseTypeInput.value = item.sub_expense_type_name || '';
+        subExpenseTypeId.value = item.sub_expense_type_id || '';
+      }
+      // Set readonly to prevent accidental clearing
+      subExpenseTypeInput.setAttribute("readonly", true);
+      // Store the value in a data attribute as backup
+      subExpenseTypeInput.setAttribute("data-initial-value", item.sub_expense_type_name || '');
+      subExpenseTypeId.setAttribute("data-initial-value", item.sub_expense_type_id || '');
+    }
+    
+    // Populate location fields
+    const fromLocation = document.getElementById("fromLocation");
+    if (fromLocation) {
+      fromLocation.value = item.from_location || '';
+    }
+    
+    const toLocation = document.getElementById("toLocation");
+    if (toLocation) {
+      toLocation.value = item.to_location || '';
+    }
+    
+    // Populate meter fields
+    const startMeter = document.getElementById("startMeter");
+    if (startMeter) {
+      startMeter.value = item.start_meter || '';
+    }
+    
+    const endMeter = document.getElementById("endMeter");
+    if (endMeter) {
+      endMeter.value = item.end_meter || '';
+    }
+    
+    const totalKilometer = document.getElementById("totalKilometer");
+    if (totalKilometer) {
+      totalKilometer.value = item.total_kilometer || '';
+    }
+    
+    // Populate amount
+    const amount = document.getElementById("amount");
+    if (amount) {
+      amount.value = item.amount || '';
+    }
+    
+    // Populate description
+    const description = document.getElementById("description");
+    if (description) {
+      description.value = item.description || '';
+    }
+  }
+  
+  // Initialize with restored items if any
+  if (restoredItems && restoredItems.length > 0) {
+    restoredItems.forEach((item) => {
+      // Helper to preserve actual values (including 0, false) but handle null/undefined
+      const getValue = (val) => {
+        if (val === null || val === undefined) return '';
+        return String(val);
+      };
+      
+      tadaSubListItems.push({
+        id: tadaItemCounter++,
+        expense_type_id: getValue(item.expense_type_id),
+        expense_type_name: item.expense_type_name || 'Unknown',
+        sub_expense_type_id: getValue(item.sub_expense_type_id),
+        sub_expense_type_name: item.sub_expense_type_name || '',
+        from_location: getValue(item.from_location),
+        to_location: getValue(item.to_location),
+        start_meter: getValue(item.start_meter),
+        end_meter: getValue(item.end_meter),
+        total_kilometer: getValue(item.total_kilometer),
+        amount: getValue(item.amount),
+        description: getValue(item.description)
+      });
+    });
+    
+    // Function to restore sub expense type if it gets cleared
+    function restoreSubExpenseTypeIfNeeded() {
+      const subExpenseTypeInput = document.getElementById("subExpenseTypeInput");
+      const subExpenseTypeId = document.getElementById("subExpenseTypeId");
+      if (subExpenseTypeInput && subExpenseTypeId) {
+        const initialValue = subExpenseTypeInput.getAttribute("data-initial-value");
+        const initialId = subExpenseTypeId.getAttribute("data-initial-value");
+        // If field is empty but we have an initial value, restore it
+        if (initialValue && initialId) {
+          // Check if value is missing or doesn't match
+          if (!subExpenseTypeInput.value || subExpenseTypeInput.value !== initialValue) {
+            subExpenseTypeInput.value = initialValue;
+            subExpenseTypeId.value = initialId;
+            subExpenseTypeInput.setAttribute("readonly", true);
+            subExpenseTypeInput.setAttribute("data-programmatic", "true");
+          }
+          // Also ensure the ID matches
+          if (subExpenseTypeId.value !== initialId) {
+            subExpenseTypeId.value = initialId;
+          }
+        }
+      }
+    }
+    
+    // Populate form fields with the first item's values after DOM is ready
+    // Populate BEFORE custom selects initialize to prevent interference
+    function initializeFormFields() {
+      function doPopulate() {
+        populateFormFields(restoredItems[0]);
+        // Re-populate after a short delay to ensure it sticks
+        setTimeout(function() {
+          populateFormFields(restoredItems[0]);
+        }, 100);
+        // Set up periodic check to restore if field gets cleared (only for edit page)
+        setInterval(restoreSubExpenseTypeIfNeeded, 500);
+      }
+      
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          // Populate immediately, before custom selects
+          doPopulate();
+        });
+      } else {
+        // DOM is already loaded, populate immediately
+        doPopulate();
+      }
+    }
+    initializeFormFields();
+  }
+  
+  // Note: Table removed from edit page, but items are still stored in tadaSubListItems array
+  // for form submission
+  
+  // Add hidden inputs on form submit (following employee creation pattern)
+  function addHiddenInputs() {
+    // Remove existing hidden inputs
+    const existingInputs = document.querySelectorAll('input[name^="sub_items_"]');
+    existingInputs.forEach(input => input.remove());
+    
+    // Add hidden inputs for all items
+    const form = document.querySelector('form');
+    if (!form) {
+      console.error('Form not found!');
+      return false;
+    }
+    
+    // Validate items before adding inputs (with better empty string checking)
+    const isEmpty = (value) => {
+      return value === null || value === undefined || value === '' || String(value).trim() === '';
+    };
+    
+    for (let i = 0; i < tadaSubListItems.length; i++) {
+      const item = tadaSubListItems[i];
+      const missingFields = [];
+      
+      if (isEmpty(item.expense_type_id)) {
+        missingFields.push('expense_type_id');
+      }
+      if (isEmpty(item.sub_expense_type_id)) {
+        missingFields.push('sub_expense_type_id');
+      }
+      if (isEmpty(item.from_location)) {
+        missingFields.push('from_location');
+      }
+      if (isEmpty(item.to_location)) {
+        missingFields.push('to_location');
+      }
+      const amountValue = item.amount;
+      if (isEmpty(amountValue) || isNaN(parseFloat(amountValue)) || parseFloat(amountValue) <= 0) {
+        missingFields.push('amount');
+      }
+      
+      if (missingFields.length > 0) {
+        console.error(`Item ${i + 1} is missing required fields:`, missingFields.join(', '), 'Item data:', item);
+        return false;
+      }
+    }
+    
+    // Add hidden inputs for all items (same format as backend expects)
+    tadaSubListItems.forEach((item) => {
+      const fields = {
+        'sub_items_expense_type[]': item.expense_type_id,
+        'sub_items_sub_expense_type[]': item.sub_expense_type_id || '',
+        'sub_items_from_location[]': item.from_location,
+        'sub_items_to_location[]': item.to_location,
+        'sub_items_start_meter[]': item.start_meter || '',
+        'sub_items_end_meter[]': item.end_meter || '',
+        'sub_items_total_kilometer[]': item.total_kilometer || '',
+        'sub_items_amount[]': item.amount,
+        'sub_items_description[]': item.description || ''
+      };
+      
+      Object.keys(fields).forEach(fieldName => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = fieldName;
+        input.value = String(fields[fieldName] || '');
+        form.appendChild(input);
+      });
+    });
+    
+    return true;
+  }
+  
+  const addBtn = document.getElementById("addBtn");
+
+  // Calculate total kilometer
+  function calculateTotalKm() {
+    const startMeter = parseFloat(document.getElementById("startMeter").value) || 0;
+    const endMeter = parseFloat(document.getElementById("endMeter").value) || 0;
+    const totalKmInput = document.getElementById("totalKilometer");
+    
+    if (startMeter && endMeter) {
+      if (endMeter >= startMeter) {
+        totalKmInput.value = (endMeter - startMeter).toFixed(2);
+      } else {
+        // Handle meter rollover
+        totalKmInput.value = ((999999 - startMeter) + endMeter).toFixed(2);
+      }
+    } else {
+      totalKmInput.value = '';
+    }
+  }
+
+  document.getElementById("startMeter").addEventListener("input", calculateTotalKm);
+  document.getElementById("endMeter").addEventListener("input", calculateTotalKm);
+
+  // Add to sublist
+  addBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    
+    // Get form values
+    const expenseType = document.getElementById("expenseTypeInput").value;
+    const expenseTypeId = document.getElementById("expenseTypeId").value;
+    const subExpenseType = document.getElementById("subExpenseTypeInput").value;
+    const subExpenseTypeId = document.getElementById("subExpenseTypeId").value;
+    const fromLocation = document.getElementById("fromLocation").value;
+    const toLocation = document.getElementById("toLocation").value;
+    const startMeter = document.getElementById("startMeter").value;
+    const endMeter = document.getElementById("endMeter").value;
+    const totalKilometer = document.getElementById("totalKilometer").value;
+    const amount = document.getElementById("amount").value;
+    const description = document.getElementById("description").value;
+
+    // Validation
+    if (!expenseType || !expenseTypeId) {
+      alert("Please select an Expense Type");
+      return;
+    }
+    if (!subExpenseType || !subExpenseTypeId) {
+      alert("Please select a Sub Expense Type");
+      return;
+    }
+    if (!fromLocation || !toLocation) {
+      alert("Please enter From and To locations");
+      return;
+    }
+    if (!amount || parseFloat(amount) <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    // Add to array
+    const item = {
+      id: tadaItemCounter++,
+      expense_type_id: expenseTypeId,
+      expense_type_name: expenseType,
+      sub_expense_type_id: subExpenseTypeId || '',
+      sub_expense_type_name: subExpenseType || '',
+      from_location: fromLocation,
+      to_location: toLocation,
+      start_meter: startMeter || '',
+      end_meter: endMeter || '',
+      total_kilometer: totalKilometer || '',
+      amount: amount,
+      description: description || ''
+    };
+    
+    tadaSubListItems.push(item);
+    
+    // Clear form
+    document.getElementById("expenseTypeInput").value = '';
+    document.getElementById("expenseTypeId").value = '';
+    document.getElementById("subExpenseTypeInput").value = '';
+    document.getElementById("subExpenseTypeId").value = '';
+    document.getElementById("fromLocation").value = '';
+    document.getElementById("toLocation").value = '';
+    document.getElementById("startMeter").value = '';
+    document.getElementById("endMeter").value = '';
+    document.getElementById("totalKilometer").value = '';
+    document.getElementById("amount").value = '';
+    document.getElementById("description").value = '';
+    document.getElementById("uploadImage").value = '';
+    document.getElementById("meterUploadImage").value = '';
+  });
+
+  // Remove item function (not used since table is removed, but kept for potential future use)
+  window.removeItem = function(itemId) {
+    if (confirm("Are you sure you want to remove this item?")) {
+      // Remove from array
+      tadaSubListItems = tadaSubListItems.filter(item => item.id !== itemId);
+    }
+  };
+
+  // Form submission validation (following employee creation pattern)
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      // Check if there are any items in the sublist
+      if (tadaSubListItems.length === 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        alert('Please add at least one expense item to the sublist before submitting.');
+        return false;
+      }
+      
+      // Update the first item in the array with current form field values (for edit page)
+      // This ensures that if user edited the form fields, those changes are reflected in the array
+      if (tadaSubListItems.length > 0) {
+        const expenseTypeInput = document.getElementById("expenseTypeInput");
+        const expenseTypeId = document.getElementById("expenseTypeId");
+        const subExpenseTypeInput = document.getElementById("subExpenseTypeInput");
+        const subExpenseTypeId = document.getElementById("subExpenseTypeId");
+        const fromLocation = document.getElementById("fromLocation");
+        const toLocation = document.getElementById("toLocation");
+        const startMeter = document.getElementById("startMeter");
+        const endMeter = document.getElementById("endMeter");
+        const totalKilometer = document.getElementById("totalKilometer");
+        const amount = document.getElementById("amount");
+        const description = document.getElementById("description");
+        
+        // Update first item with current form values
+        const firstItem = tadaSubListItems[0];
+        if (expenseTypeId && expenseTypeId.value) {
+          firstItem.expense_type_id = expenseTypeId.value.trim();
+          if (expenseTypeInput) {
+            firstItem.expense_type_name = expenseTypeInput.value.trim();
+          }
+        }
+        if (subExpenseTypeId && subExpenseTypeId.value) {
+          firstItem.sub_expense_type_id = subExpenseTypeId.value.trim();
+          if (subExpenseTypeInput) {
+            firstItem.sub_expense_type_name = subExpenseTypeInput.value.trim();
+          }
+        }
+        if (fromLocation) {
+          firstItem.from_location = fromLocation.value.trim();
+        }
+        if (toLocation) {
+          firstItem.to_location = toLocation.value.trim();
+        }
+        if (startMeter) {
+          firstItem.start_meter = startMeter.value.trim();
+        }
+        if (endMeter) {
+          firstItem.end_meter = endMeter.value.trim();
+        }
+        if (totalKilometer) {
+          firstItem.total_kilometer = totalKilometer.value.trim();
+        }
+        if (amount) {
+          firstItem.amount = amount.value.trim();
+        }
+        if (description) {
+          firstItem.description = description.value.trim();
+        }
+        
+        // Log for debugging
+        console.log('Updated first item before validation:', firstItem);
+      }
+      
+      // Validate all items have required fields with specific error messages
+      const invalidItems = [];
+      tadaSubListItems.forEach((item, index) => {
+        const missingFields = [];
+        
+        // Helper function to check if value is empty
+        const isEmpty = (value) => {
+          return value === null || value === undefined || value === '' || String(value).trim() === '';
+        };
+        
+        // Check each required field with detailed logging
+        if (isEmpty(item.expense_type_id)) {
+          missingFields.push('Expense Type');
+        }
+        if (isEmpty(item.sub_expense_type_id)) {
+          missingFields.push('Sub Expense Type');
+        }
+        if (isEmpty(item.from_location)) {
+          missingFields.push('From Location');
+        }
+        if (isEmpty(item.to_location)) {
+          missingFields.push('To Location');
+        }
+        const amountValue = item.amount;
+        if (isEmpty(amountValue) || isNaN(parseFloat(amountValue)) || parseFloat(amountValue) <= 0) {
+          missingFields.push('Amount');
+        }
+        
+        if (missingFields.length > 0) {
+          invalidItems.push({
+            index: index + 1,
+            missingFields: missingFields,
+            itemData: item // Include item data for debugging
+          });
+          // Log for debugging
+          console.error(`Item ${index + 1} validation failed:`, {
+            missingFields: missingFields,
+            item: item
+          });
+        }
+      });
+      
+      if (invalidItems.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Build detailed error message
+        let errorMessage = 'The following items are missing required fields:\n\n';
+        invalidItems.forEach(invalidItem => {
+          errorMessage += `Item ${invalidItem.index}: Missing ${invalidItem.missingFields.join(', ')}\n`;
+        });
+        errorMessage += '\nPlease fill in all required fields before submitting.';
+        
+        alert(errorMessage);
+        return false;
+      }
+      
+      // Add hidden inputs for all items before submitting
+      const success = addHiddenInputs();
+      
+      if (!success) {
+        e.preventDefault();
+        e.stopPropagation();
+        alert('Error: Could not prepare form data. Please try again.');
+        return false;
+      }
+      
+      // Allow form to submit normally
+      return true;
+    });
+  }
+
+  // Function to initialize custom selects
+  function initializeCustomSelects() {
+    document.querySelectorAll(".custom-select-wrapper").forEach(wrapper => {
+      const input = wrapper.querySelector(".custom-select-input");
+      const hiddenInput = wrapper.querySelector("input[type='hidden']");
+      const dropdown = wrapper.querySelector(".custom-select-dropdown");
+      
+      // Skip if already initialized
+      if (wrapper.dataset.initialized === 'true') {
+        return;
+      }
+      wrapper.dataset.initialized = 'true';
+
+      // Show/hide dropdown on click
+      input.addEventListener("click", () => {
+        // Don't allow editing if this was programmatically set (for edit page)
+        if (input.getAttribute("data-programmatic") === "true" && input.value) {
+          // Allow editing by removing the programmatic flag when user clicks
+          input.removeAttribute("data-programmatic");
+        }
+        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+        input.removeAttribute("readonly");
+        input.focus();
+      });
+
+      // Filter items while typing
+      input.addEventListener("input", () => {
+        const filter = input.value.toLowerCase();
+        const options = dropdown.querySelectorAll("div");
+        options.forEach(opt => {
+          opt.style.display = opt.textContent.toLowerCase().includes(filter) ? "block" : "none";
+        });
+      });
+
+      // Select option
+      dropdown.addEventListener("click", e => {
+        if (e.target.dataset.value) {
+          input.value = e.target.dataset.value;
+          if (hiddenInput && e.target.dataset.id) {
+            hiddenInput.value = e.target.dataset.id;
+          }
+          dropdown.style.display = "none";
+          input.setAttribute("readonly", true);
+        }
+      });
+
+      // Close dropdown if clicked outside
+      document.addEventListener("click", e => {
+        if (!wrapper.contains(e.target)) {
+          dropdown.style.display = "none";
+          // Preserve programmatically set values
+          if (input.getAttribute("data-programmatic") === "true") {
+            // Restore from initial value if it was cleared
+            const initialValue = input.getAttribute("data-initial-value");
+            const hiddenInitialId = hiddenInput ? hiddenInput.getAttribute("data-initial-value") : null;
+            if (initialValue && (!input.value || input.value !== initialValue)) {
+              input.value = initialValue;
+              if (hiddenInput && hiddenInitialId) {
+                hiddenInput.value = hiddenInitialId;
+              }
+            }
+            input.setAttribute("readonly", true);
+          } else if (input.value) {
+            // Only set readonly if input has a value (preserve programmatically set values)
+            input.setAttribute("readonly", true);
+          }
+        }
+      });
+    });
+  }
+  
+  // Initialize custom selects after a delay to ensure fields are populated first
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initializeCustomSelects, 500);
+    });
+  } else {
+    setTimeout(initializeCustomSelects, 500);
+  }
+</script>
+{% endblock %}
