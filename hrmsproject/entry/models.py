@@ -413,16 +413,28 @@ class TADAEntry(models.Model):
         default=0,
         validators=[MinValueValidator(0)]
     )
+    head_approval_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        help_text='Amount approved by head (can be different from total_amount)'
+    )
     head_approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_CHOICES,
         default=APPROVAL_PENDING,
     )
+    head_approval_by = models.CharField(max_length=255, blank=True, help_text='Name of the person who approved/rejected')
+    head_approval_date = models.DateTimeField(null=True, blank=True, help_text='Date and time of head approval')
     hr_approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_CHOICES,
         default=APPROVAL_PENDING,
     )
+    hr_approval_by = models.CharField(max_length=255, blank=True, help_text='Name of the person who approved/rejected at HR level')
+    hr_approval_date = models.DateTimeField(null=True, blank=True, help_text='Date and time of HR approval')
     acc_approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_CHOICES,
