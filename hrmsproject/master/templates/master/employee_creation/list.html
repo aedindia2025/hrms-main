@@ -210,33 +210,39 @@
                 "csrfmiddlewaretoken": csrftoken
             };
             
-            // Note: You'll need to create a Django view to handle this
-            // For now, this will show an alert
-            alert('Email functionality will be implemented. Email: ' + email_id);
+            // Show loading state
+            var sendButton = $('button[onclick="send_mail()"]');
+            var originalText = sendButton.html();
+            sendButton.prop('disabled', true).html('Sending...');
             
-            // TODO: Uncomment when you create the view at 'master:employee_send_email'
-            // Example AJAX call:
-            // $.ajax({
-            //     type: "POST",
-            //     url: "/master/employee/send-email/",  // Update this URL when view is created
-            //     data: data,
-            //     success: function (response) {
-            //         if (response.success) {
-            //             var modalElement = document.getElementById('emailModal');
-            //             var modal = bootstrap.Modal.getInstance(modalElement);
-            //             if (modal) {
-            //                 modal.hide();
-            //             }
-            //             alert('Email sent successfully');
-            //             location.reload();
-            //         } else {
-            //             alert('Error sending email: ' + response.error);
-            //         }
-            //     },
-            //     error: function(xhr, status, error) {
-            //         alert('Error sending email. Please try again.');
-            //     }
-            // });
+            $.ajax({
+                type: "POST",
+                url: "{% url 'master:employee_send_email' %}",
+                data: data,
+                success: function (response) {
+                    if (response.success) {
+                        var modalElement = document.getElementById('emailModal');
+                        var modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        // Clear email input
+                        $('#email_id').val('');
+                        alert('Email sent successfully to ' + email_id);
+                    } else {
+                        alert('Error sending email: ' + (response.error || 'Unknown error'));
+                    }
+                    sendButton.prop('disabled', false).html(originalText);
+                },
+                error: function(xhr, status, error) {
+                    var errorMsg = 'Error sending email. Please try again.';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMsg = xhr.responseJSON.error;
+                    }
+                    alert(errorMsg);
+                    sendButton.prop('disabled', false).html(originalText);
+                }
+            });
         } else {
             alert("Enter Email Address");
         }

@@ -483,11 +483,11 @@
                   <label class="form-label ">Branch <span class="text-danger">*</span></label>
                   <select class="form-select" name="branch_ids" id="branch_ids" required>
                     <option value="">-- Select Branch --</option>
-                    <option value="Branch 1">Branch 1</option>
-                    <option value="Branch 2">Branch 2</option>
-                    <option value="Branch 3">Branch 3</option>
-                    <option value="Branch 4">Branch 4</option>
-                    <option value="Branch 5">Branch 5</option>
+                    {% for site in sites %}
+                      <option value="{{ site.name }}">{{ site.name }}</option>
+                    {% empty %}
+                      <option value="">No branches available</option>
+                    {% endfor %}
                   </select>
                   </div>
 
@@ -1299,8 +1299,24 @@
           if (permInput) {
             permInput.disabled = false;
             permInput.required = true;
+
           }
         });
+
+            permInput.setAttribute('required', 'required');
+            permInput.setAttribute('tabindex', (index + 8).toString()); // Set proper tabindex (8-14)
+            // Clear values when unchecked
+            if (permInput.tagName === 'SELECT') {
+              permInput.value = '';
+            } else {
+              permInput.value = '';
+            }
+          }
+        });
+        // Update tab order
+        if (window.setupAddressTabOrder) {
+          setupAddressTabOrder();
+        }
         return;
       }
 
@@ -1318,6 +1334,21 @@
         // Disable permanent field
         permInput.disabled = true;
         permInput.required = false;
+        // Disable permanent field and remove from tab order
+        permInput.disabled = true;
+        permInput.required = false;
+        permInput.removeAttribute('required');
+        permInput.setAttribute('tabindex', '-1'); // Remove from tab navigation
+        
+        // Remove validation errors from permanent fields
+        permInput.classList.remove('is-invalid');
+        const formField = permInput.closest('.form-field');
+        if (formField) {
+          const feedback = formField.querySelector('.invalid-feedback');
+          if (feedback) {
+            feedback.remove();
+          }
+        }
       });
 
       // Handle cascading dropdowns: country -> state -> city
@@ -1328,8 +1359,9 @@
       const preCity = document.querySelector('[name="pre_city"]');
       const permCity = document.querySelector('[name="perm_city"]');
 
-      // If country is selected, load states
+      // If country is selected, load states for permanent address
       if (preCountry && permCountry && preCountry.value) {
+        permCountry.value = preCountry.value;
         setTimeout(() => {
           if (window.loadStates) {
             window.loadStates(permCountry);
@@ -1358,20 +1390,107 @@
       presentFields.forEach((field) => {
         const presentInput = document.querySelector(`[name="${field}"]`);
         if (presentInput) {
-          presentInput.addEventListener('change', function() {
-            if (sameAddressToggle && sameAddressToggle.checked) {
-              copyAddress();
-            }
-          });
-          presentInput.addEventListener('input', function() {
-            if (sameAddressToggle && sameAddressToggle.checked) {
-              const index = presentFields.indexOf(field);
-              const permInput = document.querySelector(`[name="${permFields[index]}"]`);
-              if (permInput && presentInput.tagName !== 'SELECT') {
-                permInput.value = presentInput.value;
+          // Remove existing listeners to avoid duplicates
+          const newInput = presentInput.cloneNode(true);
+          presentInput.parentNode.replaceChild(newInput, presentInput);
+          
+          // For dropdowns (SELECT), copy on change
+          if (newInput.tagName === 'SELECT') {
+            newInput.addEventListener('change', function() {
+              if (sameAddressToggle && sameAddressToggle.checked) {
+                copyAddress(); // Full copy for cascading dropdowns
               }
+            });
+          } else {
+            // For text inputs, copy on input and change
+            newInput.addEventListener('input', function() {
+              if (sameAddressToggle && sameAddressToggle.checked) {
+                const index = presentFields.indexOf(field);
+                const permInput = document.querySelector(`[name="${permFields[index]}"]`);
+                if (permInput) {
+                  permInput.value = newInput.value;
+                  permInput.disabled = true;
+                  permInput.required = false;
+                  permInput.removeAttribute('required');
+                  permInput.setAttribute('tabindex', '-1');
+                }
+              }
+            });
+            
+            newInput.addEventListener('change', function() {
+              if (sameAddressToggle && sameAddressToggle.checked) {
+                copyAddress(); // Ensure full sync on change
+              }
+            });
+          }
+        }
+      });
+    }
+    
+    // Setup proper tab order for address fields
+    function setupAddressTabOrder() {
+      // Set tabindex for present address fields (1-7)
+      presentFields.forEach((field, index) => {
+        const presentInput = document.querySelector(`[name="${field}"]`);
+        if (presentInput) {
+          presentInput.setAttribute('tabindex', (index + 1).toString());
+        }
+      });
+      
+      // Set tabindex for permanent address fields (8-14) or -1 if checkbox checked
+      permFields.forEach((field, index) => {
+        const permInput = document.querySelector(`[name="${field}"]`);
+        if (permInput) {
+          if (sameAddressToggle && sameAddressToggle.checked) {
+            permInput.setAttribute('tabindex', '-1');
+          } else {
+            permInput.setAttribute('tabindex', (index + 8).toString());
+          }
+        }
+      });
+    }
+    
+    // Prevent tab navigation to disabled permanent address fields
+    function setupTabNavigation() {
+      // Setup initial tab order
+      setupAddressTabOrder();
+      
+      // Update tab order when checkbox changes
+      if (sameAddressToggle) {
+        sameAddressToggle.addEventListener('change', function() {
+          setupAddressTabOrder();
+        });
+      }
+      
+      // Add keydown listener to prevent tabbing to disabled fields
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab' && !e.shiftKey) {
+          const activeElement = document.activeElement;
+          if (activeElement && (activeElement.disabled || 
+              (activeElement.hasAttribute('tabindex') && activeElement.getAttribute('tabindex') === '-1'))) {
+            e.preventDefault();
+            // Find next enabled field with valid tabindex
+            const allFields = Array.from(document.querySelectorAll('input, select, textarea'))
+              .filter(f => !f.disabled && 
+                     (!f.hasAttribute('tabindex') || f.getAttribute('tabindex') !== '-1'))
+              .sort((a, b) => {
+                const aIndex = parseInt(a.getAttribute('tabindex') || '9999');
+                const bIndex = parseInt(b.getAttribute('tabindex') || '9999');
+                return aIndex - bIndex;
+              });
+            
+            const currentTabIndex = parseInt(activeElement.getAttribute('tabindex') || '9999');
+            const nextField = allFields.find(f => {
+              const fIndex = parseInt(f.getAttribute('tabindex') || '9999');
+              return fIndex > currentTabIndex;
+            });
+            
+            if (nextField) {
+              nextField.focus();
+            } else if (allFields.length > 0) {
+              allFields[0].focus();
             }
-          });
+          }
         }
       });
     }
@@ -1725,20 +1844,30 @@
         }
       }
       
-      // Phone number validation (10 digits)
+      // Phone number validation (10 digits, Indian mobile format - starts with 6, 7, 8, or 9)
       if (fieldType === 'tel' || fieldName?.includes('contact') || fieldName?.includes('phone')) {
+        const cleaned = value.replace(/\s|-/g, '');
         const phonePattern = /^[0-9]{10}$/;
-        if (!phonePattern.test(value.replace(/\s|-/g, ''))) {
+        if (!phonePattern.test(cleaned)) {
           return { isValid: false, message: `${labelText} must be exactly 10 digits.` };
+        }
+        // Real-world validation: Indian mobile numbers must start with 6, 7, 8, or 9
+        const firstDigit = cleaned[0];
+        if (!['6', '7', '8', '9'].includes(firstDigit)) {
+          return { isValid: false, message: `${labelText} must start with 6, 7, 8, or 9 (Indian mobile format).` };
         }
       }
       
-      // Aadhar number validation (12 digits)
+      // Aadhar number validation (12 digits, doesn't start with 0 or 1)
       if (fieldName?.includes('aadhar')) {
         const aadharPattern = /^[0-9]{12}$/;
         const cleaned = value.replace(/\s/g, '');
         if (!aadharPattern.test(cleaned)) {
           return { isValid: false, message: `${labelText} must be exactly 12 digits.` };
+        }
+        // Real-world validation: Aadhar doesn't start with 0 or 1
+        if (cleaned[0] === '0' || cleaned[0] === '1') {
+          return { isValid: false, message: `${labelText} cannot start with 0 or 1 (invalid Aadhar number).` };
         }
       }
       
@@ -1751,11 +1880,18 @@
         }
       }
       
-      // Pincode validation (6 digits)
+      // Pincode validation (6 digits, range 100000-999999, first digit not 0)
       if (fieldName?.includes('pincode')) {
         const pincodePattern = /^[0-9]{6}$/;
         if (!pincodePattern.test(value)) {
           return { isValid: false, message: `${labelText} must be exactly 6 digits.` };
+        }
+        const pincodeInt = parseInt(value);
+        if (pincodeInt < 100000 || pincodeInt > 999999) {
+          return { isValid: false, message: `${labelText} must be between 100000 and 999999.` };
+        }
+        if (value[0] === '0') {
+          return { isValid: false, message: `${labelText} cannot start with 0 (invalid pincode).` };
         }
       }
       
@@ -1892,6 +2028,59 @@
         }
       }
       
+      // ESI number validation (17 digits) - Only for esi_no field, not designation
+      if (fieldName === 'esi_no' || fieldName?.endsWith('_esi_no') || fieldName?.endsWith('[esi_no]')) {
+        const cleaned = value.replace(/\s|-/g, '');
+        const esiPattern = /^[0-9]{17}$/;
+        if (!esiPattern.test(cleaned)) {
+          return { isValid: false, message: `${labelText} must be exactly 17 digits.` };
+        }
+      }
+      
+      // PF number validation (alphanumeric, 12-22 characters)
+      if (fieldName?.includes('pf_no') || fieldName?.includes('pf')) {
+        const cleaned = value.replace(/\s/g, '').toUpperCase();
+        const pfPattern = /^[A-Z0-9]{12,22}$/;
+        if (!pfPattern.test(cleaned)) {
+          return { isValid: false, message: `${labelText} must be 12-22 alphanumeric characters.` };
+        }
+      }
+      
+      // UAN number validation (12 digits)
+      if (fieldName?.includes('uan') || fieldName?.includes('UAN')) {
+        const cleaned = value.replace(/\s|-/g, '');
+        const uanPattern = /^[0-9]{12}$/;
+        if (!uanPattern.test(cleaned)) {
+          return { isValid: false, message: `${labelText} must be exactly 12 digits.` };
+        }
+      }
+      
+      // Biometric ID validation (alphanumeric, 8-15 characters)
+      if (fieldName?.includes('biometric') || fieldName?.includes('bio')) {
+        const cleaned = value.replace(/\s/g, '').toUpperCase();
+        const bioPattern = /^[A-Z0-9]{8,15}$/;
+        if (!bioPattern.test(cleaned)) {
+          return { isValid: false, message: `${labelText} must be 8-15 alphanumeric characters.` };
+        }
+      }
+      
+      // Staff ID validation (alphanumeric, typically 3-20 characters)
+      if (fieldName === 'staff_id' || fieldName?.includes('staff_id')) {
+        const cleaned = value.replace(/\s/g, '').toUpperCase();
+        const staffIdPattern = /^[A-Z0-9]{3,20}$/;
+        if (!staffIdPattern.test(cleaned)) {
+          return { isValid: false, message: `${labelText} must be 3-20 alphanumeric characters.` };
+        }
+      }
+      
+      // Age validation (should match DOB, range 18-70)
+      if (fieldName === 'age') {
+        const ageNum = parseInt(value);
+        if (isNaN(ageNum) || ageNum < 18 || ageNum > 70) {
+          return { isValid: false, message: `${labelText} must be between 18 and 70 years.` };
+        }
+      }
+      
       // Quantity validation (positive integer)
       if (fieldName?.includes('qty') || fieldName?.includes('quantity')) {
         const qty = parseInt(value);
@@ -1905,7 +2094,8 @@
 
     function shouldValidateField(field) {
       if (!field) return false;
-      if (field.disabled) return false;
+      if (field.disabled) return false; // Skip disabled fields (like permanent address when checkbox is checked)
+      if (field.hasAttribute('tabindex') && field.getAttribute('tabindex') === '-1') return false; // Skip fields removed from tab order
       const type = field.type;
       return !['hidden', 'button', 'submit', 'checkbox', 'radio'].includes(type);
     }
@@ -2259,12 +2449,25 @@
     }
 
     if (sameAddressToggle) {
+      // Initial copy if checkbox is already checked (for edit mode)
+      if (sameAddressToggle.checked) {
+        copyAddress();
+      }
+      
+      // Setup checkbox change listener
       sameAddressToggle.addEventListener('change', function() {
         copyAddress();
       });
+      
       // Setup auto-copy when present address fields change
       setupAutoCopy();
+      
+      // Setup tab navigation with proper tab order
+      setupTabNavigation();
     }
+    
+    // Make setupAddressTabOrder globally accessible for copyAddress function
+    window.setupAddressTabOrder = setupAddressTabOrder;
 
     // Ensure all required field asterisks are visible
     function ensureRequiredIndicatorsVisible() {
@@ -2669,7 +2872,7 @@
           }
           
           // All forms already saved independently, just redirect
-          showFormMessage('success', 'All employee data saved successfully!');
+          showFormMessage('success', 'All employee data saved successfully');
           setTimeout(() => {
             window.location.href = "{% url 'master:employee_list' %}";
           }, 1500);
@@ -2748,7 +2951,7 @@
         
         // ✅ All forms are already saved independently via "Add" buttons
         // Just redirect to list page (PHP pattern - no bulk save needed)
-        showFormMessage('success', 'All employee data saved successfully!');
+        showFormMessage('success', 'All employee data saved successfully');
         setTimeout(() => {
           window.location.href = "{% url 'master:employee_list' %}";
         }, 1500);
@@ -2860,7 +3063,7 @@
           });
           
           // Show success message
-          showAddToListSuccess('✅ Dependent saved successfully to database!');
+          showAddToListSuccess('✅ Dependent saved successfully!');
           
           // Scroll to table
           setTimeout(() => {
@@ -3143,7 +3346,7 @@
           clearFormValidation(form);
           
           // Show success message
-          showAddToListSuccess('✅ Account saved successfully to database!');
+          showAddToListSuccess('✅ Account saved successfully!');
           
           // Scroll to table
           setTimeout(() => {
@@ -3322,7 +3525,7 @@
             if (select.options.length > 0) select.selectedIndex = 0;
           });
           
-          showAddToListSuccess('✅ Qualification saved successfully to database!');
+          showAddToListSuccess('✅ Qualification saved successfully!');
           
           const table = document.getElementById('qualifications-tbody');
           if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -3497,7 +3700,7 @@
             if (select.options.length > 0) select.selectedIndex = 0;
           });
           
-          showAddToListSuccess('✅ Experience saved successfully to database!');
+          showAddToListSuccess('✅ Experience saved successfully');
           
           const table = document.getElementById('experiences-tbody');
           if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -3668,7 +3871,7 @@
           const dateInputs = form.querySelectorAll('input[type="date"]');
           dateInputs.forEach(input => input.value = '');
           
-          showAddToListSuccess('✅ Asset saved successfully to database!');
+          showAddToListSuccess('✅ Asset saved successfully');
           
           const table = document.getElementById('assets-tbody');
           if (table) table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

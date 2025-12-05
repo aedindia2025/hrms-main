@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load master_extras %}
 
-{% block title %}Shift Roster - Create{% endblock %}
+{% block title %}Shift Roster - {% if is_edit_mode %}Edit{% else %}Create{% endif %}{% endblock %}
 
 {% block content %}
 
@@ -10,7 +11,7 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <!-- Link to Create Page -->
-     <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark">Shift Roster Week Create</span></h6>
+     <h6 class="mb-3 fw-bold text-secondary">Master / <span class="text-dark">Shift Roster Week {% if is_edit_mode %}Edit{% else %}Create{% endif %}</span></h6>
 
      <button  onclick="history.back()" class="btn-back">
    <i data-feather="arrow-left"></i> Back
@@ -22,6 +23,9 @@
         <div class="card-body">
             <form action="" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
+                {% if is_edit_mode %}
+                <input type="hidden" name="roster_id" value="{{ roster_id }}">
+                {% endif %}
 
         
                    <div class="row g-3 mb-4">
@@ -74,8 +78,17 @@
             </td>
             {% for day in week_days %}
             <td>
-              <input type="text" name="schedule_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="form-control">
-              <input type="checkbox" name="dayoff_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="mt-1">
+              {% with assignment_key=employee.id|stringformat:"s"|add:"_"|add:day.date|date:"Ymd" %}
+              {% if existing_assignments|get_item:assignment_key %}
+                {% with assignment=existing_assignments|get_item:assignment_key %}
+                <input type="text" name="schedule_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="form-control" value="{{ assignment.shift_name }}">
+                <input type="checkbox" name="dayoff_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="mt-1" {% if assignment.is_day_off %}checked{% endif %}>
+                {% endwith %}
+              {% else %}
+                <input type="text" name="schedule_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="form-control">
+                <input type="checkbox" name="dayoff_{{ employee.id }}_{{ day.date|date:'Ymd' }}" class="mt-1">
+              {% endif %}
+              {% endwith %}
             </td>
             {% endfor %}
           </tr>

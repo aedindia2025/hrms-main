@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.core.validators import validate_email
+from django.core.mail import send_mail
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django.db.utils import ProgrammingError, OperationalError
@@ -14,6 +15,7 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
+from django.conf import settings
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils import get_column_letter
@@ -2727,12 +2729,37 @@ def shift_roster_week(request):
 
 @permission_required('master.add_shift', raise_exception=True)
 def shift_roster_create(request):
-    values = {
-        'site_name': '',
-        'salary_type': '',
-        'from_date': '',
-        'description': '',
-    }
+    # Check if editing existing roster
+    roster_id = request.GET.get('roster_id') or request.POST.get('roster_id')
+    roster = None
+    is_edit_mode = False
+    
+    if roster_id:
+        try:
+            roster = ShiftRoster.objects.select_related('site').prefetch_related('assignments').get(
+                pk=int(roster_id),
+                roster_type=ShiftRoster.ROSTER_TYPE_WEEK
+            )
+            is_edit_mode = True
+        except (ShiftRoster.DoesNotExist, ValueError, TypeError):
+            roster = None
+            is_edit_mode = False
+    
+    # Initialize values from existing roster or empty
+    if roster:
+        values = {
+            'site_name': str(roster.site.id),
+            'salary_type': roster.salary_type,
+            'from_date': roster.from_date.strftime('%Y-%m-%d') if roster.from_date else '',
+            'description': roster.description or '',
+        }
+    else:
+        values = {
+            'site_name': '',
+            'salary_type': '',
+            'from_date': '',
+            'description': '',
+        }
     errors = {}
 
     # Get sites and salary types from database
@@ -2784,16 +2811,31 @@ def shift_roster_create(request):
         # Save to database
         if not errors and site_instance and from_date_obj:
             try:
-                # Create ShiftRoster
-                roster = ShiftRoster.objects.create(
-                    site=site_instance,
-                    salary_type=values['salary_type'],
-                    from_date=from_date_obj,
-                    to_date=to_date_obj,
-                    roster_type=ShiftRoster.ROSTER_TYPE_WEEK,
-                    status=ShiftRoster.STATUS_DRAFT,
-                    description=values['description'],
-                )
+                # Update existing roster or create new one
+                if roster:
+                    # Update existing roster
+                    roster.site = site_instance
+                    roster.salary_type = values['salary_type']
+                    roster.from_date = from_date_obj
+                    roster.to_date = to_date_obj
+                    roster.description = values['description']
+                    roster.save()
+                    action = 'updated'
+                    
+                    # Delete existing assignments
+                    ShiftRosterAssignment.objects.filter(roster=roster).delete()
+                else:
+                    # Create new ShiftRoster
+                    roster = ShiftRoster.objects.create(
+                        site=site_instance,
+                        salary_type=values['salary_type'],
+                        from_date=from_date_obj,
+                        to_date=to_date_obj,
+                        roster_type=ShiftRoster.ROSTER_TYPE_WEEK,
+                        status=ShiftRoster.STATUS_DRAFT,
+                        description=values['description'],
+                    )
+                    action = 'created'
 
                 # Get employees (filter by salary category if needed)
                 employees = Employee.objects.all().order_by('staff_name')
@@ -2837,7 +2879,7 @@ def shift_roster_create(request):
                             )
                             assignments_created += 1
 
-                messages.success(request, f'Week wise roster created successfully with {assignments_created} assignments.')
+                messages.success(request, f'Week wise roster {action} successfully with {assignments_created} assignments.')
                 return redirect('master:shift_roster_week')
                 
             except Exception as e:
@@ -2868,12 +2910,34 @@ def shift_roster_create(request):
     # Get employees from database
     employees = Employee.objects.all().order_by('staff_name')
     employees_list = []
+    existing_assignments = {}
+    
+    # Load existing assignments if editing - create flat dict for template access
+    if roster:
+        assignments = ShiftRosterAssignment.objects.filter(roster=roster).select_related('employee', 'site')
+        for assignment in assignments:
+            key = f"{assignment.employee.id}_{assignment.date.strftime('%Y%m%d')}"
+            existing_assignments[key] = {
+                'shift_name': assignment.shift_name,
+                'is_day_off': assignment.is_day_off,
+                'site_id': str(assignment.site.id),
+            }
+    
     for emp in employees:
+        # Get default site from first assignment if editing, otherwise use roster site
+        default_site_id = str(roster.site.id) if roster else ''
+        if roster:
+            # Find first assignment for this employee
+            for key, assignment in existing_assignments.items():
+                if key.startswith(f"{emp.id}_"):
+                    default_site_id = assignment['site_id']
+                    break
+        
         employees_list.append({
             'id': emp.id,
             'name': emp.staff_name,
-            'designation': emp.designation,
-            'default_site': str(emp.company.id) if emp.company else '',  # Use company as default
+            'designation': str(emp.designation) if emp.designation else '',
+            'default_site': default_site_id,
         })
 
     context = {
@@ -2883,6 +2947,9 @@ def shift_roster_create(request):
         'errors': errors,
         'week_days': week_days,
         'employees': employees_list,
+        'existing_assignments': existing_assignments,
+        'is_edit_mode': is_edit_mode,
+        'roster_id': roster.id if roster else None,
     }
     return render(request, 'master/shift_roster/create.html', context)
 
@@ -2952,18 +3019,32 @@ def shift_roster_month(request):
 
 @permission_required('master.change_shift', raise_exception=True)
 def shift_roster_month_update(request):
+    """Update month-wise shift roster - saves to database."""
     roster_id = request.GET.get('id')
-    selected = None
+    roster = None
+    
+    # Get roster from database if ID provided
     if roster_id:
-        selected = next((item for item in MONTH_ROSTERS if str(item['id']) == roster_id), None)
+        try:
+            roster = ShiftRoster.objects.select_related('site').get(
+                pk=int(roster_id),
+                roster_type=ShiftRoster.ROSTER_TYPE_MONTH
+            )
+        except (ShiftRoster.DoesNotExist, ValueError, TypeError):
+            roster = None
 
+    # Initialize values from database or empty
     values = {
-        'site_name': selected['site'] if selected else '',
-        'salary_type': selected['salary_type'] if selected else '',
-        'month_date': selected['entry_month'].strftime('%Y-%m-%d') if selected else '',
-        'description': '',
+        'site_name': str(roster.site.id) if roster else '',
+        'salary_type': roster.salary_type if roster else '',
+        'month_date': roster.from_date.strftime('%Y-%m-%d') if roster and roster.from_date else '',
+        'description': roster.description if roster else '',
     }
     errors = {}
+
+    # Get sites and employees from database
+    sites = Site.objects.all().order_by('name')
+    employees = Employee.objects.all().order_by('staff_name')
 
     if request.method == 'POST':
         values.update({
@@ -2973,26 +3054,138 @@ def shift_roster_month_update(request):
             'description': request.POST.get('description', '').strip(),
         })
 
+        # Validation
+        site_instance = None
         if not values['site_name']:
             errors['site_name'] = 'Select a site to continue.'
+        else:
+            try:
+                site_instance = Site.objects.get(id=int(values['site_name']))
+            except (Site.DoesNotExist, ValueError, TypeError):
+                errors['site_name'] = 'Invalid site selected.'
+
         if not values['salary_type']:
             errors['salary_type'] = 'Choose a salary type.'
+        elif values['salary_type'] not in dict(ShiftRoster.SALARY_TYPE_CHOICES):
+            errors['salary_type'] = 'Invalid salary type selected.'
+
+        from_date_obj = None
         if not values['month_date']:
             errors['month_date'] = 'Month selection is required.'
-        elif not _parse_date(values['month_date']):
-            errors['month_date'] = 'Enter a valid month start date.'
+        else:
+            from_date_obj = _parse_date(values['month_date'])
+            if not from_date_obj:
+                errors['month_date'] = 'Enter a valid month start date (YYYY-MM-DD).'
 
-        if not errors:
-            messages.success(request, 'Month wise roster updated successfully (demo).')
-            return redirect('master:shift_roster_month')
+        # Calculate month end date (last day of the month)
+        to_date_obj = None
+        if from_date_obj:
+            # Get last day of the month
+            if from_date_obj.month == 12:
+                to_date_obj = date(from_date_obj.year + 1, 1, 1) - timedelta(days=1)
+            else:
+                to_date_obj = date(from_date_obj.year, from_date_obj.month + 1, 1) - timedelta(days=1)
+
+        # Save to database
+        if not errors and site_instance and from_date_obj:
+            try:
+                if roster:
+                    # Update existing roster
+                    roster.site = site_instance
+                    roster.salary_type = values['salary_type']
+                    roster.from_date = from_date_obj
+                    roster.to_date = to_date_obj
+                    roster.description = values['description']
+                    roster.save()
+                    action = 'updated'
+                else:
+                    # Create new roster
+                    roster = ShiftRoster.objects.create(
+                        site=site_instance,
+                        salary_type=values['salary_type'],
+                        from_date=from_date_obj,
+                        to_date=to_date_obj,
+                        roster_type=ShiftRoster.ROSTER_TYPE_MONTH,
+                        status=ShiftRoster.STATUS_DRAFT,
+                        description=values['description'],
+                    )
+                    action = 'created'
+
+                # Parse and save employee assignments for the month
+                assignments_created = 0
+                assignments_updated = 0
+                
+                # Delete existing assignments if updating
+                if action == 'updated':
+                    ShiftRosterAssignment.objects.filter(roster=roster).delete()
+                
+                # Get all days in the month
+                current_date = from_date_obj
+                while current_date <= to_date_obj:
+                    # Process each employee for this date
+                    for employee in employees:
+                        employee_id = str(employee.id)
+                        date_key = current_date.strftime('%Y%m%d')
+                        
+                        # Get shift name for this day
+                        shift_name = request.POST.get(f'schedule_{employee_id}_{date_key}', '').strip()
+                        
+                        # Check if day off
+                        is_day_off = request.POST.get(f'dayoff_{employee_id}_{date_key}') == 'on'
+                        
+                        # Get site assignment for this employee
+                        employee_site_id = request.POST.get(f'assignment_{employee_id}_site', '').strip()
+                        if employee_site_id:
+                            try:
+                                employee_site = Site.objects.get(id=int(employee_site_id))
+                            except (Site.DoesNotExist, ValueError, TypeError):
+                                employee_site = site_instance
+                        else:
+                            employee_site = site_instance
+                        
+                        # Only create assignment if shift is specified or day off is checked
+                        if shift_name or is_day_off:
+                            ShiftRosterAssignment.objects.create(
+                                roster=roster,
+                                employee=employee,
+                                date=current_date,
+                                shift_name=shift_name if shift_name else '',
+                                site=employee_site,
+                                is_day_off=is_day_off,
+                            )
+                            assignments_created += 1
+                    
+                    # Move to next day
+                    current_date += timedelta(days=1)
+
+                messages.success(
+                    request,
+                    f'Month wise roster {action} successfully with {assignments_created} assignments.'
+                )
+                return redirect('master:shift_roster_month')
+                
+            except Exception as e:
+                messages.error(request, f'Error saving roster: {str(e)}')
+
+    # Prepare context with database data
+    sites_list = [{'value': str(site.id), 'label': site.name} for site in sites]
+    salary_types_list = [
+        {'value': ShiftRoster.SALARY_TYPE_SALARY, 'label': 'Salary'},
+        {'value': ShiftRoster.SALARY_TYPE_WAGES, 'label': 'Wages'},
+        {'value': ShiftRoster.SALARY_TYPE_OTHERS, 'label': 'Others'},
+    ]
+    employees_list = [
+        {'id': emp.id, 'name': emp.staff_name, 'designation': str(emp.designation) if emp.designation else ''}
+        for emp in employees[:50]  # Limit to 50 for performance
+    ]
 
     context = {
-        'sites': ROSTER_SITES,
-        'salary_types': ROSTER_SALARY_TYPES,
+        'sites': sites_list,
+        'salary_types': salary_types_list,
         'values': values,
         'errors': errors,
-        'week_days': ROSTER_WEEK_DAYS,
-        'employees': ROSTER_EMPLOYEES,
+        'employees': employees_list,
+        'roster': roster,
     }
     return render(request, 'master/shift_roster/monthUpdate.html', context)
 
@@ -3121,11 +3314,15 @@ def employee_create(request):
     from master.models import AssetType
     asset_types = AssetType.objects.filter(is_active=True).order_by('name')
     
+    # Get sites for branch dropdown
+    sites = Site.objects.all().order_by('name')
+    
     context = {
         'companies': companies,
         'staff': None,
         'last_staff_id': last_staff_id,
         'asset_types': asset_types,
+        'sites': sites,
     }
     return render(request, 'master/employee_creation/create.html', context)
 
@@ -3149,6 +3346,9 @@ def employee_edit(request, pk):
     from master.models import AssetType
     asset_types = AssetType.objects.filter(is_active=True).order_by('name')
     
+    # Get sites for branch dropdown
+    sites = Site.objects.all().order_by('name')
+    
     context = {
         'employee': employee,
         'companies': companies,
@@ -3157,6 +3357,7 @@ def employee_edit(request, pk):
         'experiences': experiences,
         'assets': assets,
         'asset_types': asset_types,
+        'sites': sites,
         'staff': employee,  # For template compatibility
     }
     return render(request, 'master/employee_creation/edit.html', context)
@@ -3411,23 +3612,36 @@ def _clean_optional(data, field):
     return data.get(field, '').strip()
 
 
-def _clean_phone(data, field, label, errors, length=10):
+def _clean_phone(data, field, label, errors, length=10, require_indian_format=True):
+    """Validate phone number - Indian mobile format (starts with 6, 7, 8, or 9)."""
     value = _clean_optional(data, field)
     if value:
         # Remove spaces and hyphens
         cleaned = value.replace(' ', '').replace('-', '')
-        if not cleaned.isdigit() or len(cleaned) != length:
+        if not cleaned.isdigit():
+            errors[field] = f'{label} must contain only digits.'
+            return value
+        if len(cleaned) != length:
             errors[field] = f'{label} must be exactly {length} digits.'
+            return value
+        # Real-world validation: Indian mobile numbers start with 6, 7, 8, or 9
+        if require_indian_format and length == 10:
+            first_digit = cleaned[0]
+            if first_digit not in ['6', '7', '8', '9']:
+                errors[field] = f'{label} must start with 6, 7, 8, or 9 (Indian mobile format).'
+        return cleaned
     return value
 
 
 def _clean_aadhar(data, field, label, errors):
-    """Validate Aadhar number (12 digits)."""
+    """Validate Aadhar number (12 digits, doesn't start with 0 or 1)."""
     value = _clean_optional(data, field)
     if value:
         cleaned = value.replace(' ', '').replace('-', '')
         if not cleaned.isdigit() or len(cleaned) != 12:
             errors[field] = f'{label} must be exactly 12 digits.'
+        elif cleaned[0] in ['0', '1']:
+            errors[field] = f'{label} cannot start with 0 or 1 (invalid Aadhar number).'
         return cleaned
     return value
 
@@ -3445,11 +3659,17 @@ def _clean_pan(data, field, label, errors):
 
 
 def _clean_pincode(data, field, label, errors):
-    """Validate pincode (6 digits)."""
+    """Validate pincode (6 digits, range 100000-999999, first digit not 0)."""
     value = _clean_optional(data, field)
     if value:
         if not value.isdigit() or len(value) != 6:
             errors[field] = f'{label} must be exactly 6 digits.'
+        else:
+            pincode_int = int(value)
+            if pincode_int < 100000 or pincode_int > 999999:
+                errors[field] = f'{label} must be between 100000 and 999999.'
+            elif value[0] == '0':
+                errors[field] = f'{label} cannot start with 0 (invalid pincode).'
     return value
 
 
@@ -3490,11 +3710,17 @@ def _clean_percentage(data, field, label, errors):
 
 
 def _clean_year(data, field, label, errors):
-    """Validate year (1900 to current year)."""
+    """Validate year (1900 to current year). Supports both YYYY and YYYY-MM formats."""
     value = _clean_optional(data, field)
     if value:
         try:
-            year = int(value)
+            # Handle month format (YYYY-MM) - extract year only
+            if '-' in value:
+                year_str = value.split('-')[0]
+            else:
+                year_str = value
+            
+            year = int(year_str)
             from datetime import datetime
             current_year = datetime.now().year
             if year < 1900 or year > current_year:
@@ -3539,6 +3765,52 @@ def _clean_license(data, field, label, errors):
         cleaned = value.replace(' ', '').upper()
         if not re.match(r'^[A-Z0-9]{10,15}$', cleaned):
             errors[field] = f'{label} must be 10-15 alphanumeric characters.'
+        return cleaned
+    return value
+
+
+def _clean_esi(data, field, label, errors):
+    """Validate ESI number (17 digits)."""
+    value = _clean_optional(data, field)
+    if value:
+        cleaned = value.replace(' ', '').replace('-', '')
+        if not cleaned.isdigit() or len(cleaned) != 17:
+            errors[field] = f'{label} must be exactly 17 digits.'
+        return cleaned
+    return value
+
+
+def _clean_pf(data, field, label, errors):
+    """Validate PF number (alphanumeric, 12-22 characters)."""
+    value = _clean_optional(data, field)
+    if value:
+        import re
+        cleaned = value.replace(' ', '').upper()
+        if not re.match(r'^[A-Z0-9]{12,22}$', cleaned):
+            errors[field] = f'{label} must be 12-22 alphanumeric characters.'
+        return cleaned
+    return value
+
+
+def _clean_uan(data, field, label, errors):
+    """Validate UAN number (12 digits)."""
+    value = _clean_optional(data, field)
+    if value:
+        cleaned = value.replace(' ', '').replace('-', '')
+        if not cleaned.isdigit() or len(cleaned) != 12:
+            errors[field] = f'{label} must be exactly 12 digits.'
+        return cleaned
+    return value
+
+
+def _clean_biometric(data, field, label, errors):
+    """Validate biometric ID (alphanumeric, 8-15 characters)."""
+    value = _clean_optional(data, field)
+    if value:
+        import re
+        cleaned = value.replace(' ', '').upper()
+        if not re.match(r'^[A-Z0-9]{8,15}$', cleaned):
+            errors[field] = f'{label} must be 8-15 alphanumeric characters.'
         return cleaned
     return value
 
@@ -3807,9 +4079,17 @@ def _validate_staff_details(data, unique_id):
     designation = _clean_required(data, 'designation', 'Designation', errors)
     department = _clean_required(data, 'department', 'Department', errors)
     work_location = _clean_required(data, 'work_location', 'Work Location', errors)
-    esi_no = _clean_required(data, 'esi_no', 'ESI No', errors)
-    pf_no = _clean_required(data, 'pf_no', 'PF No', errors)
-    biometric_id = _clean_required(data, 'biometric_id', 'Bio Metric ID', errors)
+    esi_no = _clean_esi(data, 'esi_no', 'ESI No', errors)
+    if not esi_no:
+        errors['esi_no'] = 'ESI No is required.'
+    
+    pf_no = _clean_pf(data, 'pf_no', 'PF No', errors)
+    if not pf_no:
+        errors['pf_no'] = 'PF No is required.'
+    
+    biometric_id = _clean_biometric(data, 'biometric_id', 'Bio Metric ID', errors)
+    if not biometric_id:
+        errors['biometric_id'] = 'Bio Metric ID is required.'
     
     company_id = data.get('company_name', '').strip()
     company = None
@@ -5237,3 +5517,91 @@ def employee_asset_add_update(request):
             'status': 0,
             'msg': f'An error occurred while saving asset details: {str(e)}',
         }, status=500)
+
+
+@login_required
+@permission_required('master.view_employee', raise_exception=True)
+@require_POST
+def employee_send_email(request):
+    """
+    Send email to employee(s) from employee list page.
+    """
+    email_address = request.POST.get('email_id', '').strip()
+    
+    if not email_address:
+        return JsonResponse({
+            'success': False,
+            'error': 'Email address is required.'
+        }, status=400)
+    
+    # Validate email format
+    try:
+        validate_email(email_address)
+    except ValidationError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid email address format.'
+        }, status=400)
+    
+    # Check if email is configured
+    email_host_user = settings.EMAIL_HOST_USER
+    email_host_password = settings.EMAIL_HOST_PASSWORD
+    
+    if not email_host_user or not email_host_password:
+        return JsonResponse({
+            'success': False,
+            'error': 'Email is not configured. Please set EMAIL_HOST_USER and EMAIL_HOST_PASSWORD in .env file. For Gmail, you need to generate an App Password: https://myaccount.google.com/apppasswords'
+        }, status=500)
+    
+    # Email subject and message
+    subject = 'HRMS - Employee Information'
+    message = f'''
+Dear Employee,
+
+This is an automated email from Ascent HRMS system.
+
+If you have any questions or need assistance, please contact the HR department.
+
+Best regards,
+Ascent HRMS Team
+'''
+    
+    # Get sender email from settings (use EMAIL_HOST_USER if DEFAULT_FROM_EMAIL is not set)
+    from_email = settings.DEFAULT_FROM_EMAIL
+    if not from_email or from_email == 'noreply@ascenthrms.com':
+        from_email = email_host_user
+    
+    try:
+        # Send email
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=from_email,
+            recipient_list=[email_address],
+            fail_silently=False,
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Email sent successfully to {email_address}'
+        })
+        
+    except Exception as e:
+        error_message = str(e)
+        
+        # Provide helpful error messages for common issues
+        if 'Authentication Required' in error_message or '530' in error_message:
+            return JsonResponse({
+                'success': False,
+                'error': 'Gmail authentication failed. Please check:\n1. EMAIL_HOST_USER in .env file (your Gmail address)\n2. EMAIL_HOST_PASSWORD in .env file (Gmail App Password, not regular password)\n3. Enable 2-factor authentication in Gmail\n4. Generate App Password: https://myaccount.google.com/apppasswords'
+            }, status=500)
+        elif '535' in error_message or 'authentication' in error_message.lower():
+            return JsonResponse({
+                'success': False,
+                'error': 'Email authentication failed. Please verify EMAIL_HOST_USER and EMAIL_HOST_PASSWORD in .env file.'
+            }, status=500)
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': f'Failed to send email: {error_message}. Please check email configuration in .env file.'
+            }, status=500)

@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.db.models import Q
 from django.shortcuts import redirect, render
 
 from .forms import ProfileForm
@@ -215,6 +216,25 @@ def profile(request):
     else:
         form = ProfileForm(instance=profile_obj)
 
+    # Get employee linked to user for profile image
+    employee = None
+    try:
+        from master.models import Employee
+        employee = Employee.objects.filter(
+            Q(personal_email=request.user.email) | 
+            Q(office_email=request.user.email) |
+            Q(staff_id=request.user.username)
+        ).first()
+        
+        if not employee:
+            try:
+                if profile_obj.employee_code:
+                    employee = Employee.objects.filter(staff_id=profile_obj.employee_code).first()
+            except:
+                pass
+    except:
+        pass
+    
     primary_group = request.user.groups.first()
     context = {
         'display_name': request.user.get_full_name() or request.user.username,
@@ -223,6 +243,7 @@ def profile(request):
         'form': form,
         'email_value': email_value,
         'email_error': email_error,
+        'employee': employee,
     }
     return render(request, 'accounts/profile.html', context)
 

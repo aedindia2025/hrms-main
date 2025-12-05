@@ -87,12 +87,23 @@
 
   <div class="profile-wrapper py-3">
     <div class="profile-header">
-      <div>
-        <h3 class="mb-1">{{ display_name }}</h3>
-        <div class="profile-badges">
-          <span class="profile-badge">{{ profile.employee_code|default:'No Employee Code' }}</span>
-          <span class="profile-badge">{{ profile.job_title|default:primary_group_name|default:'Role Not Set' }}</span>
-          <span class="profile-badge">{{ profile.location|default:'Location Pending' }}</span>
+      <div class="d-flex align-items-center gap-3">
+        <div>
+          {% if employee and employee.profile_image %}
+            <img src="{{ employee.profile_image.url }}" alt="Profile" class="w-80-px h-80-px rounded-circle object-fit-cover border border-success" style="width: 80px; height: 80px;">
+          {% else %}
+            <span class="w-80-px h-80-px bg-success text-white rounded-circle d-flex justify-content-center align-items-center fw-semibold fs-2" style="width: 80px; height: 80px; display: flex;">
+              {{ request.user.first_name|first|default:request.user.username|first|upper|default:'U' }}
+            </span>
+          {% endif %}
+        </div>
+        <div>
+          <h3 class="mb-1">{{ display_name }}</h3>
+          <div class="profile-badges">
+            <span class="profile-badge">{{ profile.employee_code|default:'No Employee Code' }}</span>
+            <span class="profile-badge">{{ profile.job_title|default:primary_group_name|default:'Role Not Set' }}</span>
+            <span class="profile-badge">{{ profile.location|default:'Location Pending' }}</span>
+          </div>
         </div>
       </div>
       <div class="profile-actions">

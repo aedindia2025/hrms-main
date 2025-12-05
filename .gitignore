@@ -6,6 +6,8 @@ venv/
 .env
 .env.local
 .env.*.local
+# But allow .env.example (template file)
+!.env.example
 
 # Python
 __pycache__/
