@@ -9,8 +9,8 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 
-from master.models import Employee, Site, ExpenseType, SubExpense, Shift, SalaryType, LeaveType
-from .models import CompOffEntry, SiteEntry, PermissionEntry, LeaveEntry, TADAEntry, TADAEntrySubItem, TravelEntry, ManualEntry
+from master.models import Employee, Site, ExpenseType, SubExpense
+from .models import CompOffEntry, SiteEntry, PermissionEntry, LeaveEntry, TADAEntry, TADAEntrySubItem
 
 # ------------------------
 # ENTRY -> COMP OFF
@@ -255,7 +255,6 @@ def comp_off_delete(request, pk):
 def leave_entry_create(request):
     employees = Employee.objects.order_by('staff_name')
     sites = Site.objects.order_by('name')
-    leave_types = LeaveType.objects.order_by('leave_type')
 
     values = {
         'from_date': '',
@@ -316,13 +315,8 @@ def leave_entry_create(request):
         # Validate leave_type - must be provided and valid
         if not values['leave_type'] or not values['leave_type'].strip():
             errors['leave_type'] = 'Leave type is required.'
-        else:
-            try:
-                leave_type_id = int(values['leave_type'])
-                if not LeaveType.objects.filter(pk=leave_type_id).exists():
-                    errors['leave_type'] = 'Invalid leave type selected.'
-            except (ValueError, TypeError):
-                errors['leave_type'] = 'Invalid leave type selected.'
+        elif values['leave_type'] not in dict(LeaveEntry.LEAVE_TYPE_CHOICES):
+            errors['leave_type'] = 'Invalid leave type selected.'
 
         if not values['reason']:
             errors['reason'] = 'Reason is required.'
@@ -450,7 +444,6 @@ def leave_entry_edit(request, pk):
     leave_entry = get_object_or_404(LeaveEntry, pk=pk)
     employees = Employee.objects.order_by('staff_name')
     sites = Site.objects.order_by('name')
-    leave_types = LeaveType.objects.order_by('leave_type')
 
     values = {
         'from_date': leave_entry.from_date.strftime('%Y-%m-%d') if leave_entry.from_date else '',

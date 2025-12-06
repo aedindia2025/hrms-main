@@ -81,7 +81,11 @@
              <select name="leave_type" id="leaveType" class="form-select" required>
                 <option value="">Select Leave Type</option>
                 {% for leave_type in leave_types %}
+<<<<<<< HEAD
                     <option value="{{ leave_type.id }}" {% if values.leave_type == leave_type.id|stringformat:"s" %}selected{% endif %}>{{ leave_type.leave_type }}</option>
+=======
+                    <option value="{{ leave_type.id }}" {% if values.leave_type|stringformat:"s" == leave_type.id|stringformat:"s" %}selected{% endif %}>{{ leave_type.leave_type }}</option>
+>>>>>>> 977c76096f18e4fd846d8462414b8e4700bd0833
                 {% endfor %}
                 </select>
             {% if errors.leave_type %}

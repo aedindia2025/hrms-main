@@ -118,8 +118,8 @@
                         {% for entry in tada_entries %}
                         <tr>
                             <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
-                            <td>{{ entry.entry_date|date:"d-m-Y" }}</td>
-                            <td>{{ entry.expense_date|date:"d-m-Y" }}</td>
+                            <td class="text-nowrap">{{ entry.entry_date|date:"d-m-Y" }}</td>
+                            <td class="text-nowrap">{{ entry.expense_date|date:"d-m-Y" }}</td>
                             <td>{{ entry.entry_no|default:"-" }}</td>
                             <td>{{ entry.batch_no|default:"-" }}</td>
                             <td>{{ entry.site.name }}</td>
@@ -129,15 +129,16 @@
                             <td>
                                 <div class="d-inline-flex align-items-center">
                                     <span class="me-1">₹</span>
-                                    <input type="number" 
+                                    <input type="text" 
                                            class="form-control form-control-sm head-approval-amount" 
                                            data-entry-id="{{ entry.pk }}"
                                            data-update-url="{% url 'approval:tada_head_approval_amount_update' entry.pk %}"
                                            value="{% if entry.head_approval_amount %}{{ entry.head_approval_amount|floatformat:2 }}{% else %}{{ entry.total_amount|floatformat:2 }}{% endif %}"
-                                           step="0.01"
-                                           min="0"
+                                           pattern="[0-9]+(\.[0-9]{1,2})?"
                                            style="width: 100px;"
-                                           onblur="saveHeadApprovalAmount(this)">
+                                           onblur="saveHeadApprovalAmount(this)"
+                                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"
+                                           inputmode="decimal">
                                     <button type="button" 
                                             class="btn btn-sm btn-link p-0 ms-1 save-amount-btn" 
                                             data-entry-id="{{ entry.pk }}"
@@ -339,7 +340,7 @@
     }
     
     function saveHeadApprovalAmount(input) {
-        const amount = input.value;
+        const amount = input.value.trim();
         const saveBtn = input.nextElementSibling;
         const updateUrl = input.getAttribute('data-update-url');
         
@@ -353,8 +354,15 @@
             saveBtn.style.display = 'inline-block';
         }
         
-        // Validate amount
-        if (!amount || isNaN(amount) || parseFloat(amount) < 0) {
+        // Validate amount - allow empty to clear, but if filled must be valid number
+        if (amount && (isNaN(amount) || parseFloat(amount) < 0)) {
+            alert('Please enter a valid amount (numbers and decimal only)');
+            input.focus();
+            return;
+        }
+        
+        // If empty, don't save
+        if (!amount) {
             return;
         }
         

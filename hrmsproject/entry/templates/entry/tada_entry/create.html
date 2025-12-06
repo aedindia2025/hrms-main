@@ -79,15 +79,15 @@
           <div data-value="{{ expense_type.name }}" data-id="{{ expense_type.id }}">{{ expense_type.name }}</div>
         {% endfor %}
       {% else %}
-        <div data-value="Drinking Water Expenses">Drinking Water Expenses</div>
-        <div data-value="Food Expenses Special">Food Expenses Special</div>
-        <div data-value="Food Expenses">Food Expenses</div>
-        <div data-value="Lodging Expenses">Lodging Expenses</div>
-        <div data-value="Miscallaneous Expenses">Miscallaneous Expenses</div>
-        <div data-value="Staff Refreshment">Staff Refreshment</div>
-        <div data-value="Staff Welfare Expenses">Staff Welfare Expenses</div>
-        <div data-value="Tollgate Expenses">Tollgate Expenses</div>
-        <div data-value="Travelling Expenses">Travelling Expenses</div>
+        <div data-value="Drinking Water Expenses" data-id="">Drinking Water Expenses</div>
+        <div data-value="Food Expenses Special" data-id="">Food Expenses Special</div>
+        <div data-value="Food Expenses" data-id="">Food Expenses</div>
+        <div data-value="Lodging Expenses" data-id="">Lodging Expenses</div>
+        <div data-value="Miscallaneous Expenses" data-id="">Miscallaneous Expenses</div>
+        <div data-value="Staff Refreshment" data-id="">Staff Refreshment</div>
+        <div data-value="Staff Welfare Expenses" data-id="">Staff Welfare Expenses</div>
+        <div data-value="Tollgate Expenses" data-id="">Tollgate Expenses</div>
+        <div data-value="Travelling Expenses" data-id="">Travelling Expenses</div>
       {% endif %}
     </div>
   </div>
@@ -103,14 +103,14 @@
           <div data-value="{{ sub_expense_type.name }}" data-id="{{ sub_expense_type.id }}">{{ sub_expense_type.name }}</div>
         {% endfor %}
       {% else %}
-        <div data-value="Bike Own">Bike Own</div>
-        <div data-value="Bike Rental">Bike Rental</div>
-        <div data-value="Bus">Bus</div>
-        <div data-value="Car CNG">Car CNG</div>
-        <div data-value="Car Petrol">Car Petrol</div>
-        <div data-value="Car Rental">Car Rental</div>
-        <div data-value="Taxi/Auto">Taxi/Auto</div>
-        <div data-value="Train">Train</div>
+        <div data-value="Bike Own" data-id="">Bike Own</div>
+        <div data-value="Bike Rental" data-id="">Bike Rental</div>
+        <div data-value="Bus" data-id="">Bus</div>
+        <div data-value="Car CNG" data-id="">Car CNG</div>
+        <div data-value="Car Petrol" data-id="">Car Petrol</div>
+        <div data-value="Car Rental" data-id="">Car Rental</div>
+        <div data-value="Taxi/Auto" data-id="">Taxi/Auto</div>
+        <div data-value="Train" data-id="">Train</div>
       {% endif %}
     </div>
   </div>
@@ -152,6 +152,7 @@
             <textarea id="description" class="form-control" rows="3"></textarea>
           </div>
         <div class="col-md-2 d-flex align-items-center mb-3 gap-2">
+        <button type="button" id="addBtn" class="btn btn-primary">Add</button>
         <button type="button" id="updateBtn" class="btn btn-success" style="display: none;">Update</button>
         <button type="button" id="cancelEditBtn" class="btn btn-secondary" style="display: none;">Cancel</button>
       </div>
@@ -475,18 +476,43 @@
     refreshSubListTable();
   });
 
-  const addBtn = document.getElementById("addBtn");
-  const updateBtn = document.getElementById("updateBtn");
-  const cancelEditBtn = document.getElementById("cancelEditBtn");
-  const tableBody = document.querySelector("#recordsTable tbody");
-  const noRecordsRow = document.getElementById("noRecordsRow");
+  // Initialize buttons after DOM is ready
+  let addBtn, updateBtn, cancelEditBtn;
   
-  // Cancel edit button event
-  if (cancelEditBtn) {
-    cancelEditBtn.addEventListener("click", function(e) {
-      e.preventDefault();
-      cancelEdit();
-    });
+  function initializeButtons() {
+    addBtn = document.getElementById("addBtn");
+    updateBtn = document.getElementById("updateBtn");
+    cancelEditBtn = document.getElementById("cancelEditBtn");
+    
+    // Cancel edit button event
+    if (cancelEditBtn) {
+      cancelEditBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        cancelEdit();
+      });
+    }
+    
+    // Add button event
+    if (addBtn) {
+      addBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        addOrUpdateItem();
+      });
+    }
+    
+    // Update button event
+    if (updateBtn) {
+      updateBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        addOrUpdateItem();
+      });
+    }
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeButtons);
+  } else {
+    initializeButtons();
   }
 
   // Calculate total kilometer
@@ -567,9 +593,9 @@
         editingItemId = null;
         
         // Show Add button, hide Update and Cancel buttons
-        document.getElementById("addBtn").style.display = 'inline-block';
-        document.getElementById("updateBtn").style.display = 'none';
-        document.getElementById("cancelEditBtn").style.display = 'none';
+        if (addBtn) addBtn.style.display = 'inline-block';
+        if (updateBtn) updateBtn.style.display = 'none';
+        if (cancelEditBtn) cancelEditBtn.style.display = 'none';
       } else {
         alert('Error: Item not found for updating. Please try again.');
         return;
@@ -624,19 +650,6 @@
     document.getElementById("meterUploadImage").value = '';
   }
   
-  // Add to sublist
-  addBtn.addEventListener("click", function (e) {
-    e.preventDefault();
-    addOrUpdateItem();
-  });
-  
-  // Update item
-  if (updateBtn) {
-    updateBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      addOrUpdateItem();
-    });
-  }
 
   // Edit item function
   window.editItem = function(itemId) {
@@ -676,9 +689,9 @@
     document.getElementById("description").value = item.description || '';
     
     // Show Update and Cancel buttons, hide Add button
-    document.getElementById("addBtn").style.display = 'none';
-    document.getElementById("updateBtn").style.display = 'inline-block';
-    document.getElementById("cancelEditBtn").style.display = 'inline-block';
+    if (addBtn) addBtn.style.display = 'none';
+    if (updateBtn) updateBtn.style.display = 'inline-block';
+    if (cancelEditBtn) cancelEditBtn.style.display = 'inline-block';
     
     // Scroll to form fields
     if (expenseTypeInput) {
@@ -718,9 +731,9 @@
     document.getElementById("meterUploadImage").value = '';
     
     // Show Add button, hide Update and Cancel buttons
-    document.getElementById("addBtn").style.display = 'inline-block';
-    document.getElementById("updateBtn").style.display = 'none';
-    document.getElementById("cancelEditBtn").style.display = 'none';
+    if (addBtn) addBtn.style.display = 'inline-block';
+    if (updateBtn) updateBtn.style.display = 'none';
+    if (cancelEditBtn) cancelEditBtn.style.display = 'none';
   };
   
   // Remove item function
@@ -778,47 +791,75 @@
     });
   }
 
-  // Update custom select to store IDs
-  document.querySelectorAll(".custom-select-wrapper").forEach(wrapper => {
-    const input = wrapper.querySelector(".custom-select-input");
-    const hiddenInput = wrapper.querySelector("input[type='hidden']");
-    const dropdown = wrapper.querySelector(".custom-select-dropdown");
+  // Initialize custom select dropdowns
+  function initializeCustomSelects() {
+    document.querySelectorAll(".custom-select-wrapper").forEach(wrapper => {
+      const input = wrapper.querySelector(".custom-select-input");
+      const hiddenInput = wrapper.querySelector("input[type='hidden']");
+      const dropdown = wrapper.querySelector(".custom-select-dropdown");
 
-    // Show/hide dropdown on click
-    input.addEventListener("click", () => {
-      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-      input.removeAttribute("readonly");
-      input.focus();
-    });
+      if (!input || !dropdown) {
+        console.error('Custom select elements not found');
+        return;
+      }
 
-    // Filter items while typing
-    input.addEventListener("input", () => {
-      const filter = input.value.toLowerCase();
-      const options = dropdown.querySelectorAll("div");
-      options.forEach(opt => {
-        opt.style.display = opt.textContent.toLowerCase().includes(filter) ? "block" : "none";
+      // Show/hide dropdown on click
+      input.addEventListener("click", (e) => {
+        e.stopPropagation();
+        // Close all other dropdowns first
+        document.querySelectorAll(".custom-select-dropdown").forEach(dd => {
+          if (dd !== dropdown) {
+            dd.style.display = "none";
+          }
+        });
+        dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+        input.removeAttribute("readonly");
+        input.focus();
+      });
+
+      // Filter items while typing
+      input.addEventListener("input", () => {
+        const filter = input.value.toLowerCase();
+        const options = dropdown.querySelectorAll("div");
+        options.forEach(opt => {
+          const text = opt.textContent.toLowerCase();
+          opt.style.display = text.includes(filter) ? "block" : "none";
+        });
+        // Show dropdown when typing
+        if (filter.length > 0) {
+          dropdown.style.display = "block";
+        }
+      });
+
+      // Select option
+      dropdown.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const option = e.target.closest("div[data-value]");
+        if (option && option.dataset.value) {
+          input.value = option.dataset.value;
+          if (hiddenInput) {
+            hiddenInput.value = option.dataset.id || '';
+          }
+          dropdown.style.display = "none";
+          input.setAttribute("readonly", true);
+        }
+      });
+
+      // Close dropdown if clicked outside
+      document.addEventListener("click", (e) => {
+        if (!wrapper.contains(e.target)) {
+          dropdown.style.display = "none";
+          input.setAttribute("readonly", true);
+        }
       });
     });
+  }
 
-    // Select option
-    dropdown.addEventListener("click", e => {
-      if (e.target.dataset.value) {
-        input.value = e.target.dataset.value;
-        if (hiddenInput && e.target.dataset.id) {
-          hiddenInput.value = e.target.dataset.id;
-        }
-        dropdown.style.display = "none";
-        input.setAttribute("readonly", true);
-      }
-    });
-
-    // Close dropdown if clicked outside
-    document.addEventListener("click", e => {
-      if (!wrapper.contains(e.target)) {
-        dropdown.style.display = "none";
-        input.setAttribute("readonly", true);
-      }
-    });
-  });
+  // Initialize custom selects after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCustomSelects);
+  } else {
+    initializeCustomSelects();
+  }
 </script>
 {% endblock %}
