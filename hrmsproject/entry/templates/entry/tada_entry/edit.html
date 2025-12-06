@@ -148,9 +148,6 @@
             <label class="form-label">Description</label>
             <textarea id="description" class="form-control" rows="3"></textarea>
           </div>
-        <div class="col-md-1 d-flex align-items-center mb-3 text-end">
-        <button type="button" id="addBtn" class="btn btn-primary w-100">Add</button>
-      </div>
         </div>
 
         {% if errors.sub_items %}
@@ -520,8 +517,6 @@
     return true;
   }
   
-  const addBtn = document.getElementById("addBtn");
-
   // Calculate total kilometer
   function calculateTotalKm() {
     const startMeter = parseFloat(document.getElementById("startMeter").value) || 0;
@@ -542,75 +537,6 @@
 
   document.getElementById("startMeter").addEventListener("input", calculateTotalKm);
   document.getElementById("endMeter").addEventListener("input", calculateTotalKm);
-
-  // Add to sublist
-  addBtn.addEventListener("click", function (e) {
-    e.preventDefault();
-    
-    // Get form values
-    const expenseType = document.getElementById("expenseTypeInput").value;
-    const expenseTypeId = document.getElementById("expenseTypeId").value;
-    const subExpenseType = document.getElementById("subExpenseTypeInput").value;
-    const subExpenseTypeId = document.getElementById("subExpenseTypeId").value;
-    const fromLocation = document.getElementById("fromLocation").value;
-    const toLocation = document.getElementById("toLocation").value;
-    const startMeter = document.getElementById("startMeter").value;
-    const endMeter = document.getElementById("endMeter").value;
-    const totalKilometer = document.getElementById("totalKilometer").value;
-    const amount = document.getElementById("amount").value;
-    const description = document.getElementById("description").value;
-
-    // Validation
-    if (!expenseType || !expenseTypeId) {
-      alert("Please select an Expense Type");
-      return;
-    }
-    if (!subExpenseType || !subExpenseTypeId) {
-      alert("Please select a Sub Expense Type");
-      return;
-    }
-    if (!fromLocation || !toLocation) {
-      alert("Please enter From and To locations");
-      return;
-    }
-    if (!amount || parseFloat(amount) <= 0) {
-      alert("Please enter a valid amount");
-      return;
-    }
-
-    // Add to array
-    const item = {
-      id: tadaItemCounter++,
-      expense_type_id: expenseTypeId,
-      expense_type_name: expenseType,
-      sub_expense_type_id: subExpenseTypeId || '',
-      sub_expense_type_name: subExpenseType || '',
-      from_location: fromLocation,
-      to_location: toLocation,
-      start_meter: startMeter || '',
-      end_meter: endMeter || '',
-      total_kilometer: totalKilometer || '',
-      amount: amount,
-      description: description || ''
-    };
-    
-    tadaSubListItems.push(item);
-    
-    // Clear form
-    document.getElementById("expenseTypeInput").value = '';
-    document.getElementById("expenseTypeId").value = '';
-    document.getElementById("subExpenseTypeInput").value = '';
-    document.getElementById("subExpenseTypeId").value = '';
-    document.getElementById("fromLocation").value = '';
-    document.getElementById("toLocation").value = '';
-    document.getElementById("startMeter").value = '';
-    document.getElementById("endMeter").value = '';
-    document.getElementById("totalKilometer").value = '';
-    document.getElementById("amount").value = '';
-    document.getElementById("description").value = '';
-    document.getElementById("uploadImage").value = '';
-    document.getElementById("meterUploadImage").value = '';
-  });
 
   // Remove item function (not used since table is removed, but kept for potential future use)
   window.removeItem = function(itemId) {
