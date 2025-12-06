@@ -103,16 +103,16 @@
                             <th>S.No</th>
                             <th>Entry Date</th>
                             <th>Expense Date</th>
-                            <th>Entry No</th>
+                            <th class="col-entry-no">Entry No</th>
                             <th>Batch No</th>
                             <th>Site Name</th>
                             <th>Emp ID</th>
                             <th>Staff Name</th>
                             <th>Staff Req Amt</th>
                             <th>Head app</th>
-                            <th>HR App</th>
+                            <th class="col-hr-app">HR App</th>
                             <th>Print</th>
-                            <th>Action</th>
+                            <th class="col-action">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,7 +121,7 @@
                             <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
                             <td class="text-nowrap">{{ entry.entry_date|date:"d-m-Y" }}</td>
                             <td class="text-nowrap">{{ entry.expense_date|date:"d-m-Y" }}</td>
-                            <td class="text-nowrap">{{ entry.entry_no|default:"-" }}</td>
+                            <td class="col-entry-no">{{ entry.entry_no|default:"-" }}</td>
                             <td class="text-nowrap">{{ entry.batch_no|default:"-" }}</td>
                             <td>{{ entry.site.name }}</td>
                             <td>{{ entry.employee.staff_id }}</td>
@@ -137,14 +137,21 @@
                                 {% endif %}
                                 <div><strong>Status:</strong> <span class="text-success text-nowrap">Head Approved → HR</span></div>
                             </td>
-                            <td>
-                                <span class="badge rounded-pill d-inline-flex align-items-center {{ entry.hr_approval_badge_class }}">
-                                    {% if entry.hr_approval_status == 'approved' %}
-                                        <i data-feather="check-circle" class="me-1" style="width:14px; height:14px; color:#28a745;"></i>
-                                    {% elif entry.hr_approval_status == 'rejected' %}
-                                        <i data-feather="x-circle" class="me-1" style="width:14px; height:14px; color:#dc3545;"></i>
+                            <td class="col-hr-app">
+                                <span class="badge rounded-pill d-inline-flex flex-column align-items-start {{ entry.hr_approval_badge_class }}" style="width: fit-content; padding: 0.35em 0.65em;">
+                                    <span class="d-inline-flex align-items-center">
+                                        {% if entry.hr_approval_status == 'approved' %}
+                                            <i data-feather="check-circle" class="me-1" style="width:14px; height:14px; color:#28a745;"></i>
+                                        {% elif entry.hr_approval_status == 'rejected' %}
+                                            <i data-feather="x-circle" class="me-1" style="width:14px; height:14px; color:#dc3545;"></i>
+                                        {% endif %}
+                                        {{ entry.get_hr_approval_status_display }}
+                                    </span>
+                                    {% if entry.hr_approval_by %}
+                                        <span style="font-size: 0.75rem; margin-top: 0.25rem; word-break: break-word;">
+                                            by {{ entry.hr_approval_by }}
+                                        </span>
                                     {% endif %}
-                                    {{ entry.get_hr_approval_status_display }}{% if entry.hr_approval_by %} by {{ entry.hr_approval_by }}{% endif %}
                                 </span>
                             </td>
                             <td>
@@ -152,34 +159,36 @@
                                     <i data-feather="printer"></i>
                                 </a>
                             </td>
-                            <td class="text-nowrap">
+                            <td class="col-action">
                                 {% if perms.approval.approve_tadaapproval %}
-                                    <form method="post"
-                                          action="{% url 'approval:tada_hr_approval_update' entry.pk %}"
-                                          class="d-inline"
-                                          onsubmit="return confirmApproval(this, 'approve');">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="status" value="approved">
-                                        <input type="hidden" name="note" value="">
-                                        <button type="submit" 
-                                                class="btn btn-xs btn-success me-1" 
-                                                title="Approve">
-                                            Approve
-                                        </button>
-                                    </form>
-                                    <form method="post"
-                                          action="{% url 'approval:tada_hr_approval_update' entry.pk %}"
-                                          class="d-inline"
-                                          onsubmit="return confirmApproval(this, 'reject');">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="status" value="rejected">
-                                        <input type="hidden" name="note" value="">
-                                        <button type="submit" 
-                                                class="btn btn-xs btn-danger" 
-                                                title="Reject">
-                                            Reject
-                                        </button>
-                                    </form>
+                                    <div class="d-flex flex-column gap-1">
+                                        <form method="post"
+                                              action="{% url 'approval:tada_hr_approval_update' entry.pk %}"
+                                              class="w-100"
+                                              onsubmit="return confirmApproval(this, 'approve');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="approved">
+                                            <input type="hidden" name="note" value="">
+                                            <button type="submit" 
+                                                    class="btn btn-xs btn-success w-100" 
+                                                    title="Approve">
+                                                Approve
+                                            </button>
+                                        </form>
+                                        <form method="post"
+                                              action="{% url 'approval:tada_hr_approval_update' entry.pk %}"
+                                              class="w-100"
+                                              onsubmit="return confirmApproval(this, 'reject');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="rejected">
+                                            <input type="hidden" name="note" value="">
+                                            <button type="submit" 
+                                                    class="btn btn-xs btn-danger w-100" 
+                                                    title="Reject">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    </div>
                                 {% else %}
                                     <span class="text-muted">No permission</span>
                                 {% endif %}
@@ -283,6 +292,59 @@
     line-height: 1.2;
     border-radius: 0.2rem;
     font-weight: 500;
+  }
+  .col-entry-no {
+    width: 100px;
+    max-width: 100px;
+    min-width: 100px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+  .col-hr-app {
+    width: 140px;
+    max-width: 140px;
+    min-width: 140px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    overflow: hidden;
+  }
+  .col-hr-app .badge {
+    max-width: 100%;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    display: inline-flex;
+  }
+  .col-hr-app .badge > span:first-child {
+    white-space: nowrap;
+  }
+  .col-hr-app .badge.bg-success {
+    background-color: #28a745 !important;
+    color: white !important;
+  }
+  .col-hr-app .badge.bg-danger {
+    background-color: #dc3545 !important;
+    color: white !important;
+  }
+  .col-hr-app .badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+  }
+  .col-hr-app .badge.bg-secondary {
+    background-color: #6c757d !important;
+    color: white !important;
+  }
+  .col-hr-app .d-flex.flex-column {
+    gap: 0.25rem;
+  }
+  .col-action {
+    width: 120px;
+    max-width: 120px;
+    min-width: 120px;
+  }
+  .col-action .d-flex.flex-column {
+    gap: 0.25rem;
   }
 </style>
 
