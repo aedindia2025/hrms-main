@@ -6,9 +6,9 @@ from django.db.models import Q
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from entry.models import CompOffEntry, LeaveEntry, PermissionEntry, TADAEntry
+from entry.models import CompOffEntry, LeaveEntry, PermissionEntry, TADAEntry, TravelEntry
 from master.models import Employee, Site
-from .models import HRCompOffApproval, LeaveApproval, PermissionApproval
+from .models import HRCompOffApproval, LeaveApproval, PermissionApproval, TravelApproval
 
 
 # ==================== HR Approval ====================
@@ -655,5 +655,131 @@ def tada_hr_print(request):
 # ==================== Travel HR ====================
 @permission_required('approval.view_travelapproval', raise_exception=True)
 def travel_hr_approval_list(request):
-    """Approval -> Travel HR Approval list."""
-    return render(request, 'approval/travelHr_approval/list.html')
+    """Approval -> Travel HR Approval list with filters & pagination."""
+    per_page = request.GET.get('per_page', '').strip() or '10'
+    search_query = request.GET.get('q', '').strip()
+    page_number = request.GET.get('page')
+
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    site_id = request.GET.get('site', '').strip()
+    employee_id = request.GET.get('employee', '').strip()
+    status = request.GET.get('status', '').strip()
+
+    try:
+        per_page_value = max(int(per_page), 1)
+    except ValueError:
+        per_page_value = 10
+
+    travel_entries = TravelEntry.objects.select_related('employee', 'site')
+
+    if search_query:
+        travel_entries = travel_entries.filter(
+            Q(employee__staff_name__icontains=search_query)
+            | Q(employee__staff_id__icontains=search_query)
+            | Q(site__name__icontains=search_query)
+            | Q(from_location__icontains=search_query)
+            | Q(to_location__icontains=search_query)
+            | Q(purpose_of_visit__icontains=search_query)
+        )
+
+    if from_date:
+        travel_entries = travel_entries.filter(departure_date__gte=from_date)
+    if to_date:
+        travel_entries = travel_entries.filter(departure_date__lte=to_date)
+    if site_id:
+        travel_entries = travel_entries.filter(site_id=site_id)
+    if employee_id:
+        travel_entries = travel_entries.filter(employee_id=employee_id)
+    if status:
+        status_mapping = {
+            'pending': TravelEntry.APPROVAL_PENDING,
+            'approved': TravelEntry.APPROVAL_APPROVED,
+            'rejected': TravelEntry.APPROVAL_REJECTED,
+        }
+        mapped_status = status_mapping.get(status)
+        if mapped_status:
+            travel_entries = travel_entries.filter(approval_status=mapped_status)
+
+    travel_entries = travel_entries.order_by('-departure_date', 'employee__staff_name')
+
+    paginator = Paginator(travel_entries, per_page_value)
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    base_querystring = query_params.urlencode()
+    page_query_base = f'{base_querystring}&' if base_querystring else ''
+
+    context = {
+        'travel_entries': page_obj,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'per_page': str(per_page_value),
+        'per_page_value': per_page_value,
+        'base_querystring': base_querystring,
+        'page_query_base': page_query_base,
+        'total_entries': paginator.count,
+        'from_date': from_date,
+        'to_date': to_date,
+        'filter_site_id': site_id,
+        'filter_employee_id': employee_id,
+        'filter_status': status,
+        'sites': Site.objects.order_by('name'),
+        'employees': Employee.objects.order_by('staff_name'),
+        'approval_choices': TravelApproval.APPROVAL_CHOICES,
+        'travel_status_choices': TravelEntry.APPROVAL_CHOICES,
+    }
+    return render(request, 'approval/travelHr_approval/list.html', context)
+
+
+@permission_required('approval.approve_travelapproval', raise_exception=True)
+@require_POST
+def travel_hr_approval_update(request, pk):
+    """
+    Update travel approval status using the TravelApproval model.
+    Also updates the TravelEntry for backward compatibility.
+    """
+    travel_entry = get_object_or_404(TravelEntry, pk=pk)
+    
+    # Get or create travel approval record
+    travel_approval, created = TravelApproval.objects.get_or_create(
+        travel_entry=travel_entry
+    )
+
+    new_status = request.POST.get('status', '').strip()
+    note = request.POST.get('note', '').strip()
+
+    valid_statuses = {choice[0] for choice in TravelApproval.APPROVAL_CHOICES}
+    if new_status not in valid_statuses:
+        messages.error(request, 'Invalid approval status.')
+    else:
+        # Update travel approval model
+        travel_approval.approval_status = new_status
+        travel_approval.approved_by = request.user
+        travel_approval.approval_note = note
+        travel_approval.approval_date = timezone.now()
+        travel_approval.save()
+        
+        # Map approval status to TravelEntry approval status
+        status_mapping = {
+            'approved': TravelEntry.APPROVAL_APPROVED,
+            'rejected': TravelEntry.APPROVAL_REJECTED,
+            'pending': TravelEntry.APPROVAL_PENDING,
+        }
+        
+        # Also update TravelEntry for backward compatibility
+        travel_entry.approval_status = status_mapping.get(new_status, TravelEntry.APPROVAL_PENDING)
+        travel_entry.approved_by = (
+            request.user.get_full_name() or request.user.get_username()
+        )
+        travel_entry.approval_note = note
+        travel_entry.save()
+        
+        messages.success(request, 'Travel requisition approval status updated successfully.')
+
+    # Redirect back to the referring page if available, otherwise to the list view
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        return redirect(referer)
+    return redirect('approval:travel_hr_approval_list')

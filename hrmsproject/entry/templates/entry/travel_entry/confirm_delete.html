@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Travel Requisition - Delete{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0 fw-bold text-secondary">Entry / <span class="text-dark">Travel Requisition Delete</span></h6>
+        <a href="{% url 'entry:travel_entry_list' %}" class="btn-back">
+            <i data-feather="arrow-left"></i> Back
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-4">Are you sure you want to delete this Travel Requisition?</h5>
+            
+            <div class="mb-4">
+                <strong>Employee:</strong> {{ entry.employee.staff_name }}<br>
+                <strong>From:</strong> {{ entry.from_location }}<br>
+                <strong>To:</strong> {{ entry.to_location }}<br>
+                <strong>Departure Date:</strong> {{ entry.departure_date|date:"d-m-Y" }}
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                <a href="{% url 'entry:travel_entry_list' %}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        text-decoration: none;
+        transition: 0.2s ease-in-out;
+    }
+    .btn-back:hover {
+        background: #f8f9fa;
+        color: #212529;
+        text-decoration: none;
+    }
+</style>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+</script>
+
+{% endblock %}
+

@@ -80,8 +80,8 @@
             <label class="form-label">Leave Type <span class="text-danger">*</span></label>
              <select name="leave_type" id="leaveType" class="form-select" required>
                 <option value="">Select Leave Type</option>
-                {% for key, label in leave_type_choices %}
-                    <option value="{{ key }}" {% if values.leave_type == key %}selected{% endif %}>{{ label }}</option>
+                {% for leave_type in leave_types %}
+                    <option value="{{ leave_type.id }}" {% if values.leave_type == leave_type.id|stringformat:"s" %}selected{% endif %}>{{ leave_type.leave_type }}</option>
                 {% endfor %}
                 </select>
             {% if errors.leave_type %}

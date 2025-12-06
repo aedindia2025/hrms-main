@@ -31,4 +31,5 @@ urlpatterns = [
 
     # ==================== Travel HR ====================
     path('travel-hr/', views.travel_hr_approval_list, name='travel_hr_approval_list'),
+    path('travel-hr/<int:pk>/update/', views.travel_hr_approval_update, name='travel_hr_approval_update'),
 ]

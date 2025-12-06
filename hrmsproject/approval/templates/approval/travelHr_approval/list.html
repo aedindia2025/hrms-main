@@ -10,65 +10,89 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h6 class="mb-3 fw-bold text-secondary">Approval / <span class="text-dark"> Travel HR Approval</span></h6>
-        <!-- Link to Create Page -->
-       <a href="#" class="btn btn-success btn-create text-nowrap">Home<span data-feather="home" class="icon-sm"></span> </a>
+        <a href="{% url 'entry:travel_entry_list' %}" class="btn btn-success btn-create text-nowrap">Home<span data-feather="home" class="icon-sm"></span> </a>
     </div>
-
 
    <div class="card shadow-sm">
         <div class="card-body">
-    <!-- Copy dashboard HTML here -->
-      <div class="row g-3 mb-3">
-      <div class="col-md-2">
-        <label class="form-label">From Date</label>
-        <input type="date" class="form-control" value="2025-09-20">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">To Date</label>
-        <input type="date" class="form-control" value="2025-09-20">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Site Name</label>
-        <select class="form-select">
-          <option>select</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Employee Name</label>
-        <select class="form-select">
-        <option>Select</option>
-          <option>Manoj</option>
-          <option>Gowshi</option>
-          <option>Prabu</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Status</label>
-        <select class="form-select">
-          <option>select</option>
-          <option>Approved</option>
-          <option>Pending</option>
-          <option>Cancel</option>
-        </select>
-      </div>
-      <div class="col-md-1 d-flex align-items-end">
-        <button class="btn btn-primary w-100">Go</button>
-      </div>
-    </div>
-     <div class="d-flex justify-content-between align-items-center mt-5 mb-10">
+      <form method="get" class="row g-3 mb-3">
+                <input type="hidden" name="per_page" value="{{ per_page }}">
+                {% if search_query %}
+                    <input type="hidden" name="q" value="{{ search_query }}">
+                {% endif %}
+                <div class="col-md-2">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Site Name</label>
+                    <select name="site" class="form-select">
+                        <option value="">All Sites</option>
+                        {% for site in sites %}
+                            <option value="{{ site.id }}" {% if filter_site_id|stringformat:"s" == site.id|stringformat:"s" %}selected{% endif %}>
+                                {{ site.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Employee Name</label>
+                    <select name="employee" class="form-select">
+                        <option value="">All Employees</option>
+                        {% for employee in employees %}
+                            <option value="{{ employee.id }}" {% if filter_employee_id|stringformat:"s" == employee.id|stringformat:"s" %}selected{% endif %}>
+                                {{ employee.staff_name }} - {{ employee.staff_id }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        {% for key, label in travel_status_choices %}
+                            <option value="{{ key }}" {% if filter_status == key %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Go</button>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <a href="?per_page={{ per_page }}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-secondary w-100">Clear</a>
+                </div>
+            </form>
+     <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
                 <div>
                     Show 
-                    <select class="form-select d-inline-block w-auto mx-1">
-                        <option>10</option>
-                        <option>25</option>
-                        <option>50</option>
-                        <option>100</option>
+                    <select class="form-select d-inline-block w-auto mx-1" id="perPageSelect" onchange="updatePerPage(this.value)">
+                        <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+                        <option value="25" {% if per_page == '25' %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
                     </select>
                     entries
                 </div>
                 <div>
-                    <label class="me-2">Search:</label>
-                    <input type="text" class="form-control d-inline-block w-auto">
+                    <form method="get" class="d-inline-flex align-items-center">
+                        <input type="hidden" name="per_page" value="{{ per_page }}">
+                        {% if from_date %}<input type="hidden" name="from_date" value="{{ from_date }}">{% endif %}
+                        {% if to_date %}<input type="hidden" name="to_date" value="{{ to_date }}">{% endif %}
+                        {% if filter_site_id %}<input type="hidden" name="site" value="{{ filter_site_id }}">{% endif %}
+                        {% if filter_employee_id %}<input type="hidden" name="employee" value="{{ filter_employee_id }}">{% endif %}
+                        {% if filter_status %}<input type="hidden" name="status" value="{{ filter_status }}">{% endif %}
+                        <label class="me-2">Search:</label>
+                        <input type="text" name="q" class="form-control d-inline-block w-auto" value="{{ search_query }}" placeholder="Employee / Site / Location">
+                        {% if search_query %}
+                            <a href="?per_page={{ per_page }}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}{% if filter_site_id %}&site={{ filter_site_id }}{% endif %}{% if filter_employee_id %}&employee={{ filter_employee_id }}{% endif %}{% if filter_status %}&status={{ filter_status }}{% endif %}" class="btn btn-sm btn-secondary ms-2">Clear</a>
+                        {% endif %}
+                    </form>
                 </div>
             </div>
 
@@ -77,48 +101,151 @@
                 <table class="table table-bordered align-middle">
                     <thead class="table-light">
                         <tr>
-                           
                             <th>S.No</th>
                             <th>Entry Date</th>
                             <th>Staff Name</th>
                             <th>From-To</th>
                             <th>Departure / Return Date</th>
                             <th>Travel By</th>
-                            <th>Remarks</th>
-                            <th>Staff Head</th>
-                            <th>Staff Head Status</th>
-                            <th>Hr Action By</th>
+                            <th>Purpose</th>
+                            <th>Status</th>
                             <th>View</th>
                             <th>One Way Document</th>
-                            <th>Round Trip Document</th> 
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                           <td colspan="14" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No data available in table</td>
-                        </tr>
+                        {% if travel_entries %}
+                            {% for entry in travel_entries %}
+                            <tr>
+                                <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                                <td>{{ entry.entry_date|date:"d-m-Y" }}</td>
+                                <td>{{ entry.employee.staff_name }}</td>
+                                <td>{{ entry.from_to_display }}</td>
+                                <td>
+                                    {{ entry.departure_date|date:"d-m-Y" }} {{ entry.departure_time|time:"H:i" }}
+                                    {% if entry.return_date %}
+                                        <br><small class="text-muted">Return: {{ entry.return_date|date:"d-m-Y" }} {{ entry.return_time|time:"H:i" }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ entry.get_travel_mode_display }}</td>
+                                <td>{{ entry.purpose_of_visit|truncatewords:10 }}</td>
+                                <td>
+                                    {% if entry.travel_approval %}
+                                        {% with approval=entry.travel_approval %}
+                                            <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1" style="{{ approval.approval_badge_class }}">
+                                                {% if approval.approval_status == 'approved' %}
+                                                    <i data-feather="check-circle" class="me-1" style="width:14px; height:14px; color:#28a745;"></i>
+                                                {% elif approval.approval_status == 'rejected' %}
+                                                    <i data-feather="x-circle" class="me-1" style="width:14px; height:14px; color:#dc3545;"></i>
+                                                {% endif %}
+                                                <span style="font-size: 0.75rem; color: inherit;">
+                                                    {{ approval.get_approval_status_display }}{% if approval.approved_by %} by {{ approval.approved_by.get_full_name|default:approval.approved_by.username }}{% endif %}
+                                                </span>
+                                            </span>
+                                        {% endwith %}
+                                    {% else %}
+                                        <span class="badge rounded-pill d-inline-flex align-items-center px-2 py-1 {{ entry.approval_badge_class }}">
+                                            {{ entry.get_approval_status_display }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'entry:travel_entry_view' entry.pk %}" class="text-info" title="View">
+                                        <i data-feather="eye"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if entry.one_way_document %}
+                                        <a href="{{ entry.one_way_document.url }}" target="_blank" class="text-primary" title="View Document">
+                                            <i data-feather="file-text"></i>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-nowrap">
+                                    {% if perms.approval.approve_travelapproval %}
+                                        <form method="post"
+                                              action="{% url 'approval:travel_hr_approval_update' entry.pk %}"
+                                              class="d-inline"
+                                              onsubmit="return confirmApproval(this, 'approve');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="approved">
+                                            <input type="hidden" name="note" value="">
+                                            <button type="submit" 
+                                                    class="btn btn-xs btn-success me-1" 
+                                                    title="Approve">
+                                                Approve
+                                            </button>
+                                        </form>
+                                        <form method="post"
+                                              action="{% url 'approval:travel_hr_approval_update' entry.pk %}"
+                                              class="d-inline"
+                                              onsubmit="return confirmApproval(this, 'reject');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="status" value="rejected">
+                                            <input type="hidden" name="note" value="">
+                                            <button type="submit" 
+                                                    class="btn btn-xs btn-danger" 
+                                                    title="Reject">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-muted">No permission</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="11" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No travel requisitions found.</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
             <div class="d-flex justify-content-between align-items-center">
-                <div>Showing 1 to 1 of 1 entries</div>
+                <div>
+                    {% if total_entries %}
+                        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_entries }} entries
+                    {% else %}
+                        No entries to show
+                    {% endif %}
+                </div>
+                {% if page_obj.has_other_pages %}
                 <nav>
                     <ul class="pagination mb-0">
-                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                        <li class="page-item active"><a class="page-link">1</a></li>
-                        <li class="page-item disabled"><a class="page-link">Next</a></li>
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if page_query_base %}&{{ page_query_base }}{% endif %}">Previous</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><a class="page-link">{{ num }}</a></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link" href="?page={{ num }}{% if page_query_base %}&{{ page_query_base }}{% endif %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if page_query_base %}&{{ page_query_base }}{% endif %}">Next</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link">Next</a></li>
+                        {% endif %}
                     </ul>
                 </nav>
+                {% endif %}
             </div>
 
         </div>
 </div>
 </div>
-</div>
-
 
 <style>
     body {
@@ -132,24 +259,58 @@
         font-size: 14px;
     }
     .btn-create {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: 0.2s ease-in-out;
-}
-.icon-sm {
-    width: 16px;
-    height: 16px;
-  }
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: 0.2s ease-in-out;
+    }
+    .icon-sm {
+        width: 16px;
+        height: 16px;
+    }
+    .btn-xs {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        line-height: 1.2;
+        border-radius: 0.2rem;
+        font-weight: 500;
+    }
 </style>
 
 <script src="https://unpkg.com/feather-icons"></script>
 <script>
     feather.replace();
+    
+    // Apply icon colors and ensure icons are rendered
+    (function applyStatusIconStyles() {
+        setTimeout(function() {
+            document.querySelectorAll('[data-feather]').forEach(function(el) {
+                var color = el.style.color;
+                if (color) {
+                    el.setAttribute('data-color', color);
+                }
+            });
+            feather.replace();
+        }, 100);
+    })();
+    
+    function updatePerPage(value) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('per_page', value);
+        url.searchParams.delete('page'); // Reset to first page
+        window.location.href = url.toString();
+    }
+    
+    function confirmApproval(form, action) {
+        const message = action === 'approve' 
+            ? 'Are you sure you want to approve this travel requisition?'
+            : 'Are you sure you want to reject this travel requisition?';
+        return confirm(message);
+    }
 </script>
 {% endblock %}

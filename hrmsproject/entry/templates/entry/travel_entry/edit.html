@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Travel Requisition - Create{% endblock %}
+{% block title %}Travel Requisition - Edit{% endblock %}
 
 {% block content %}
 
@@ -11,7 +11,7 @@
 
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="mb-0 fw-bold text-secondary">Entry / <span class="text-dark">Travel Requisition Create</span></h6>
+        <h6 class="mb-0 fw-bold text-secondary">Entry / <span class="text-dark">Travel Requisition Edit</span></h6>
         <a href="{% url 'entry:travel_entry_list' %}" class="btn-back">
             <i data-feather="arrow-left"></i> Back
         </a>
@@ -22,16 +22,16 @@
             <div class="travel-card">
     
                 <!-- Travel Form -->
-                <form method="POST" action="{% url 'entry:travel_entry_create' %}" enctype="multipart/form-data">
+                <form method="POST" action="{% url 'entry:travel_entry_edit' travel_entry.pk %}" enctype="multipart/form-data">
                     {% csrf_token %}
                     
                     <!-- Hidden inputs for travel_mode and trip_type (must be inside form) -->
-                    <input type="hidden" name="travel_mode" id="travel_mode" value="{% if values.travel_mode %}{{ values.travel_mode }}{% else %}bus{% endif %}" required>
-                    <input type="hidden" name="trip_type" id="trip_type" value="{% if values.trip_type %}{{ values.trip_type }}{% else %}one_way{% endif %}" required>
+                    <input type="hidden" name="travel_mode" id="travel_mode" value="{{ values.travel_mode }}" required>
+                    <input type="hidden" name="trip_type" id="trip_type" value="{{ values.trip_type }}" required>
                     
                     <!-- Tabs -->
                     <div class="d-flex justify-content-center gap-3 mb-3 travel-tabs" id="travelModeTabs">
-                        <button type="button" class="btn {% if not values.travel_mode or values.travel_mode == 'bus' %}active{% endif %}" data-mode="bus">Bus</button>
+                        <button type="button" class="btn {% if values.travel_mode == 'bus' %}active{% endif %}" data-mode="bus">Bus</button>
                         <button type="button" class="btn {% if values.travel_mode == 'train' %}active{% endif %}" data-mode="train">Train</button>
                         <button type="button" class="btn {% if values.travel_mode == 'cab' %}active{% endif %}" data-mode="cab">Cab</button>
                         <button type="button" class="btn {% if values.travel_mode == 'flight' %}active{% endif %}" data-mode="flight">Flight</button>
@@ -39,7 +39,7 @@
 
                     <!-- Trip Type -->
                     <div class="d-flex justify-content-center gap-2 mb-3 trip-type" id="tripTypeTabs">
-                        <button type="button" class="btn {% if not values.trip_type or values.trip_type == 'one_way' %}active{% endif %}" data-trip="one_way">One Way</button>
+                        <button type="button" class="btn {% if values.trip_type == 'one_way' %}active{% endif %}" data-trip="one_way">One Way</button>
                         <button type="button" class="btn {% if values.trip_type == 'return' %}active{% endif %}" data-trip="return">Return</button>
                     </div>
                     
@@ -146,7 +146,7 @@
                             {% endif %}
                         </div>
 
-                        <div class="col-md-6" id="returnDateField" style="display:none;">
+                        <div class="col-md-6" id="returnDateField" style="{% if values.trip_type == 'return' %}display:block;{% else %}display:none;{% endif %}">
                             <label>Return Date <span class="text-danger">*</span></label>
                             <input type="date" name="return_date" class="form-control" value="{{ values.return_date }}">
                             {% if errors.return_date %}
@@ -154,7 +154,7 @@
                             {% endif %}
                         </div>
 
-                        <div class="col-md-6" id="returnTimeField" style="display:none;">
+                        <div class="col-md-6" id="returnTimeField" style="{% if values.trip_type == 'return' %}display:block;{% else %}display:none;{% endif %}">
                             <label>Return Time <span class="text-danger">*</span></label>
                             <input type="time" name="return_time" class="form-control" value="{{ values.return_time }}">
                             {% if errors.return_time %}
@@ -192,19 +192,27 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Aadhar Upload <small class="text-muted">(Optional)</small></label>
+                            {% if travel_entry.aadhar_upload %}
+                                <div class="mb-2">
+                                    <small>Current: <a href="{{ travel_entry.aadhar_upload.url }}" target="_blank">View</a></small>
+                                </div>
+                            {% endif %}
                             <input class="form-control" type="file" name="aadhar_upload" accept="image/*">
-                            <!-- <small class="text-muted">Note: File will need to be re-selected if form has errors</small> -->
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label">Upload One Way Document <small class="text-muted">(Optional)</small></label>
+                            {% if travel_entry.one_way_document %}
+                                <div class="mb-2">
+                                    <small>Current: <a href="{{ travel_entry.one_way_document.url }}" target="_blank">View</a></small>
+                                </div>
+                            {% endif %}
                             <input class="form-control" type="file" name="one_way_document" accept="image/*">
-                            <!-- <small class="text-muted">Note: File will need to be re-selected if form has errors</small> -->
                         </div>
 
                         <div class="row justify-content-center mt-3">
                             <div class="col-3">
-                                <button type="submit" class="btn submit-btn">Submit</button>
+                                <button type="submit" class="btn submit-btn">Update</button>
                             </div>
                         </div>
                     </div>
@@ -220,7 +228,6 @@
         -webkit-appearance: radio !important;
         margin-right: 4px;
     }
-
     body {
         background: #f7f8fa;
     }
@@ -241,7 +248,6 @@
         color: #495057;
         text-decoration: none;
         transition: 0.2s ease-in-out;
-        cursor: pointer;
     }
     .btn-back:hover {
         background: #f8f9fa;
@@ -252,8 +258,6 @@
         padding: 15px;
         max-width: 100%;
     }
-
-    /* Pill shaped tabs */
     .travel-tabs .btn {
         border-radius: 50px;
         padding: 8px 25px;
@@ -268,8 +272,6 @@
         background: #146c43;
         color: #fff;
     }
-
-    /* One Way / Return toggle */
     .trip-type .btn {
         border-radius: 30px;
         padding: 6px 20px;
@@ -283,11 +285,9 @@
         color: #fff;
         border-color: #0d6efd;
     }
-
     .form-control, .form-select {
         border-radius: 12px;
     }
-
     .submit-btn {
         background: #146c43;
         border: none;
@@ -303,7 +303,6 @@
         background: #0b5232;
         color:#fff;
     }
-
     label {
         font-weight: 500;
         margin-bottom: 5px;
@@ -322,13 +321,6 @@
             document.getElementById('travel_mode').value = this.dataset.mode;
         });
     });
-    // Set active based on current value or default to first
-    const currentTravelMode = document.getElementById('travel_mode').value;
-    if (currentTravelMode) {
-        document.querySelector(`#travelModeTabs .btn[data-mode="${currentTravelMode}"]`).classList.add('active');
-    } else {
-        document.querySelector('#travelModeTabs .btn').classList.add('active');
-    }
 
     // Trip Type Selection
     document.querySelectorAll('#tripTypeTabs .btn').forEach(btn => {
@@ -338,7 +330,6 @@
             const tripType = this.dataset.trip;
             document.getElementById('trip_type').value = tripType;
             
-            // Show/hide return date fields
             const returnDateField = document.getElementById('returnDateField');
             const returnTimeField = document.getElementById('returnTimeField');
             if (tripType === 'return') {
@@ -354,24 +345,6 @@
             }
         });
     });
-    
-    // Initialize trip type on page load
-    const currentTripType = document.getElementById('trip_type').value;
-    const returnDateField = document.getElementById('returnDateField');
-    const returnTimeField = document.getElementById('returnTimeField');
-    
-    if (currentTripType === 'return') {
-        returnDateField.style.display = 'block';
-        returnTimeField.style.display = 'block';
-        returnDateField.querySelector('input').required = true;
-        returnTimeField.querySelector('input').required = true;
-    } else {
-        // Ensure fields are hidden for one-way trips
-        returnDateField.style.display = 'none';
-        returnTimeField.style.display = 'none';
-        returnDateField.querySelector('input').required = false;
-        returnTimeField.querySelector('input').required = false;
-    }
 
     // Swap Locations
     document.getElementById('swapLocations').addEventListener('click', function() {
@@ -384,3 +357,4 @@
 </script>
 
 {% endblock %}
+

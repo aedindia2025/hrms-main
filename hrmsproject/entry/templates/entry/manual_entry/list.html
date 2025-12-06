@@ -10,82 +10,92 @@
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h6 class="mb-3 fw-bold text-secondary">Entry / <span class="text-dark">Manual Attendance Entry </span></h6>
-        <!-- Link to Create Page -->
       <div>
-       {% url 'manual_entry_create' as manual_entry_create_url %}
-       <a href="{{ manual_entry_create_url|default:'#' }}" class="btn btn-success btn-create text-nowrap">+ Create</a>
-       </div>
+       <a href="{% url 'entry:manual_entry_create' %}" class="btn btn-success btn-create text-nowrap">+ Create</a>
+      </div>
     </div>
-
-
 
     <div class="card shadow-sm">
         <div class="card-body">
             
             <!-- Filter Section -->
+            <form method="GET" action="{% url 'entry:manual_entry_list' %}" class="row g-3 mb-3">
+                <div class="col-md-2">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Site Name</label>
+                    <select name="site" class="form-select">
+                        <option value="">All Sites</option>
+                        {% for site in sites %}
+                            <option value="{{ site.id }}" {% if filter_site_id == site.id|stringformat:"s" %}selected{% endif %}>
+                                {{ site.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Salary Type</label>
+                    <select name="salary_type" class="form-select">
+                        <option value="">All Types</option>
+                        {% for salary_type in salary_types %}
+                            <option value="{{ salary_type.id }}" {% if filter_salary_type == salary_type.id|stringformat:"s" %}selected{% endif %}>
+                                {{ salary_type.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Shift</label>
+                    <select name="shift" class="form-select">
+                        <option value="">All Shifts</option>
+                        {% for shift in shifts %}
+                            <option value="{{ shift.id }}" {% if filter_shift == shift.id|stringformat:"s" %}selected{% endif %}>
+                                {{ shift.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Go</button>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <a href="{% url 'entry:manual_entry_list' %}" class="btn btn-secondary w-100">Clear</a>
+                </div>
+            </form>
 
-            <div class="row g-3 mb-3">
-      <div class="col-md-2">
-        <label class="form-label">From Date</label>
-        <input type="date" class="form-control" value="2025-09-20">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">To Date</label>
-        <input type="date" class="form-control" value="2025-09-20">
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Site Name</label>
-        <select class="form-select">
-          <option>select</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Salary Type</label>
-        <select class="form-select">
-        <option>Select</option>
-          <option>Salary</option>
-          <option>Wages</option>
-          <option>Others</option>
-        </select>
-      </div>
-      <div class="col-md-2">
-        <label class="form-label">Shift Type</label>
-        <select class="form-select">
-        <option>Select</option>
-          <option>Day Shift</option>
-          <option>Night Shift</option>
-          <option>Rotational Shift</option>
-        </select>
-      </div>
-      <div class="col-md-1 d-flex align-items-end">
-        <button class="btn btn-primary w-100">Go</button>
-      </div>
-    </div>
-
-    <div class="d-flex justify-content-end align-items-center mt-5 ">
-
-                {% url 'manual_entry_print' as manual_entry_print_url %}
-                <a href="{{ manual_entry_print_url|default:'#' }}" id="btnPrint" class="btn btn-sm btn-primary" style="background-color:#4b49ac;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-</a>
-            </div>
             <!-- Show entries & Search -->
-            <div class="d-flex justify-content-between align-items-center mt-3 mb-10">
+            <form method="GET" action="{% url 'entry:manual_entry_list' %}" class="d-flex justify-content-between align-items-center mt-3 mb-3">
+                <input type="hidden" name="per_page" value="{{ per_page }}">
+                {% if from_date %}<input type="hidden" name="from_date" value="{{ from_date }}">{% endif %}
+                {% if to_date %}<input type="hidden" name="to_date" value="{{ to_date }}">{% endif %}
+                {% if filter_site_id %}<input type="hidden" name="site" value="{{ filter_site_id }}">{% endif %}
+                {% if filter_salary_type %}<input type="hidden" name="salary_type" value="{{ filter_salary_type }}">{% endif %}
+                {% if filter_shift %}<input type="hidden" name="shift" value="{{ filter_shift }}">{% endif %}
                 <div>
                     Show 
-                    <select class="form-select d-inline-block w-auto mx-1">
-                        <option>10</option>
-                        <option>25</option>
-                        <option>50</option>
-                        <option>100</option>
+                    <select class="form-select d-inline-block w-auto mx-1" onchange="this.form.submit()">
+                        <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+                        <option value="25" {% if per_page == '25' %}selected{% endif %}>25</option>
+                        <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+                        <option value="100" {% if per_page == '100' %}selected{% endif %}>100</option>
                     </select>
                     entries
                 </div>
                 <div>
                     <label class="me-2">Search:</label>
-                    <input type="text" class="form-control d-inline-block w-auto">
+                    <input type="text" name="search" class="form-control d-inline-block w-auto" value="{{ search_query }}" placeholder="Employee / Site">
+                    <button type="submit" class="btn btn-sm btn-primary ms-2">Search</button>
+                    {% if search_query %}
+                        <a href="?per_page={{ per_page }}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}{% if filter_site_id %}&site={{ filter_site_id }}{% endif %}{% if filter_salary_type %}&salary_type={{ filter_salary_type }}{% endif %}{% if filter_shift %}&shift={{ filter_shift }}{% endif %}" class="btn btn-sm btn-secondary ms-2">Clear</a>
+                    {% endif %}
                 </div>
-            </div>
+            </form>
 
             <!-- Data Table -->
             <div class="table-responsive">
@@ -99,31 +109,95 @@
                             <th>Employee Name</th>
                             <th>Salary Type</th>
                             <th>Shift Name</th>
-                            <th>Type</th>
-                            <th>Time</th>
+                            <th>Shift In</th>
+                            <th>Shift Out</th>
                             <th>Attendance Type</th>
+                            <th>Worked Hours</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="12" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No data available in table</td>
-                        </tr>
+                        {% if manual_entries %}
+                            {% for entry in manual_entries %}
+                            <tr>
+                                <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                                <td>{{ entry.attendance_date|date:"d-m-Y" }}</td>
+                                <td>{{ entry.site.name }}</td>
+                                <td>{{ entry.employee.staff_id }}</td>
+                                <td>{{ entry.employee.staff_name }}</td>
+                                <td>{{ entry.salary_type.name }}</td>
+                                <td>{{ entry.shift.name }}</td>
+                                <td>{{ entry.shift_in_time|time:"H:i"|default:"-" }}</td>
+                                <td>{{ entry.shift_out_time|time:"H:i"|default:"-" }}</td>
+                                <td>
+                                    <span class="badge {% if entry.attendance_type == 'present' %}bg-success{% elif entry.attendance_type == 'absent' %}bg-danger{% else %}bg-warning{% endif %}">
+                                        {{ entry.get_attendance_type_display }}
+                                    </span>
+                                </td>
+                                <td>{{ entry.worked_hours_display }}</td>
+                                <td class="text-nowrap">
+                                    <a href="{% url 'entry:manual_entry_edit' entry.pk %}" class="text-primary me-2" title="Edit">
+                                        <i data-feather="edit"></i>
+                                    </a>
+                                    <form action="{% url 'entry:manual_entry_delete' entry.pk %}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this manual attendance entry?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="text-danger border-0 bg-transparent p-0" title="Delete">
+                                            <i data-feather="trash-2"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="12" class="text-center" style="background-color:#f2f2f2; color:#146c43; font-weight:500;">No data available in table</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
             <div class="d-flex justify-content-between align-items-center">
-                <div>Showing 1 to 1 of 1 entries</div>
+                <div>
+                    Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ total_entries }} entries
+                </div>
                 <nav>
                     <ul class="pagination mb-0">
-                        <li class="page-item disabled"><a class="page-link">Previous</a></li>
-                        <li class="page-item active"><a class="page-link">1</a></li>
-                        <li class="page-item disabled"><a class="page-link">Next</a></li>
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if page_query_base %}&{{ page_query_base }}{% endif %}">Previous</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link">Previous</a></li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><a class="page-link">{{ num }}</a></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if page_query_base %}&{{ page_query_base }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if page_query_base %}&{{ page_query_base }}{% endif %}">Next</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link">Next</a></li>
+                        {% endif %}
                     </ul>
                 </nav>
             </div>
+            {% else %}
+            <div class="d-flex justify-content-between align-items-center">
+                <div>Showing {{ manual_entries|length }} entries</div>
+            </div>
+            {% endif %}
 
         </div>
     </div>
@@ -141,39 +215,15 @@
         font-size: 14px;
     }
     .btn-create {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    text-decoration: none;
-    transition: 0.2s ease-in-out;
-}
-.btn-expenses {
-      border: 2px solid #28a745;
-      color: #28a745;
-      font-weight: 500;
-      padding: 8px 16px;
-      border-radius: 6px;
-      background: transparent;
-      position: relative;
-      transition: all 0.3s ease;
-      overflow: hidden;
-    }
-    .btn-expenses:hover {
-      background-color: #28a745;
-      color: #fff;
-    }
-    .btn-expenses .arrow {
-      opacity: 0;
-      margin-left: 0;
-      transition: all 0.3s ease;
-    }
-    .btn-expenses:hover .arrow {
-      opacity: 1;
-      margin-left: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: 0.2s ease-in-out;
     }
 </style>
 

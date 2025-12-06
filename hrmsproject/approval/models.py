@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 
-from entry.models import CompOffEntry, LeaveEntry
+from entry.models import CompOffEntry, LeaveEntry, TravelEntry
 from master.models import Employee
 
 User = get_user_model()
@@ -245,7 +245,7 @@ class TADAApproval(models.Model):
 class TravelApproval(models.Model):
     """
     Model for Travel Approvals.
-    Can be extended when TravelEntry model is created.
+    Links to TravelEntry for approval workflow.
     """
     APPROVAL_PENDING = 'pending'
     APPROVAL_APPROVED = 'approved'
@@ -256,6 +256,14 @@ class TravelApproval(models.Model):
         (APPROVAL_REJECTED, 'Rejected'),
     ]
 
+    travel_entry = models.OneToOneField(
+        TravelEntry,
+        on_delete=models.CASCADE,
+        related_name='travel_approval',
+        help_text='The Travel Entry being approved',
+        null=True,
+        blank=True
+    )
     approval_status = models.CharField(
         max_length=20,
         choices=APPROVAL_CHOICES,
@@ -283,4 +291,26 @@ class TravelApproval(models.Model):
         ]
 
     def __str__(self):
+        if self.travel_entry:
+            return f'Travel Approval for {self.travel_entry.employee.staff_name} - {self.get_approval_status_display()}'
         return f'Travel Approval - {self.get_approval_status_display()}'
+
+    @property
+    def approval_badge_class(self) -> str:
+        """Return CSS classes for approval status badge."""
+        mapping = {
+            self.APPROVAL_APPROVED: 'background-color:#d4edda; color:#155724;',
+            self.APPROVAL_REJECTED: 'background-color:#f8d7da; color:#721c24;',
+            self.APPROVAL_PENDING: 'background-color:#d1ecf1; color:#0c5460;',
+        }
+        return mapping.get(self.approval_status, 'background-color:#e2e3e5; color:#383d41;')
+
+    @property
+    def approval_icon_color(self) -> str:
+        """Return icon color for approval status."""
+        mapping = {
+            self.APPROVAL_APPROVED: '#28a745',
+            self.APPROVAL_REJECTED: '#dc3545',
+            self.APPROVAL_PENDING: '#17a2b8',
+        }
+        return mapping.get(self.approval_status, '#6c757d')

@@ -9,8 +9,8 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 
-from master.models import Employee, Site, ExpenseType, SubExpense
-from .models import CompOffEntry, SiteEntry, PermissionEntry, LeaveEntry, TADAEntry, TADAEntrySubItem
+from master.models import Employee, Site, ExpenseType, SubExpense, Shift, SalaryType, LeaveType
+from .models import CompOffEntry, SiteEntry, PermissionEntry, LeaveEntry, TADAEntry, TADAEntrySubItem, TravelEntry, ManualEntry
 
 # ------------------------
 # ENTRY -> COMP OFF
@@ -255,6 +255,7 @@ def comp_off_delete(request, pk):
 def leave_entry_create(request):
     employees = Employee.objects.order_by('staff_name')
     sites = Site.objects.order_by('name')
+    leave_types = LeaveType.objects.order_by('leave_type')
 
     values = {
         'from_date': '',
@@ -312,10 +313,16 @@ def leave_entry_create(request):
         elif not Site.objects.filter(pk=values['site']).exists():
             errors['site'] = 'Selected site does not exist.'
 
-        if not values['leave_type']:
+        # Validate leave_type - must be provided and valid
+        if not values['leave_type'] or not values['leave_type'].strip():
             errors['leave_type'] = 'Leave type is required.'
-        elif values['leave_type'] not in dict(LeaveEntry.LEAVE_TYPE_CHOICES):
-            errors['leave_type'] = 'Invalid leave type selected.'
+        else:
+            try:
+                leave_type_id = int(values['leave_type'])
+                if not LeaveType.objects.filter(pk=leave_type_id).exists():
+                    errors['leave_type'] = 'Invalid leave type selected.'
+            except (ValueError, TypeError):
+                errors['leave_type'] = 'Invalid leave type selected.'
 
         if not values['reason']:
             errors['reason'] = 'Reason is required.'
@@ -337,12 +344,13 @@ def leave_entry_create(request):
                 calculated_days = days_diff
 
         if not errors:
+            # leave_type_id is required - validation ensures it exists
             LeaveEntry.objects.create(
                 from_date=from_date_obj,
                 to_date=to_date_obj,
                 employee_id=values['employee'],
                 site_id=values['site'],
-                leave_type=values['leave_type'],
+                leave_type_id=int(values['leave_type']),  # Required field
                 leave_duration_type=values['leave_duration_type'],
                 reason=values['reason'],
             )
@@ -356,7 +364,7 @@ def leave_entry_create(request):
         'errors': errors,
         'selected_employee': selected_employee,
         'calculated_days': calculated_days,
-        'leave_type_choices': LeaveEntry.LEAVE_TYPE_CHOICES,
+        'leave_types': leave_types,
         'duration_type_choices': LeaveEntry.DURATION_CHOICES,
     }
     return render(request, 'entry/leave_entry/create.html', context)
@@ -442,13 +450,14 @@ def leave_entry_edit(request, pk):
     leave_entry = get_object_or_404(LeaveEntry, pk=pk)
     employees = Employee.objects.order_by('staff_name')
     sites = Site.objects.order_by('name')
+    leave_types = LeaveType.objects.order_by('leave_type')
 
     values = {
         'from_date': leave_entry.from_date.strftime('%Y-%m-%d') if leave_entry.from_date else '',
         'to_date': leave_entry.to_date.strftime('%Y-%m-%d') if leave_entry.to_date else '',
         'site': str(leave_entry.site_id) if leave_entry.site_id else '',
         'employee': str(leave_entry.employee_id) if leave_entry.employee_id else '',
-        'leave_type': leave_entry.leave_type or '',
+        'leave_type': str(leave_entry.leave_type_id) if leave_entry.leave_type_id else '',
         'leave_duration_type': leave_entry.leave_duration_type or LeaveEntry.DURATION_FULL_DAY,
         'reason': leave_entry.reason or '',
     }
@@ -501,7 +510,7 @@ def leave_entry_edit(request, pk):
 
         if not values['leave_type']:
             errors['leave_type'] = 'Leave type is required.'
-        elif values['leave_type'] not in dict(LeaveEntry.LEAVE_TYPE_CHOICES):
+        elif not LeaveType.objects.filter(pk=values['leave_type']).exists():
             errors['leave_type'] = 'Invalid leave type selected.'
 
         if not values['reason']:
@@ -528,7 +537,7 @@ def leave_entry_edit(request, pk):
             leave_entry.to_date = to_date_obj
             leave_entry.employee_id = values['employee']
             leave_entry.site_id = values['site']
-            leave_entry.leave_type = values['leave_type']
+            leave_entry.leave_type_id = values['leave_type']
             leave_entry.leave_duration_type = values['leave_duration_type']
             leave_entry.reason = values['reason']
             leave_entry.save()  # This will recalculate leave_days
@@ -545,7 +554,7 @@ def leave_entry_edit(request, pk):
         'errors': errors,
         'selected_employee': selected_employee,
         'calculated_days': calculated_days,
-        'leave_type_choices': LeaveEntry.LEAVE_TYPE_CHOICES,
+        'leave_types': leave_types,
         'duration_type_choices': LeaveEntry.DURATION_CHOICES,
     }
     return render(request, 'entry/leave_entry/edit.html', context)
@@ -571,18 +580,345 @@ def leave_entry_print(request):
 
 
 # ------------------------
-# ENTRY -> MANUAL
+# ENTRY -> MANUAL ATTENDANCE
 # ------------------------
 @permission_required('entry.add_manualentry', raise_exception=True)
 def manual_entry_create(request):
-    return render(request, 'entry/manual_entry/create.html')
+    """Create manual attendance entries for employees."""
+    employees = Employee.objects.order_by('staff_name')
+    sites = Site.objects.order_by('name')
+
+    # Get masters data
+    shifts = Shift.objects.order_by('name')
+    salary_types = SalaryType.objects.filter(is_active=True).order_by('name')
+
+    # Get all employees (no filtering needed - user selects from full list)
+    filtered_employees = employees
+
+    values = {
+        'attendance_date': '',
+        'site': '',
+        'salary_type': '',
+        'shift': '',
+    }
+    errors = {}
+
+    if request.method == 'POST':
+        attendance_date_str = request.POST.get('attendance_date', '').strip()
+        site_id = request.POST.get('site', '').strip()
+        salary_type_id = request.POST.get('salary_type', '').strip()
+        shift_id = request.POST.get('shift', '').strip()
+        selected_employees = request.POST.getlist('employees')  # List of employee IDs
+        attendance_type = request.POST.get('attendance_type', ManualEntry.ATTENDANCE_TYPE_PRESENT).strip()
+
+        # Validation
+        if not attendance_date_str:
+            errors['attendance_date'] = 'Attendance date is required.'
+        else:
+            try:
+                attendance_date = datetime.strptime(attendance_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                errors['attendance_date'] = 'Invalid date format.'
+
+        if not site_id:
+            errors['site'] = 'Site selection is required.'
+        elif not Site.objects.filter(pk=site_id).exists():
+            errors['site'] = 'Selected site does not exist.'
+
+        if not salary_type_id:
+            errors['salary_type'] = 'Salary type is required.'
+        elif not SalaryType.objects.filter(pk=salary_type_id, is_active=True).exists():
+            errors['salary_type'] = 'Invalid salary type selected.'
+
+        if not shift_id:
+            errors['shift'] = 'Shift is required.'
+        elif not Shift.objects.filter(pk=shift_id).exists():
+            errors['shift'] = 'Invalid shift selected.'
+
+        if not selected_employees:
+            errors['employees'] = 'At least one employee must be selected.'
+
+        # Process each employee
+        if not errors and attendance_date_str and site_id:
+            attendance_date = datetime.strptime(attendance_date_str, '%Y-%m-%d').date()
+            created_count = 0
+            updated_count = 0
+
+            for emp_id in selected_employees:
+                if not Employee.objects.filter(pk=emp_id).exists():
+                    continue
+
+                # Get shift times for this employee (from POST data)
+                shift_in_time_str = request.POST.get(f'shift_in_time_{emp_id}', '').strip()
+                shift_out_time_str = request.POST.get(f'shift_out_time_{emp_id}', '').strip()
+                emp_attendance_type = request.POST.get(f'attendance_type_{emp_id}', attendance_type).strip()
+                remarks = request.POST.get(f'remarks_{emp_id}', '').strip()
+
+                shift_in_time = None
+                shift_out_time = None
+
+                if shift_in_time_str:
+                    try:
+                        shift_in_time = datetime.strptime(shift_in_time_str, '%H:%M').time()
+                    except ValueError:
+                        pass
+
+                if shift_out_time_str:
+                    try:
+                        shift_out_time = datetime.strptime(shift_out_time_str, '%H:%M').time()
+                    except ValueError:
+                        pass
+
+                # Check if entry already exists
+                manual_entry, created = ManualEntry.objects.get_or_create(
+                    attendance_date=attendance_date,
+                    employee_id=emp_id,
+                    site_id=site_id,
+                    defaults={
+                        'salary_type_id': salary_type_id,
+                        'shift_id': shift_id,
+                        'shift_in_time': shift_in_time,
+                        'shift_out_time': shift_out_time,
+                        'attendance_type': emp_attendance_type,
+                        'remarks': remarks,
+                    }
+                )
+
+                if not created:
+                    # Update existing entry
+                    manual_entry.salary_type_id = salary_type_id
+                    manual_entry.shift_id = shift_id
+                    manual_entry.shift_in_time = shift_in_time
+                    manual_entry.shift_out_time = shift_out_time
+                    manual_entry.attendance_type = emp_attendance_type
+                    manual_entry.remarks = remarks
+                    manual_entry.save()
+                    updated_count += 1
+                else:
+                    created_count += 1
+
+            if created_count > 0 or updated_count > 0:
+                messages.success(
+                    request,
+                    f'Manual attendance entries saved successfully. Created: {created_count}, Updated: {updated_count}.'
+                )
+                return redirect('entry:manual_entry_list')
+
+    context = {
+        'employees': filtered_employees,
+        'sites': sites,
+        'values': values,
+        'errors': errors,
+        'salary_types': salary_types,
+        'shifts': shifts,
+        'attendance_types': ManualEntry.ATTENDANCE_TYPE_CHOICES,
+    }
+    return render(request, 'entry/manual_entry/create.html', context)
+
 
 @permission_required('entry.view_manualentry', raise_exception=True)
 def manual_entry_list(request):
-    return render(request, 'entry/manual_entry/list.html')
+    """List all manual attendance entries with filters."""
+    manual_entries = ManualEntry.objects.select_related('employee', 'site', 'salary_type', 'shift').order_by('-attendance_date', 'employee__staff_name')
+
+    # Filtering
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    site_id = request.GET.get('site', '').strip()
+    salary_type_id = request.GET.get('salary_type', '').strip()
+    shift_id = request.GET.get('shift', '').strip()
+
+    if from_date:
+        try:
+            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+            manual_entries = manual_entries.filter(attendance_date__gte=from_date_obj)
+        except ValueError:
+            pass
+
+    if to_date:
+        try:
+            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+            manual_entries = manual_entries.filter(attendance_date__lte=to_date_obj)
+        except ValueError:
+            pass
+
+    if site_id:
+        manual_entries = manual_entries.filter(site_id=site_id)
+
+    if salary_type_id:
+        manual_entries = manual_entries.filter(salary_type_id=salary_type_id)
+
+    if shift_id:
+        manual_entries = manual_entries.filter(shift_id=shift_id)
+
+    # Search
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        manual_entries = manual_entries.filter(
+            Q(employee__staff_name__icontains=search_query) |
+            Q(employee__staff_id__icontains=search_query) |
+            Q(site__name__icontains=search_query)
+        )
+
+    # Pagination
+    per_page = request.GET.get('per_page', '10').strip()
+    try:
+        per_page_value = max(int(per_page), 1)
+    except ValueError:
+        per_page_value = 10
+
+    paginator = Paginator(manual_entries, per_page_value)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    page_query_base = query_params.urlencode()
+
+    context = {
+        'manual_entries': page_obj,
+        'page_obj': page_obj,
+        'from_date': from_date,
+        'to_date': to_date,
+        'filter_site_id': site_id,
+        'filter_salary_type': salary_type_id,
+        'filter_shift': shift_id,
+        'filter_shift_type': shift_id,  # Keep for backward compatibility in template
+        'search_query': search_query,
+        'per_page': str(per_page_value),
+        'page_query_base': page_query_base,
+        'total_entries': paginator.count,
+        'sites': Site.objects.order_by('name'),
+        'salary_types': SalaryType.objects.filter(is_active=True).order_by('name'),
+        'shifts': Shift.objects.order_by('name'),
+    }
+    return render(request, 'entry/manual_entry/list.html', context)
+
+
+@permission_required('entry.change_manualentry', raise_exception=True)
+def manual_entry_edit(request, pk):
+    """Edit a manual attendance entry."""
+    manual_entry = get_object_or_404(ManualEntry, pk=pk)
+    employees = Employee.objects.order_by('staff_name')
+    sites = Site.objects.order_by('name')
+
+    shifts = Shift.objects.order_by('name')
+    salary_types = SalaryType.objects.filter(is_active=True).order_by('name')
+
+    values = {
+        'attendance_date': manual_entry.attendance_date.strftime('%Y-%m-%d') if manual_entry.attendance_date else '',
+        'employee': str(manual_entry.employee_id) if manual_entry.employee_id else '',
+        'site': str(manual_entry.site_id) if manual_entry.site_id else '',
+        'salary_type': str(manual_entry.salary_type_id) if manual_entry.salary_type_id else '',
+        'shift': str(manual_entry.shift_id) if manual_entry.shift_id else '',
+        'shift_in_time': manual_entry.shift_in_time.strftime('%H:%M') if manual_entry.shift_in_time else '',
+        'shift_out_time': manual_entry.shift_out_time.strftime('%H:%M') if manual_entry.shift_out_time else '',
+        'attendance_type': manual_entry.attendance_type or ManualEntry.ATTENDANCE_TYPE_PRESENT,
+        'remarks': manual_entry.remarks or '',
+    }
+    errors = {}
+
+    if request.method == 'POST':
+        values['attendance_date'] = request.POST.get('attendance_date', '').strip()
+        values['employee'] = request.POST.get('employee', '').strip()
+        values['site'] = request.POST.get('site', '').strip()
+        values['salary_type'] = request.POST.get('salary_type', '').strip()
+        values['shift'] = request.POST.get('shift', '').strip()
+        values['shift_in_time'] = request.POST.get('shift_in_time', '').strip()
+        values['shift_out_time'] = request.POST.get('shift_out_time', '').strip()
+        values['attendance_type'] = request.POST.get('attendance_type', ManualEntry.ATTENDANCE_TYPE_PRESENT).strip()
+        values['remarks'] = request.POST.get('remarks', '').strip()
+
+        # Validation
+        if not values['attendance_date']:
+            errors['attendance_date'] = 'Attendance date is required.'
+        else:
+            try:
+                attendance_date = datetime.strptime(values['attendance_date'], '%Y-%m-%d').date()
+            except ValueError:
+                errors['attendance_date'] = 'Invalid date format.'
+
+        if not values['employee']:
+            errors['employee'] = 'Employee selection is required.'
+        elif not Employee.objects.filter(pk=values['employee']).exists():
+            errors['employee'] = 'Selected employee does not exist.'
+
+        if not values['site']:
+            errors['site'] = 'Site selection is required.'
+        elif not Site.objects.filter(pk=values['site']).exists():
+            errors['site'] = 'Selected site does not exist.'
+
+        if not values['salary_type']:
+            errors['salary_type'] = 'Salary type is required.'
+        elif not SalaryType.objects.filter(pk=values['salary_type'], is_active=True).exists():
+            errors['salary_type'] = 'Invalid salary type selected.'
+
+        if not values['shift']:
+            errors['shift'] = 'Shift is required.'
+        elif not Shift.objects.filter(pk=values['shift']).exists():
+            errors['shift'] = 'Invalid shift selected.'
+
+        shift_in_time = None
+        if values['shift_in_time']:
+            try:
+                shift_in_time = datetime.strptime(values['shift_in_time'], '%H:%M').time()
+            except ValueError:
+                errors['shift_in_time'] = 'Invalid time format (use HH:MM).'
+
+        shift_out_time = None
+        if values['shift_out_time']:
+            try:
+                shift_out_time = datetime.strptime(values['shift_out_time'], '%H:%M').time()
+            except ValueError:
+                errors['shift_out_time'] = 'Invalid time format (use HH:MM).'
+
+        if not errors:
+            attendance_date = datetime.strptime(values['attendance_date'], '%Y-%m-%d').date()
+            manual_entry.attendance_date = attendance_date
+            manual_entry.employee_id = values['employee']
+            manual_entry.site_id = values['site']
+            manual_entry.salary_type_id = values['salary_type']
+            manual_entry.shift_id = values['shift']
+            manual_entry.shift_in_time = shift_in_time
+            manual_entry.shift_out_time = shift_out_time
+            manual_entry.attendance_type = values['attendance_type']
+            manual_entry.remarks = values['remarks']
+            manual_entry.save()
+
+            messages.success(request, 'Manual attendance entry updated successfully.')
+            return redirect('entry:manual_entry_list')
+
+    context = {
+        'employees': employees,
+        'sites': sites,
+        'values': values,
+        'errors': errors,
+        'manual_entry': manual_entry,
+        'salary_types': salary_types,
+        'shifts': shifts,
+        'attendance_types': ManualEntry.ATTENDANCE_TYPE_CHOICES,
+    }
+    return render(request, 'entry/manual_entry/edit.html', context)
+
+
+@permission_required('entry.delete_manualentry', raise_exception=True)
+def manual_entry_delete(request, pk):
+    """Delete a manual attendance entry."""
+    manual_entry = get_object_or_404(ManualEntry, pk=pk)
+    if request.method == 'POST':
+        manual_entry.delete()
+        messages.success(request, 'Manual attendance entry deleted successfully.')
+        return redirect('entry:manual_entry_list')
+    context = {
+        'entry': manual_entry,
+    }
+    return render(request, 'entry/manual_entry/confirm_delete.html', context)
+
 
 @permission_required('entry.view_manualentry', raise_exception=True)
 def manual_entry_print(request):
+    """Print view for manual attendance entries."""
+    # Similar to list but formatted for printing
     return render(request, 'entry/manual_entry/print.html')
 
 
@@ -1558,10 +1894,425 @@ def tada_entry_delete(request, pk):
 # ------------------------
 # ENTRY -> TRAVEL
 # ------------------------
+# ENTRY -> TRAVEL REQUISITION
+# ------------------------
 @permission_required('entry.add_travelentry', raise_exception=True)
 def travel_entry_create(request):
-    return render(request, 'entry/travel_entry/create.html')
+    employees = Employee.objects.order_by('staff_name')
+    sites = Site.objects.order_by('name')
+
+    values = {
+        'employee': '',
+        'site': '',
+        'travel_mode': '',
+        'trip_type': TravelEntry.TRIP_TYPE_ONE_WAY,
+        'booking_option': '',
+        'accommodation_type': '',
+        'from_location': '',
+        'to_location': '',
+        'departure_date': '',
+        'departure_time': '',
+        'return_date': '',
+        'return_time': '',
+        'no_of_days': '',
+        'travel_reason': '',
+        'purpose_of_visit': '',
+    }
+    errors = {}
+    selected_employee = None
+
+    if request.method == 'POST':
+        values['employee'] = request.POST.get('employee', '').strip()
+        values['site'] = request.POST.get('site', '').strip()
+        values['travel_mode'] = request.POST.get('travel_mode', '').strip()
+        values['trip_type'] = request.POST.get('trip_type', TravelEntry.TRIP_TYPE_ONE_WAY).strip()
+        values['booking_option'] = request.POST.get('booking_option', '').strip()
+        values['accommodation_type'] = request.POST.get('accommodation_type', '').strip()
+        values['from_location'] = request.POST.get('from_location', '').strip()
+        values['to_location'] = request.POST.get('to_location', '').strip()
+        values['departure_date'] = request.POST.get('departure_date', '').strip()
+        values['departure_time'] = request.POST.get('departure_time', '').strip()
+        values['return_date'] = request.POST.get('return_date', '').strip()
+        values['return_time'] = request.POST.get('return_time', '').strip()
+        values['no_of_days'] = request.POST.get('no_of_days', '').strip()
+        values['travel_reason'] = request.POST.get('travel_reason', '').strip()
+        values['purpose_of_visit'] = request.POST.get('purpose_of_visit', '').strip()
+
+        # Validation
+        if not values['employee']:
+            errors['employee'] = 'Employee selection is required.'
+        elif not Employee.objects.filter(pk=values['employee']).exists():
+            errors['employee'] = 'Selected employee does not exist.'
+        else:
+            selected_employee = Employee.objects.get(pk=values['employee'])
+
+        if not values['site']:
+            errors['site'] = 'Site selection is required.'
+        elif not Site.objects.filter(pk=values['site']).exists():
+            errors['site'] = 'Selected site does not exist.'
+
+        if not values['travel_mode']:
+            errors['travel_mode'] = 'Travel mode is required.'
+        elif values['travel_mode'] not in dict(TravelEntry.TRAVEL_MODE_CHOICES):
+            errors['travel_mode'] = 'Invalid travel mode selected.'
+
+        if not values['trip_type']:
+            values['trip_type'] = TravelEntry.TRIP_TYPE_ONE_WAY
+
+        if not values['booking_option']:
+            errors['booking_option'] = 'Booking option is required.'
+        elif values['booking_option'] not in dict(TravelEntry.BOOKING_CHOICES):
+            errors['booking_option'] = 'Invalid booking option selected.'
+
+        if not values['from_location']:
+            errors['from_location'] = 'From location is required.'
+
+        if not values['to_location']:
+            errors['to_location'] = 'To location is required.'
+
+        departure_date_obj = None
+        if not values['departure_date']:
+            errors['departure_date'] = 'Departure date is required.'
+        else:
+            try:
+                departure_date_obj = datetime.strptime(values['departure_date'], '%Y-%m-%d').date()
+            except ValueError:
+                errors['departure_date'] = 'Invalid departure date format.'
+
+        departure_time_obj = None
+        if not values['departure_time']:
+            errors['departure_time'] = 'Departure time is required.'
+        else:
+            try:
+                departure_time_obj = datetime.strptime(values['departure_time'], '%H:%M').time()
+            except ValueError:
+                errors['departure_time'] = 'Invalid departure time format.'
+
+        return_date_obj = None
+        return_time_obj = None
+        if values['trip_type'] == TravelEntry.TRIP_TYPE_RETURN:
+            if not values['return_date']:
+                errors['return_date'] = 'Return date is required for return trips.'
+            else:
+                try:
+                    return_date_obj = datetime.strptime(values['return_date'], '%Y-%m-%d').date()
+                    if departure_date_obj and return_date_obj < departure_date_obj:
+                        errors['return_date'] = 'Return date cannot be before departure date.'
+                except ValueError:
+                    errors['return_date'] = 'Invalid return date format.'
+
+            if not values['return_time']:
+                errors['return_time'] = 'Return time is required for return trips.'
+            else:
+                try:
+                    return_time_obj = datetime.strptime(values['return_time'], '%H:%M').time()
+                except ValueError:
+                    errors['return_time'] = 'Invalid return time format.'
+
+        if not values['no_of_days']:
+            errors['no_of_days'] = 'Number of days is required.'
+        else:
+            try:
+                no_of_days = int(values['no_of_days'])
+                if no_of_days < 1:
+                    errors['no_of_days'] = 'Number of days must be at least 1.'
+            except ValueError:
+                errors['no_of_days'] = 'Invalid number of days.'
+
+        if not values['travel_reason']:
+            errors['travel_reason'] = 'Travel reason is required.'
+        elif values['travel_reason'] not in dict(TravelEntry.TRAVEL_REASON_CHOICES):
+            errors['travel_reason'] = 'Invalid travel reason selected.'
+
+        if not values['purpose_of_visit']:
+            errors['purpose_of_visit'] = 'Purpose of visit is required.'
+
+        # File uploads
+        aadhar_file = request.FILES.get('aadhar_upload')
+        one_way_doc_file = request.FILES.get('one_way_document')
+
+        # Create entry if no errors
+        if not errors:
+            travel_entry = TravelEntry.objects.create(
+                employee_id=values['employee'],
+                site_id=values['site'],
+                travel_mode=values['travel_mode'],
+                trip_type=values['trip_type'],
+                booking_option=values['booking_option'],
+                accommodation_type=values['accommodation_type'] if values['accommodation_type'] else None,
+                from_location=values['from_location'],
+                to_location=values['to_location'],
+                departure_date=departure_date_obj,
+                departure_time=departure_time_obj,
+                return_date=return_date_obj,
+                return_time=return_time_obj,
+                no_of_days=int(values['no_of_days']),
+                travel_reason=values['travel_reason'],
+                purpose_of_visit=values['purpose_of_visit'],
+                aadhar_upload=aadhar_file if aadhar_file else None,
+                one_way_document=one_way_doc_file if one_way_doc_file else None,
+            )
+            messages.success(request, 'Travel requisition created successfully.')
+            return redirect('entry:travel_entry_list')
+
+    context = {
+        'employees': employees,
+        'sites': sites,
+        'values': values,
+        'errors': errors,
+        'selected_employee': selected_employee,
+        'travel_modes': TravelEntry.TRAVEL_MODE_CHOICES,
+        'trip_types': TravelEntry.TRIP_TYPE_CHOICES,
+        'booking_options': TravelEntry.BOOKING_CHOICES,
+        'accommodation_types': TravelEntry.ACCOMMODATION_CHOICES,
+        'travel_reasons': TravelEntry.TRAVEL_REASON_CHOICES,
+    }
+    return render(request, 'entry/travel_entry/create.html', context)
+
 
 @permission_required('entry.view_travelentry', raise_exception=True)
 def travel_entry_list(request):
-    return render(request, 'entry/travel_entry/list.html')
+    travel_entries = TravelEntry.objects.select_related('employee', 'site').order_by('-departure_date', '-entry_date')
+
+    # Filtering
+    from_date = request.GET.get('from_date', '')
+    to_date = request.GET.get('to_date', '')
+    
+    if from_date:
+        try:
+            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+            travel_entries = travel_entries.filter(departure_date__gte=from_date_obj)
+        except ValueError:
+            pass
+
+    if to_date:
+        try:
+            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+            travel_entries = travel_entries.filter(departure_date__lte=to_date_obj)
+        except ValueError:
+            pass
+
+    # Search
+    search_query = request.GET.get('search', '')
+    if search_query:
+        travel_entries = travel_entries.filter(
+            Q(employee__staff_name__icontains=search_query) |
+            Q(from_location__icontains=search_query) |
+            Q(to_location__icontains=search_query) |
+            Q(purpose_of_visit__icontains=search_query)
+        )
+
+    # Pagination
+    paginator = Paginator(travel_entries, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'travel_entries': page_obj,
+        'from_date': from_date,
+        'to_date': to_date,
+        'search_query': search_query,
+        'page_query_base': request.GET.urlencode().replace(f'&page={page_number}', '').replace(f'page={page_number}&', '').replace(f'page={page_number}', ''),
+    }
+    return render(request, 'entry/travel_entry/list.html', context)
+
+
+@permission_required('entry.view_travelentry', raise_exception=True)
+def travel_entry_view(request, pk):
+    travel_entry = get_object_or_404(TravelEntry, pk=pk)
+    context = {
+        'entry': travel_entry,
+    }
+    return render(request, 'entry/travel_entry/view.html', context)
+
+
+@permission_required('entry.change_travelentry', raise_exception=True)
+def travel_entry_edit(request, pk):
+    travel_entry = get_object_or_404(TravelEntry, pk=pk)
+    employees = Employee.objects.order_by('staff_name')
+    sites = Site.objects.order_by('name')
+
+    values = {
+        'employee': str(travel_entry.employee_id) if travel_entry.employee_id else '',
+        'site': str(travel_entry.site_id) if travel_entry.site_id else '',
+        'travel_mode': travel_entry.travel_mode or 'bus',
+        'trip_type': travel_entry.trip_type or TravelEntry.TRIP_TYPE_ONE_WAY,
+        'booking_option': travel_entry.booking_option or '',
+        'accommodation_type': travel_entry.accommodation_type or '',
+        'from_location': travel_entry.from_location or '',
+        'to_location': travel_entry.to_location or '',
+        'departure_date': travel_entry.departure_date.strftime('%Y-%m-%d') if travel_entry.departure_date else '',
+        'departure_time': travel_entry.departure_time.strftime('%H:%M') if travel_entry.departure_time else '',
+        'return_date': travel_entry.return_date.strftime('%Y-%m-%d') if travel_entry.return_date else '',
+        'return_time': travel_entry.return_time.strftime('%H:%M') if travel_entry.return_time else '',
+        'no_of_days': str(travel_entry.no_of_days) if travel_entry.no_of_days else '',
+        'travel_reason': travel_entry.travel_reason or '',
+        'purpose_of_visit': travel_entry.purpose_of_visit or '',
+    }
+    errors = {}
+    selected_employee = None
+
+    if request.method == 'POST':
+        values['employee'] = request.POST.get('employee', '').strip()
+        values['site'] = request.POST.get('site', '').strip()
+        values['travel_mode'] = request.POST.get('travel_mode', '').strip()
+        values['trip_type'] = request.POST.get('trip_type', TravelEntry.TRIP_TYPE_ONE_WAY).strip()
+        values['booking_option'] = request.POST.get('booking_option', '').strip()
+        values['accommodation_type'] = request.POST.get('accommodation_type', '').strip()
+        values['from_location'] = request.POST.get('from_location', '').strip()
+        values['to_location'] = request.POST.get('to_location', '').strip()
+        values['departure_date'] = request.POST.get('departure_date', '').strip()
+        values['departure_time'] = request.POST.get('departure_time', '').strip()
+        values['return_date'] = request.POST.get('return_date', '').strip()
+        values['return_time'] = request.POST.get('return_time', '').strip()
+        values['no_of_days'] = request.POST.get('no_of_days', '').strip()
+        values['travel_reason'] = request.POST.get('travel_reason', '').strip()
+        values['purpose_of_visit'] = request.POST.get('purpose_of_visit', '').strip()
+
+        # Validation (same as create)
+        if not values['employee']:
+            errors['employee'] = 'Employee selection is required.'
+        elif not Employee.objects.filter(pk=values['employee']).exists():
+            errors['employee'] = 'Selected employee does not exist.'
+        else:
+            selected_employee = Employee.objects.get(pk=values['employee'])
+
+        if not values['site']:
+            errors['site'] = 'Site selection is required.'
+        elif not Site.objects.filter(pk=values['site']).exists():
+            errors['site'] = 'Selected site does not exist.'
+
+        if not values['travel_mode']:
+            errors['travel_mode'] = 'Travel mode is required.'
+        elif values['travel_mode'] not in dict(TravelEntry.TRAVEL_MODE_CHOICES):
+            errors['travel_mode'] = 'Invalid travel mode selected.'
+
+        if not values['trip_type']:
+            values['trip_type'] = TravelEntry.TRIP_TYPE_ONE_WAY
+
+        if not values['booking_option']:
+            errors['booking_option'] = 'Booking option is required.'
+        elif values['booking_option'] not in dict(TravelEntry.BOOKING_CHOICES):
+            errors['booking_option'] = 'Invalid booking option selected.'
+
+        if not values['from_location']:
+            errors['from_location'] = 'From location is required.'
+
+        if not values['to_location']:
+            errors['to_location'] = 'To location is required.'
+
+        departure_date_obj = None
+        if not values['departure_date']:
+            errors['departure_date'] = 'Departure date is required.'
+        else:
+            try:
+                departure_date_obj = datetime.strptime(values['departure_date'], '%Y-%m-%d').date()
+            except ValueError:
+                errors['departure_date'] = 'Invalid departure date format.'
+
+        departure_time_obj = None
+        if not values['departure_time']:
+            errors['departure_time'] = 'Departure time is required.'
+        else:
+            try:
+                departure_time_obj = datetime.strptime(values['departure_time'], '%H:%M').time()
+            except ValueError:
+                errors['departure_time'] = 'Invalid departure time format.'
+
+        return_date_obj = None
+        return_time_obj = None
+        if values['trip_type'] == TravelEntry.TRIP_TYPE_RETURN:
+            if not values['return_date']:
+                errors['return_date'] = 'Return date is required for return trips.'
+            else:
+                try:
+                    return_date_obj = datetime.strptime(values['return_date'], '%Y-%m-%d').date()
+                    if departure_date_obj and return_date_obj < departure_date_obj:
+                        errors['return_date'] = 'Return date cannot be before departure date.'
+                except ValueError:
+                    errors['return_date'] = 'Invalid return date format.'
+
+            if not values['return_time']:
+                errors['return_time'] = 'Return time is required for return trips.'
+            else:
+                try:
+                    return_time_obj = datetime.strptime(values['return_time'], '%H:%M').time()
+                except ValueError:
+                    errors['return_time'] = 'Invalid return time format.'
+
+        if not values['no_of_days']:
+            errors['no_of_days'] = 'Number of days is required.'
+        else:
+            try:
+                no_of_days = int(values['no_of_days'])
+                if no_of_days < 1:
+                    errors['no_of_days'] = 'Number of days must be at least 1.'
+            except ValueError:
+                errors['no_of_days'] = 'Invalid number of days.'
+
+        if not values['travel_reason']:
+            errors['travel_reason'] = 'Travel reason is required.'
+        elif values['travel_reason'] not in dict(TravelEntry.TRAVEL_REASON_CHOICES):
+            errors['travel_reason'] = 'Invalid travel reason selected.'
+
+        if not values['purpose_of_visit']:
+            errors['purpose_of_visit'] = 'Purpose of visit is required.'
+
+        # File uploads
+        aadhar_file = request.FILES.get('aadhar_upload')
+        one_way_doc_file = request.FILES.get('one_way_document')
+
+        # Update entry if no errors
+        if not errors:
+            travel_entry.employee_id = values['employee']
+            travel_entry.site_id = values['site']
+            travel_entry.travel_mode = values['travel_mode']
+            travel_entry.trip_type = values['trip_type']
+            travel_entry.booking_option = values['booking_option']
+            travel_entry.accommodation_type = values['accommodation_type'] if values['accommodation_type'] else None
+            travel_entry.from_location = values['from_location']
+            travel_entry.to_location = values['to_location']
+            travel_entry.departure_date = departure_date_obj
+            travel_entry.departure_time = departure_time_obj
+            travel_entry.return_date = return_date_obj
+            travel_entry.return_time = return_time_obj
+            travel_entry.no_of_days = int(values['no_of_days'])
+            travel_entry.travel_reason = values['travel_reason']
+            travel_entry.purpose_of_visit = values['purpose_of_visit']
+            
+            if aadhar_file:
+                travel_entry.aadhar_upload = aadhar_file
+            if one_way_doc_file:
+                travel_entry.one_way_document = one_way_doc_file
+            
+            travel_entry.save()
+            messages.success(request, 'Travel requisition updated successfully.')
+            return redirect('entry:travel_entry_list')
+
+    context = {
+        'employees': employees,
+        'sites': sites,
+        'values': values,
+        'errors': errors,
+        'selected_employee': selected_employee,
+        'travel_entry': travel_entry,
+        'travel_modes': TravelEntry.TRAVEL_MODE_CHOICES,
+        'trip_types': TravelEntry.TRIP_TYPE_CHOICES,
+        'booking_options': TravelEntry.BOOKING_CHOICES,
+        'accommodation_types': TravelEntry.ACCOMMODATION_CHOICES,
+        'travel_reasons': TravelEntry.TRAVEL_REASON_CHOICES,
+    }
+    return render(request, 'entry/travel_entry/edit.html', context)
+
+
+@permission_required('entry.delete_travelentry', raise_exception=True)
+def travel_entry_delete(request, pk):
+    travel_entry = get_object_or_404(TravelEntry, pk=pk)
+    if request.method == 'POST':
+        travel_entry.delete()
+        messages.success(request, 'Travel requisition deleted successfully.')
+        return redirect('entry:travel_entry_list')
+    context = {
+        'entry': travel_entry,
+    }
+    return render(request, 'entry/travel_entry/confirm_delete.html', context)

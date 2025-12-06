@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Travel Requisition - View{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-main-body">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0 fw-bold text-secondary">Entry / <span class="text-dark">Travel Requisition View</span></h6>
+        <a href="{% url 'entry:travel_entry_list' %}" class="btn-back">
+            <i data-feather="arrow-left"></i> Back
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <strong>Entry Date:</strong> {{ entry.entry_date|date:"d-m-Y" }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Employee:</strong> {{ entry.employee.staff_name }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Site:</strong> {{ entry.site.name }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Travel Mode:</strong> {{ entry.get_travel_mode_display }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Trip Type:</strong> {{ entry.get_trip_type_display }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Booking Option:</strong> {{ entry.get_booking_option_display }}
+                </div>
+                {% if entry.accommodation_type %}
+                <div class="col-md-6">
+                    <strong>Accommodation:</strong> {{ entry.get_accommodation_type_display }}
+                </div>
+                {% endif %}
+                <div class="col-md-6">
+                    <strong>From:</strong> {{ entry.from_location }}
+                </div>
+                <div class="col-md-6">
+                    <strong>To:</strong> {{ entry.to_location }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Departure Date:</strong> {{ entry.departure_date|date:"d-m-Y" }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Departure Time:</strong> {{ entry.departure_time|time:"H:i" }}
+                </div>
+                {% if entry.return_date %}
+                <div class="col-md-6">
+                    <strong>Return Date:</strong> {{ entry.return_date|date:"d-m-Y" }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Return Time:</strong> {{ entry.return_time|time:"H:i" }}
+                </div>
+                {% endif %}
+                <div class="col-md-6">
+                    <strong>No of Days:</strong> {{ entry.no_of_days }}
+                </div>
+                <div class="col-md-6">
+                    <strong>Travel Reason:</strong> {{ entry.get_travel_reason_display }}
+                </div>
+                <div class="col-12">
+                    <strong>Purpose of Visit:</strong><br>
+                    {{ entry.purpose_of_visit }}
+                </div>
+                {% if entry.aadhar_upload %}
+                <div class="col-md-6">
+                    <strong>Aadhar Upload:</strong><br>
+                    <a href="{{ entry.aadhar_upload.url }}" target="_blank">
+                        <img src="{{ entry.aadhar_upload.url }}" alt="Aadhar" style="max-width: 200px; max-height: 200px;">
+                    </a>
+                </div>
+                {% endif %}
+                {% if entry.one_way_document %}
+                <div class="col-md-6">
+                    <strong>One Way Document:</strong><br>
+                    <a href="{{ entry.one_way_document.url }}" target="_blank">
+                        <img src="{{ entry.one_way_document.url }}" alt="Document" style="max-width: 200px; max-height: 200px;">
+                    </a>
+                </div>
+                {% endif %}
+                <div class="col-md-6">
+                    <strong>Status:</strong>
+                    <span class="badge {{ entry.approval_badge_class }}">
+                        {{ entry.get_approval_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        text-decoration: none;
+        transition: 0.2s ease-in-out;
+    }
+    .btn-back:hover {
+        background: #f8f9fa;
+        color: #212529;
+        text-decoration: none;
+    }
+</style>
+
+<script src="https://unpkg.com/feather-icons"></script>
+<script>
+    feather.replace();
+</script>
+
+{% endblock %}
+

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import Permission
 
-from .models import CompOffEntry, SiteEntry, PermissionEntry, LeaveEntry
+from .models import CompOffEntry, SiteEntry, PermissionEntry, LeaveEntry, TravelEntry, ManualEntry
 
 
 @admin.register(CompOffEntry)
@@ -111,15 +111,55 @@ class LeaveEntryAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ('employee', 'site')
     date_hierarchy = 'from_date'
-#
-# @admin.register(TADAEntry)
-# class TADAEntryAdmin(admin.ModelAdmin):
-#     list_display = ('id', '__str__')
-#
-# @admin.register(TravelEntry)
-# class TravelEntryAdmin(admin.ModelAdmin):
-#     list_display = ('id', '__str__')
-#
-# @admin.register(ManualEntry)
-# class ManualEntryAdmin(admin.ModelAdmin):
-#     list_display = ('id', '__str__')
+
+
+@admin.register(TravelEntry)
+class TravelEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        'entry_date',
+        'employee',
+        'site',
+        'from_location',
+        'to_location',
+        'departure_date',
+        'travel_mode',
+        'trip_type',
+        'approval_status',
+    )
+    list_filter = ('travel_mode', 'trip_type', 'approval_status', 'departure_date', 'booking_option')
+    search_fields = (
+        'employee__staff_name',
+        'employee__staff_id',
+        'site__name',
+        'from_location',
+        'to_location',
+        'purpose_of_visit',
+    )
+    autocomplete_fields = ('employee', 'site')
+    date_hierarchy = 'departure_date'
+    readonly_fields = ('entry_date', 'created_at', 'updated_at')
+
+
+@admin.register(ManualEntry)
+class ManualEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        'attendance_date',
+        'employee',
+        'site',
+        'salary_type',
+        'shift',
+        'shift_in_time',
+        'shift_out_time',
+        'attendance_type',
+        'worked_hours_display',
+    )
+    list_filter = ('attendance_type', 'salary_type', 'shift', 'attendance_date')
+    search_fields = (
+        'employee__staff_name',
+        'employee__staff_id',
+        'site__name',
+        'remarks',
+    )
+    autocomplete_fields = ('employee', 'site')
+    date_hierarchy = 'attendance_date'
+    readonly_fields = ('created_at', 'updated_at', 'worked_hours_display')

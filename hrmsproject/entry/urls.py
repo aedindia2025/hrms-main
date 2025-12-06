@@ -21,6 +21,8 @@ urlpatterns = [
     # Entry -> Manual
     path('manual/create/', views.manual_entry_create, name='manual_entry_create'),
     path('manual/list/', views.manual_entry_list, name='manual_entry_list'),
+    path('manual/edit/<int:pk>/', views.manual_entry_edit, name='manual_entry_edit'),
+    path('manual/delete/<int:pk>/', views.manual_entry_delete, name='manual_entry_delete'),
     path('manual/print/', views.manual_entry_print, name='manual_entry_print'),
 
     # Entry -> Permission
@@ -45,4 +47,7 @@ urlpatterns = [
     # Entry -> Travel
     path('travel/create/', views.travel_entry_create, name='travel_entry_create'),
     path('travel/list/', views.travel_entry_list, name='travel_entry_list'),
+    path('travel/view/<int:pk>/', views.travel_entry_view, name='travel_entry_view'),
+    path('travel/edit/<int:pk>/', views.travel_entry_edit, name='travel_entry_edit'),
+    path('travel/delete/<int:pk>/', views.travel_entry_delete, name='travel_entry_delete'),
 ]

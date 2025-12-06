@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import models
 from django.core.validators import MinValueValidator
 
-from master.models import Employee, Site, ExpenseType, SubExpense
+from master.models import Employee, Site, ExpenseType, SubExpense, Shift, SalaryType, LeaveType
 
 
 class CompOffEntry(models.Model):
@@ -250,19 +250,6 @@ class PermissionEntry(models.Model):
 
 
 class LeaveEntry(models.Model):
-    LEAVE_TYPE_COMPENSATORY = 'compensatory-leave'
-    LEAVE_TYPE_EARNED = 'earned-leave'
-    LEAVE_TYPE_LOP = 'LOP'
-    LEAVE_TYPE_SICK = 'Sick-leave'
-    LEAVE_TYPE_CASUAL = 'casual-leave'
-    LEAVE_TYPE_CHOICES = [
-        (LEAVE_TYPE_COMPENSATORY, 'Compensatory Leave/Off'),
-        (LEAVE_TYPE_EARNED, 'Earned Leave'),
-        (LEAVE_TYPE_LOP, 'Loss of Pay'),
-        (LEAVE_TYPE_SICK, 'Sick Leave'),
-        (LEAVE_TYPE_CASUAL, 'Casual Leave'),
-    ]
-
     DURATION_FULL_DAY = 'full_day'
     DURATION_FORENOON = 'forenoon'
     DURATION_AFTERNOON = 'afternoon'
@@ -302,9 +289,13 @@ class LeaveEntry(models.Model):
         default=0,
         help_text='Number of leave days (e.g. 1.00 for full day, 0.50 for half day)'
     )
-    leave_type = models.CharField(
-        max_length=50,
-        choices=LEAVE_TYPE_CHOICES,
+    leave_type = models.ForeignKey(
+        LeaveType,
+        on_delete=models.PROTECT,
+        related_name='leave_entries',
+        help_text='Leave type from master data',
+        null=True,
+        blank=True,
     )
     leave_duration_type = models.CharField(
         max_length=20,
@@ -594,3 +585,240 @@ class TADAEntrySubItem(models.Model):
                 # If conversion fails, leave total_kilometer as is
                 pass
         super().save(*args, **kwargs)
+
+
+class TravelEntry(models.Model):
+    TRAVEL_MODE_BUS = 'bus'
+    TRAVEL_MODE_TRAIN = 'train'
+    TRAVEL_MODE_CAB = 'cab'
+    TRAVEL_MODE_FLIGHT = 'flight'
+    TRAVEL_MODE_CHOICES = [
+        (TRAVEL_MODE_BUS, 'Bus'),
+        (TRAVEL_MODE_TRAIN, 'Train'),
+        (TRAVEL_MODE_CAB, 'Cab'),
+        (TRAVEL_MODE_FLIGHT, 'Flight'),
+    ]
+
+    TRIP_TYPE_ONE_WAY = 'one_way'
+    TRIP_TYPE_RETURN = 'return'
+    TRIP_TYPE_CHOICES = [
+        (TRIP_TYPE_ONE_WAY, 'One Way'),
+        (TRIP_TYPE_RETURN, 'Return'),
+    ]
+
+    BOOKING_FRONT_DESK = 'front_desk'
+    BOOKING_SELF = 'self'
+    BOOKING_CHOICES = [
+        (BOOKING_FRONT_DESK, 'Front Desk'),
+        (BOOKING_SELF, 'Self'),
+    ]
+
+    ACCOMMODATION_HOTEL = 'hotel'
+    ACCOMMODATION_GUEST_HOUSE = 'guest_house'
+    ACCOMMODATION_CHOICES = [
+        (ACCOMMODATION_HOTEL, 'Hotel'),
+        (ACCOMMODATION_GUEST_HOUSE, 'Guest House'),
+    ]
+
+    TRAVEL_REASON_BUSINESS = 'business_trip'
+    TRAVEL_REASON_HOME_TOWN = 'home_town_visit'
+    TRAVEL_REASON_CHOICES = [
+        (TRAVEL_REASON_BUSINESS, 'Business Trip'),
+        (TRAVEL_REASON_HOME_TOWN, 'Quarterly Home Town Visit'),
+    ]
+
+    APPROVAL_PENDING = 'pending'
+    APPROVAL_APPROVED = 'approved'
+    APPROVAL_REJECTED = 'rejected'
+    APPROVAL_CHOICES = [
+        (APPROVAL_PENDING, 'Pending'),
+        (APPROVAL_APPROVED, 'Approved'),
+        (APPROVAL_REJECTED, 'Rejected'),
+    ]
+
+    entry_date = models.DateField(auto_now_add=True)
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name='travel_entries',
+    )
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.PROTECT,
+        related_name='travel_entries',
+    )
+    travel_mode = models.CharField(
+        max_length=20,
+        choices=TRAVEL_MODE_CHOICES,
+    )
+    trip_type = models.CharField(
+        max_length=20,
+        choices=TRIP_TYPE_CHOICES,
+        default=TRIP_TYPE_ONE_WAY,
+    )
+    booking_option = models.CharField(
+        max_length=20,
+        choices=BOOKING_CHOICES,
+    )
+    accommodation_type = models.CharField(
+        max_length=20,
+        choices=ACCOMMODATION_CHOICES,
+        blank=True,
+    )
+    from_location = models.CharField(max_length=255)
+    to_location = models.CharField(max_length=255)
+    departure_date = models.DateField()
+    departure_time = models.TimeField()
+    return_date = models.DateField(null=True, blank=True)
+    return_time = models.TimeField(null=True, blank=True)
+    no_of_days = models.IntegerField(
+        validators=[MinValueValidator(1)],
+        help_text='Number of days for travel'
+    )
+    travel_reason = models.CharField(
+        max_length=50,
+        choices=TRAVEL_REASON_CHOICES,
+    )
+    purpose_of_visit = models.TextField()
+    aadhar_upload = models.ImageField(
+        upload_to='travel_entry/aadhar/',
+        null=True,
+        blank=True,
+    )
+    one_way_document = models.ImageField(
+        upload_to='travel_entry/documents/',
+        null=True,
+        blank=True,
+    )
+    approval_status = models.CharField(
+        max_length=20,
+        choices=APPROVAL_CHOICES,
+        default=APPROVAL_PENDING,
+    )
+    approved_by = models.CharField(max_length=255, blank=True)
+    approval_note = models.CharField(max_length=255, blank=True)
+    is_printed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-departure_date', '-entry_date', 'employee__staff_name']
+        verbose_name = 'Travel Requisition Entry'
+        verbose_name_plural = 'Travel Requisition Entries'
+
+    def __str__(self):
+        return f'{self.employee} - {self.from_location} to {self.to_location} ({self.departure_date})'
+
+    def save(self, *args, **kwargs):
+        # Validate return date for return trips
+        if self.trip_type == self.TRIP_TYPE_RETURN:
+            if not self.return_date:
+                raise ValueError("Return date is required for return trips")
+            if self.return_date < self.departure_date:
+                raise ValueError("Return date cannot be before departure date")
+        super().save(*args, **kwargs)
+
+    @property
+    def from_to_display(self) -> str:
+        """Returns formatted from-to location"""
+        return f"{self.from_location} → {self.to_location}"
+
+    @property
+    def approval_badge_class(self) -> str:
+        """Returns CSS classes for approval status badge"""
+        mapping = {
+            self.APPROVAL_APPROVED: 'text-success bg-success-subtle border border-success',
+            self.APPROVAL_REJECTED: 'text-danger bg-danger-subtle border border-danger',
+            self.APPROVAL_PENDING: 'text-info bg-info-subtle border border-info',
+        }
+        return mapping.get(self.approval_status, 'text-secondary bg-secondary-subtle border border-secondary')
+
+
+class ManualEntry(models.Model):
+    """
+    Model for Manual Attendance Entry.
+    Used to manually record employee attendance when biometric/punch system fails.
+    """
+    ATTENDANCE_TYPE_PRESENT = 'present'
+    ATTENDANCE_TYPE_ABSENT = 'absent'
+    ATTENDANCE_TYPE_HALF_DAY = 'half_day'
+    ATTENDANCE_TYPE_LEAVE = 'leave'
+    ATTENDANCE_TYPE_CHOICES = [
+        (ATTENDANCE_TYPE_PRESENT, 'Present'),
+        (ATTENDANCE_TYPE_ABSENT, 'Absent'),
+        (ATTENDANCE_TYPE_HALF_DAY, 'Half Day'),
+        (ATTENDANCE_TYPE_LEAVE, 'Leave'),
+    ]
+
+    attendance_date = models.DateField()
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.PROTECT,
+        related_name='manual_entries',
+    )
+    site = models.ForeignKey(
+        Site,
+        on_delete=models.PROTECT,
+        related_name='manual_entries',
+    )
+    salary_type = models.ForeignKey(
+        SalaryType,
+        on_delete=models.PROTECT,
+        related_name='manual_entries',
+        help_text='Salary type from master data',
+        null=True,
+        blank=True,
+    )
+    shift = models.ForeignKey(
+        Shift,
+        on_delete=models.PROTECT,
+        related_name='manual_entries',
+        help_text='Shift from master data',
+        null=True,
+        blank=True,
+    )
+    shift_in_time = models.TimeField(null=True, blank=True)
+    shift_out_time = models.TimeField(null=True, blank=True)
+    attendance_type = models.CharField(
+        max_length=20,
+        choices=ATTENDANCE_TYPE_CHOICES,
+        default=ATTENDANCE_TYPE_PRESENT,
+    )
+    remarks = models.TextField(blank=True, help_text='Additional remarks or notes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-attendance_date', 'employee__staff_name']
+        verbose_name = 'Manual Attendance Entry'
+        verbose_name_plural = 'Manual Attendance Entries'
+        unique_together = ['attendance_date', 'employee', 'site']
+
+    def __str__(self):
+        return f'{self.employee.staff_name} - {self.attendance_date} ({self.get_attendance_type_display()})'
+
+    @property
+    def worked_duration(self):
+        """Calculate worked duration if both in and out times are present."""
+        if self.shift_in_time and self.shift_out_time:
+            in_dt = datetime.combine(self.attendance_date, self.shift_in_time)
+            out_dt = datetime.combine(self.attendance_date, self.shift_out_time)
+            if out_dt <= in_dt:
+                out_dt += timedelta(days=1)
+            return out_dt - in_dt
+        return None
+
+    @property
+    def worked_hours_display(self) -> str:
+        """Returns formatted worked hours."""
+        duration = self.worked_duration
+        if not duration:
+            return '-'
+        total_minutes = int(duration.total_seconds() // 60)
+        hours, minutes = divmod(total_minutes, 60)
+        parts = []
+        if hours:
+            parts.append(f'{hours} hr{"s" if hours != 1 else ""}')
+        if minutes:
+            parts.append(f'{minutes} min{"s" if minutes != 1 else ""}')
+        return ' '.join(parts) or '0 mins'
