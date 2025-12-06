@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 
-from master.models import Employee, Site, ExpenseType, SubExpense
+from master.models import Employee, Site, ExpenseType, SubExpense, LeaveType
 from .models import CompOffEntry, SiteEntry, PermissionEntry, LeaveEntry, TADAEntry, TADAEntrySubItem
 
 # ------------------------
@@ -255,6 +255,7 @@ def comp_off_delete(request, pk):
 def leave_entry_create(request):
     employees = Employee.objects.order_by('staff_name')
     sites = Site.objects.order_by('name')
+    leave_types = LeaveType.objects.all().order_by('leave_type')
 
     values = {
         'from_date': '',
@@ -314,7 +315,7 @@ def leave_entry_create(request):
 
         if not values['leave_type']:
             errors['leave_type'] = 'Leave type is required.'
-        elif values['leave_type'] not in dict(LeaveEntry.LEAVE_TYPE_CHOICES):
+        elif not LeaveType.objects.filter(pk=values['leave_type']).exists():
             errors['leave_type'] = 'Invalid leave type selected.'
 
         if not values['reason']:
@@ -356,7 +357,7 @@ def leave_entry_create(request):
         'errors': errors,
         'selected_employee': selected_employee,
         'calculated_days': calculated_days,
-        'leave_type_choices': LeaveEntry.LEAVE_TYPE_CHOICES,
+        'leave_types': leave_types,
         'duration_type_choices': LeaveEntry.DURATION_CHOICES,
     }
     return render(request, 'entry/leave_entry/create.html', context)
@@ -442,6 +443,7 @@ def leave_entry_edit(request, pk):
     leave_entry = get_object_or_404(LeaveEntry, pk=pk)
     employees = Employee.objects.order_by('staff_name')
     sites = Site.objects.order_by('name')
+    leave_types = LeaveType.objects.all().order_by('leave_type')
 
     values = {
         'from_date': leave_entry.from_date.strftime('%Y-%m-%d') if leave_entry.from_date else '',
@@ -501,7 +503,7 @@ def leave_entry_edit(request, pk):
 
         if not values['leave_type']:
             errors['leave_type'] = 'Leave type is required.'
-        elif values['leave_type'] not in dict(LeaveEntry.LEAVE_TYPE_CHOICES):
+        elif not LeaveType.objects.filter(pk=values['leave_type']).exists():
             errors['leave_type'] = 'Invalid leave type selected.'
 
         if not values['reason']:
@@ -545,7 +547,7 @@ def leave_entry_edit(request, pk):
         'errors': errors,
         'selected_employee': selected_employee,
         'calculated_days': calculated_days,
-        'leave_type_choices': LeaveEntry.LEAVE_TYPE_CHOICES,
+        'leave_types': leave_types,
         'duration_type_choices': LeaveEntry.DURATION_CHOICES,
     }
     return render(request, 'entry/leave_entry/edit.html', context)

@@ -118,8 +118,8 @@
                         {% for entry in tada_entries %}
                         <tr>
                             <td>{{ forloop.counter0|add:tada_entries.start_index }}</td>
-                            <td>{{ entry.entry_date|date:"d-m-Y" }}</td>
-                            <td>{{ entry.expense_date|date:"d-m-Y" }}</td>
+                            <td class="text-nowrap">{{ entry.entry_date|date:"d-m-Y" }}</td>
+                            <td class="text-nowrap">{{ entry.expense_date|date:"d-m-Y" }}</td>
                             <td>{{ entry.entry_no|default:"-" }}</td>
                             <td>{{ entry.batch_no|default:"-" }}</td>
                             <td>{{ entry.site.name }}</td>
