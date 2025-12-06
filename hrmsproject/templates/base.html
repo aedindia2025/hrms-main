@@ -44,7 +44,13 @@
   <!-- Bootstrap js -->
   <script src="{% static 'assets/js/lib/bootstrap.bundle.min.js' %}"></script>
 </head>
-
+<style>
+html {
+    transform: scale(0.9);       /* change % here */
+    transform-origin: top left;
+    width: 111%;                 /* adjust matching the scale */
+}
+</style>
 <body class="app-body bg-light">
 
   {% include 'partials/sidebar.html' %}
